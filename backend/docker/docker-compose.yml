@@ -1,0 +1,17 @@
+name: DeliveryHub
+services:
+  postgres:
+    image: postgres:18
+    container_name: deliveryhub-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: deliveryhub
+      POSTGRES_PASSWORD: deliveryhub
+      POSTGRES_DB: deliveryhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+
+volumes:
+  postgres_data:
