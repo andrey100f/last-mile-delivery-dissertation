@@ -2,17 +2,19 @@
 
 Spring Boot modular monolith for the Last Mile Delivery Marketplace. Bounded contexts are Java packages (not separate Maven modules). The **PostgreSQL** schema is owned by **Flyway** (`src/main/resources/db/migration`); Hibernate `ddl-auto` is `none` so SQL migrations and JPA stay aligned.
 
+**Local machine runs** use the **`local`** profile by default (`spring.profiles.default=local` in `application.properties`). JDBC settings live in `application-local.properties` so the main file stays free of hardcoded credentials.
+
 ## Prerequisites
 
 - **JDK** version matching `pom.xml` (`java.version`; currently **25**).
 - **Apache Maven** 3.9+ (this repo does not include the Maven Wrapper).
-- **PostgreSQL** for local runs and tests — easiest path is **Docker** (see [Database](#database)). A locally installed PostgreSQL 15+ on `localhost:5432` is fine if you create the same database and user.
+- **PostgreSQL** when running the app on your machine — easiest path is **Docker** (see [Database](#database)). A locally installed PostgreSQL 15+ on `localhost:5432` is fine if you create the same database and user.
 
 ## Database
 
 ### Why it matters
 
-The application does not start without a reachable datasource. If PostgreSQL is stopped, startup fails with a connection error. That is expected.
+The application does not start without a reachable datasource when the **`local`** profile is active (the default for `spring-boot:run`). If PostgreSQL is stopped, startup fails with a connection error. That is expected.
 
 ### Option 1: Docker (recommended)
 
@@ -43,7 +45,7 @@ Create a database and role matching the defaults above, or override the datasour
 
 ### Datasource environment variables
 
-Defaults are set in `src/main/resources/application.properties`. In any environment (including production), override with standard Spring Boot properties — for example:
+Defaults for the **`local`** profile are in `src/main/resources/application-local.properties`. Override with standard Spring Boot properties — for example:
 
 | Variable | Example |
 |----------|---------|
@@ -90,17 +92,21 @@ You should see applied migrations (for example version `1` for `V1__init.sql`).
 mvn spring-boot:run
 ```
 
+The **`local`** profile is active by default, so no extra `-Dspring-boot.run.profiles=local` is required unless you changed `spring.profiles.default`.
+
 The API listens on **port 8080** (see `src/main/resources/application.properties`).
+
+## Build
+
+Compile and package the application:
+
+```bash
+mvn -q package
+```
 
 ## Verify
 
-Run the full test suite (PostgreSQL must be running; tests load the full Spring context):
-
-```bash
-mvn -q verify
-```
-
-Check actuator health (with the app running):
+With the app running, check actuator health:
 
 ```bash
 curl -s http://localhost:8080/actuator/health
