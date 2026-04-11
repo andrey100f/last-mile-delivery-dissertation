@@ -47,6 +47,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "local": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.local.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -59,7 +70,14 @@
             },
             "development": {
               "buildTarget": "deliveryhub:build:development"
+            },
+            "local": {
+              "buildTarget": "deliveryhub:build:local",
+              "proxyConfig": "proxy.conf.json"
             }
+          },
+          "options": {
+            "proxyConfig": "proxy.conf.json"
           },
           "defaultConfiguration": "development"
         },
