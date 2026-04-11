@@ -43,11 +43,6 @@
               ],
               "outputHashing": "all"
             },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            },
             "local": {
               "optimization": false,
               "extractLicenses": false,
@@ -68,18 +63,12 @@
             "production": {
               "buildTarget": "deliveryhub:build:production"
             },
-            "development": {
-              "buildTarget": "deliveryhub:build:development"
-            },
             "local": {
               "buildTarget": "deliveryhub:build:local",
               "proxyConfig": "proxy.conf.json"
             }
           },
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "local"
         },
         "test": {
           "builder": "@angular/build:unit-test"

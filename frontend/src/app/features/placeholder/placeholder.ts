@@ -16,13 +16,12 @@ export class Placeholder implements OnInit {
   ngOnInit(): void {
     this._healthService.getHealth()
       .subscribe({
-        next: data => {
-          console.log(data);
-        },
         error: () => {
           this._messageService.add({
             severity: 'error',
-            summary: 'Something went wrong',
+            summary: 'Backend health check failed',
+            detail: 'The frontend could not reach a healthy backend service. Make sure the backend is running locally ' +
+              'and is reachable from this application.',
           });
         }
     });
