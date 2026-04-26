@@ -8,5 +8,11 @@ export function pathPrefixForRole(role: UserRole): string {
       return '/courier';
     case UserRole.ADMIN:
       return '/admin';
+    default:
+      return assertNever(role);
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unexpected role: ${String(value)}`);
 }

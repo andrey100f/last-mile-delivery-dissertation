@@ -17,7 +17,7 @@ public class AuthService {
     private final JwtService jwtService;
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
-        if (loginRequestDto.getRole() == null) {
+        if (isMissingLoginFields(loginRequestDto)) {
             throw new AuthException("Invalid credentials");
         }
 
@@ -32,6 +32,16 @@ public class AuthService {
         return LoginResponseDto.builder()
             .token(jwtService.generateToken(user))
             .build();
+    }
+
+    private static boolean isMissingLoginFields(LoginRequestDto dto) {
+        if (dto.getRole() == null) {
+            return true;
+        }
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            return true;
+        }
+        return dto.getPassword() == null || dto.getPassword().isBlank();
     }
 
 }

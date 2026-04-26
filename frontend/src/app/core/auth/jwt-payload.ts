@@ -18,11 +18,15 @@ export function readJwtSubject(token: string): string | null {
   return typeof v === 'string' && v.length > 0 ? v : null;
 }
 
+/** True if past `exp`, or if the token cannot be read / has no valid numeric `exp` (treat as unusable). */
 export function isJwtExpired(token: string, nowMs = Date.now()): boolean {
   const payload = readJwtPayload(token);
-  const exp = payload?.['exp'];
-  if (typeof exp !== 'number') {
-    return false;
+  if (payload === null) {
+    return true;
+  }
+  const exp = payload['exp'];
+  if (typeof exp !== 'number' || !Number.isFinite(exp)) {
+    return true;
   }
   return exp * 1000 <= nowMs;
 }

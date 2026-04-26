@@ -120,12 +120,13 @@ export class LoginPage {
   private navigateAfterLogin(): void {
     const fromQuery = this.route.snapshot.queryParamMap.get('returnUrl');
     const fromSession = sessionStorage.getItem(AUTH_RETURN_URL_SESSION_KEY);
+    sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
+
     const candidate = fromQuery?.trim() || fromSession || undefined;
     const safe = candidate ? sanitizeInternalReturnUrl(candidate) : undefined;
     const role = this.form.controls.role.getRawValue();
     const allowed = returnUrlAllowedForRole(safe, role);
     if (allowed) {
-      sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
       void this.router.navigateByUrl(allowed);
       return;
     }
