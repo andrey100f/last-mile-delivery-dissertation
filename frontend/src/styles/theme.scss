@@ -38,6 +38,7 @@
   --p-text-primary: #1E293B;
   --p-text-secondary: #475569;
   --p-text-muted: #94A3B8;
+  --p-text-muted-color: var(--p-text-muted);
   --p-text-disabled: #CBD5E1;
 
   --p-surface-ground: #F8FAFC;
@@ -155,6 +156,7 @@
   --p-text-primary: #F1F5F9;
   --p-text-secondary: #CBD5E1;
   --p-text-muted: #64748B;
+  --p-text-muted-color: var(--p-text-muted);
   --p-text-disabled: #475569;
 
   --p-surface-ground: #0F172A;

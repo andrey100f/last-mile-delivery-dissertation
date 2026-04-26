@@ -1,8 +1,8 @@
 import { definePreset } from '@primeng/themes';
 import Aura from '@primeng/themes/aura';
 
-// PrimeNG preset mapped to CSS variables declared in src/styles/theme.css.
-// Semantic extensions map Aura tokens to app CSS variables in src/styles/theme.css.
+// PrimeNG preset mapped to CSS variables declared in src/styles/theme.scss.
+// Semantic extensions map Aura tokens to app CSS variables in src/styles/theme.scss.
 // Cast preserves compatibility when Aura typing is stricter than our overrides.
 const DeliveryPreset = definePreset(Aura, {
   semantic: {

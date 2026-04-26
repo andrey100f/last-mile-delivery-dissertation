@@ -1,0 +1,91 @@
+<div class="flex h-screen flex-row overflow-hidden bg-p-surface-ground">
+  <aside
+    class="flex h-screen w-63 shrink-0 flex-col border-r border-p-surface-border bg-p-surface-section"
+    aria-label="Application sidebar"
+  >
+    <div
+      class="flex h-19 shrink-0 items-center border-b border-p-surface-border px-5"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-2.5">
+        <div
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-(--p-radius-md) bg-p-primary"
+        >
+          <i class="pi pi-box text-xl text-p-primary-text" aria-hidden="true"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-base font-semibold leading-tight text-p-text-primary">DeliveryHub</h1>
+          <p class="text-xs capitalize text-p-text-muted">{{ rolePortalTagline() }}</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3" aria-label="Primary">
+      @for (section of navSections(); track section.label) {
+        <div class="mb-4">
+          <h3
+            class="mb-1.5 px-5 text-xs font-semibold uppercase tracking-wider text-p-text-muted"
+          >
+            {{ section.label }}
+          </h3>
+          <ul class="space-y-0.5 px-2.5">
+            @for (item of section.items; track item.label + item.routerCommands.join('/')) {
+              <li>
+                <a
+                  [routerLink]="item.routerCommands"
+                  routerLinkActive
+                  #rla="routerLinkActive"
+                  [routerLinkActiveOptions]="{ exact: item.linkActiveExact ?? false }"
+                  [ngClass]="
+                    rla.isActive
+                      ? 'bg-p-primary-light text-p-primary'
+                      : 'text-p-text-secondary hover:bg-p-surface-hover'
+                  "
+                  class="flex items-center gap-2.5 rounded-(--p-radius-md) px-2.5 py-2 text-sm font-medium transition-all duration-150"
+                >
+                  @if (item.icon) {
+                    <i [class]="item.icon + ' shrink-0 text-lg'" aria-hidden="true"></i>
+                  }
+                  <span class="truncate">{{ item.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </nav>
+
+    <div class="border-t border-p-surface-border px-3 py-3">
+      <div
+        class="flex cursor-default items-center gap-2.5 rounded-(--p-radius-md) px-2.5 py-2"
+      >
+        <div
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-p-primary"
+        >
+          <span class="text-xs font-semibold text-p-primary-text">{{
+            sidebarUser().initials
+          }}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-p-text-primary">
+            {{ sidebarUser().line1 }}
+          </p>
+          <p class="truncate text-xs text-p-text-muted">{{ sidebarUser().line2 }}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="app-layout-logout mt-2 flex w-full cursor-pointer items-center gap-2.5 rounded-(--p-radius-md) px-2.5 py-2 text-left text-sm font-medium text-p-text-secondary transition-colors duration-150 hover:bg-p-surface-hover hover:text-[var(--p-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-p-primary focus-visible:ring-offset-2 focus-visible:ring-offset-p-surface-section"
+        (click)="onLogout()"
+      >
+        <i class="pi pi-sign-out shrink-0 text-lg" aria-hidden="true"></i>
+        <span>Log out</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <main class="min-h-0 flex-1 overflow-y-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

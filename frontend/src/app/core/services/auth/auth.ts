@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   USER_ROLE_STORAGE_KEY,
@@ -21,6 +21,13 @@ import { Observable, tap } from 'rxjs';
 export class AuthService extends BaseService {
   private readonly userService = inject(UserService);
 
+  private readonly _sessionRole = signal<UserRole | null>(
+    parseStoredUserRole(sessionStorage.getItem(USER_ROLE_STORAGE_KEY)),
+  );
+
+  /** Mirrors persisted portal role for reactive shell menu (#60). */
+  readonly sessionRole = this._sessionRole.asReadonly();
+
   /**
    * Sends email, password, and portal role; the API returns 401 if no user matches that triple.
    * Persists token and role only after a successful response.
@@ -41,8 +48,7 @@ export class AuthService extends BaseService {
   }
 
   public getCurrentRole(): UserRole | null {
-    const raw = sessionStorage.getItem(USER_ROLE_STORAGE_KEY);
-    return parseStoredUserRole(raw);
+    return this._sessionRole();
   }
 
   public getCurrentUser(): { role: UserRole } | null {
@@ -64,6 +70,7 @@ export class AuthService extends BaseService {
   /** Clears persisted session client-side only (no server revoke); safe for 401 handler — avoids redirect loops. */
   public logout(): void {
     clearStoredAuthSession();
+    this._sessionRole.set(null);
     this.userService.clearCurrentUser();
   }
 
@@ -73,6 +80,7 @@ export class AuthService extends BaseService {
 
   private setPersistedRole(role: UserRole): void {
     sessionStorage.setItem(USER_ROLE_STORAGE_KEY, role);
+    this._sessionRole.set(role);
   }
 }
 

@@ -1,9 +1,8 @@
-/* You can add global styles to this file, and also import other style files */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer theme, base, primeng, utilities;
 
 @import 'tailwindcss';
 @import 'tailwindcss-primeui';
-@import './styles/index.css';
+@import './theme.scss';
 @import 'primeicons/primeicons.css';
