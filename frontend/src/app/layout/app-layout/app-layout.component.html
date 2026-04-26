@@ -1,0 +1,162 @@
+<div
+  class="flex h-screen overflow-hidden bg-p-surface-ground"
+  [class.flex-col]="isMobile()"
+  [class.flex-row]="!isMobile()"
+>
+  <ng-template #navBody>
+    <div
+      class="flex h-[4.75rem] shrink-0 items-center border-b border-p-surface-border px-5"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-2.5">
+        <div
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--p-radius-md)] bg-p-primary"
+        >
+          <i class="pi pi-box text-[20px] text-p-primary-text" aria-hidden="true"></i>
+        </div>
+        @if (!sidebarCollapsed() || isMobile()) {
+          <div class="min-w-0">
+            <h1 class="text-[15px] font-semibold leading-tight text-p-text-primary">DeliveryHub</h1>
+            <p class="text-[11px] capitalize text-p-text-muted">{{ rolePortalTagline() }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3" aria-label="Primary">
+      @for (section of navSections(); track section.label) {
+        <div class="mb-4">
+          @if (!sidebarCollapsed() || isMobile()) {
+            <h3
+              class="mb-1.5 px-5 text-[10px] font-semibold uppercase tracking-wider text-p-text-muted"
+            >
+              {{ section.label }}
+            </h3>
+          }
+          <ul class="space-y-0.5 px-2.5">
+            @for (item of section.items; track item.label + item.routerCommands.join('/')) {
+              <li>
+                <a
+                  [routerLink]="item.routerCommands"
+                  routerLinkActive
+                  #rla="routerLinkActive"
+                  [routerLinkActiveOptions]="{ exact: item.linkActiveExact ?? false }"
+                  [ngClass]="
+                    rla.isActive
+                      ? 'bg-p-primary-light text-p-primary'
+                      : 'text-p-text-secondary hover:bg-p-surface-hover'
+                  "
+                  class="flex items-center gap-2.5 rounded-[var(--p-radius-md)] px-2.5 py-2 text-[13px] font-medium transition-all duration-150"
+                  [class.justify-center]="sidebarCollapsed() && !isMobile()"
+                  (click)="onNavLinkClick()"
+                >
+                  @if (item.icon) {
+                    <i [class]="item.icon + ' shrink-0 text-[18px]'" aria-hidden="true"></i>
+                  }
+                  @if (!sidebarCollapsed() || isMobile()) {
+                    <span class="truncate">{{ item.label }}</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </nav>
+
+    <div class="border-t border-p-surface-border px-3 py-3">
+      <div
+        class="flex cursor-default items-center gap-2.5 rounded-[var(--p-radius-md)] px-2.5 py-2"
+      >
+        <div
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-p-primary"
+        >
+          <span class="text-[12px] font-semibold text-p-primary-text">{{
+            sidebarUser().initials
+          }}</span>
+        </div>
+        @if (!sidebarCollapsed() || isMobile()) {
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[13px] font-medium text-p-text-primary">
+              {{ sidebarUser().line1 }}
+            </p>
+            <p class="truncate text-[11px] text-p-text-muted">{{ sidebarUser().line2 }}</p>
+          </div>
+        }
+      </div>
+      @if (!sidebarCollapsed() || isMobile()) {
+        <p-button
+          type="button"
+          class="mt-2 block w-full"
+          label="Log out"
+          icon="pi pi-sign-out"
+          [text]="true"
+          severity="secondary"
+          styleClass="w-full justify-start"
+          (onClick)="onLogout()"
+        />
+      } @else {
+        <p-button
+          type="button"
+          class="mt-2"
+          icon="pi pi-sign-out"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          aria-label="Log out"
+          (onClick)="onLogout()"
+        />
+      }
+    </div>
+  </ng-template>
+
+  @if (isMobile()) {
+    <p-drawer
+      [visible]="mobileMenuOpen()"
+      (visibleChange)="mobileMenuOpen.set($event)"
+      position="left"
+      [modal]="true"
+      [dismissible]="true"
+      styleClass="!w-[min(100vw,252px)]"
+      header="Menu"
+    >
+      <ng-container [ngTemplateOutlet]="navBody" />
+    </p-drawer>
+
+    <div
+      class="flex h-[4.75rem] shrink-0 items-center gap-2 border-b border-p-surface-border bg-p-surface-section px-5"
+    >
+      <p-button
+        type="button"
+        icon="pi pi-bars"
+        [rounded]="true"
+        [text]="true"
+        aria-label="Open menu"
+        (onClick)="openMobileMenu()"
+      />
+      <span class="text-[15px] font-semibold text-p-text-primary">DeliveryHub</span>
+    </div>
+  } @else {
+    <aside
+      class="relative flex h-screen shrink-0 flex-col border-r border-p-surface-border bg-p-surface-section transition-[width] duration-200 ease-out"
+      [ngClass]="sidebarCollapsed() ? 'w-[72px]' : 'w-[252px]'"
+      aria-label="Application sidebar"
+    >
+      <p-button
+        type="button"
+        class="!absolute top-2 right-1 z-[1]"
+        [icon]="sidebarCollapsed() ? 'pi pi-angle-right' : 'pi pi-angle-left'"
+        [rounded]="true"
+        [text]="true"
+        [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        (onClick)="toggleCollapse()"
+      />
+      <ng-container [ngTemplateOutlet]="navBody" />
+    </aside>
+  }
+
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <main class="min-h-0 flex-1 overflow-y-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>
