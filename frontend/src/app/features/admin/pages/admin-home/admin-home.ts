@@ -5,6 +5,5 @@ import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-ba
   selector: 'app-admin-home',
   imports: [PageTopBarComponent],
   templateUrl: './admin-home.html',
-  styleUrl: './admin-home.css',
 })
 export class AdminHome {}

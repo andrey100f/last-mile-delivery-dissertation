@@ -1,0 +1,2 @@
+/* Global entry (SCSS): delegates the Tailwind + PostCSS import chain to plain CSS so Sass does not break Tailwind’s internal @import paths. */
+@import './styles/postcss-entry.css';

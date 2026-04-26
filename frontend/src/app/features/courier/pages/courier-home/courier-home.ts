@@ -5,6 +5,5 @@ import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-ba
   selector: 'app-courier-home',
   imports: [PageTopBarComponent],
   templateUrl: './courier-home.html',
-  styleUrl: './courier-home.css',
 })
 export class CourierHome {}

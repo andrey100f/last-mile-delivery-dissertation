@@ -13,10 +13,6 @@ export const routes: Routes = [
     redirectTo: 'login',
   },
   {
-    path: 'welcome',
-    loadComponent: () => import('./features/placeholder/placeholder').then((m) => m.Placeholder),
-  },
-  {
     path: '',
     component: AppLayoutComponent,
     canActivate: [authGuard],
@@ -56,6 +52,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'welcome',
+    redirectTo: 'login',
   },
 ];

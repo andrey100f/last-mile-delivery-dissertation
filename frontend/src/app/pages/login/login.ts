@@ -25,7 +25,7 @@ import { finalize, switchMap } from 'rxjs';
   selector: 'app-login-page',
   imports: [ReactiveFormsModule, Button, InputText],
   templateUrl: './login.html',
-  styleUrl: './login.css',
+  styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPage {
@@ -146,7 +146,7 @@ export class LoginPage {
         void this.router.navigate(['/admin']);
         break;
       default:
-        void this.router.navigate(['/welcome']);
+        void this.router.navigate(['/login']);
     }
   }
 }

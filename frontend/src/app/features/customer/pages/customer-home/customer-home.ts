@@ -5,6 +5,5 @@ import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-ba
   selector: 'app-customer-home',
   imports: [PageTopBarComponent],
   templateUrl: './customer-home.html',
-  styleUrl: './customer-home.css',
 })
 export class CustomerHome {}

@@ -17,7 +17,7 @@ export const customerRoutes: Routes = [
     data: { pageTitle: 'Create New Delivery' },
   },
   {
-    path: 'tracking/:id',
+    path: 'tracking',
     loadComponent: loadStub,
     data: { pageTitle: 'Track delivery' },
   },

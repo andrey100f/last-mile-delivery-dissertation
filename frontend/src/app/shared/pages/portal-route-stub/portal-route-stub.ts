@@ -14,7 +14,6 @@ import { filter } from 'rxjs';
   selector: 'app-portal-route-stub',
   imports: [PageTopBarComponent],
   templateUrl: './portal-route-stub.html',
-  styleUrl: './portal-route-stub.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PortalRouteStub {

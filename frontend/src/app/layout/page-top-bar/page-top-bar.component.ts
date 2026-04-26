@@ -6,7 +6,6 @@ import { PORTAL_PAGE_PLACEHOLDER_BODY } from '@shared/portal-page-placeholder';
   selector: 'app-page-top-bar',
   standalone: true,
   templateUrl: './page-top-bar.component.html',
-  styleUrl: './page-top-bar.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PageTopBarComponent {

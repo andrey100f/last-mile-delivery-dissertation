@@ -9,7 +9,7 @@ import { Card } from 'primeng/card';
   selector: 'app-forbidden-page',
   imports: [Card, Button],
   templateUrl: './forbidden.html',
-  styleUrl: './forbidden.css',
+  styleUrl: './forbidden.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ForbiddenPage {

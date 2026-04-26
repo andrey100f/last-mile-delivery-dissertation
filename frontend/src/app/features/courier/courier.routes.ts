@@ -17,7 +17,7 @@ export const courierRoutes: Routes = [
     data: { pageTitle: 'Requests' },
   },
   {
-    path: 'active/:id',
+    path: 'active',
     loadComponent: loadStub,
     data: { pageTitle: 'Active delivery' },
   },

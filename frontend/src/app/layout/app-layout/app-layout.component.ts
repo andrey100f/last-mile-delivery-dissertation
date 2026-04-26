@@ -1,60 +1,23 @@
-import { NgClass, NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgClass } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { navSectionsForRole } from '@core/navigation/app-nav.utils';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
 import { UserService } from '@core/services/user/user';
-import { Button } from 'primeng/button';
-import { Drawer } from 'primeng/drawer';
-import { fromEvent } from 'rxjs';
-
-const MOBILE_MAX_WIDTH_PX = 768;
 
 @Component({
   selector: 'app-layout',
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    NgTemplateOutlet,
-    NgClass,
-    Drawer,
-    Button,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass],
   templateUrl: './app-layout.component.html',
-  styleUrl: './app-layout.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppLayoutComponent {
   private readonly auth = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  /** PrimeNG drawer visibility (mobile). */
-  protected readonly mobileMenuOpen = signal(false);
-
-  /** Desktop sidebar narrow (icon-first) mode. */
-  protected readonly sidebarCollapsed = signal(false);
-
-  protected readonly isMobile = signal(
-    typeof globalThis.matchMedia === 'function'
-      ? globalThis.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH_PX}px)`).matches
-      : false,
-  );
-
-  protected readonly navSections = computed(() =>
-    navSectionsForRole(this.auth.sessionRole()),
-  );
+  protected readonly navSections = computed(() => navSectionsForRole(this.auth.sessionRole()));
 
   protected readonly rolePortalTagline = computed(() => {
     switch (this.auth.sessionRole()) {
@@ -82,44 +45,9 @@ export class AppLayoutComponent {
     };
   });
 
-  constructor() {
-    if (typeof globalThis.matchMedia !== 'function') {
-      return;
-    }
-    const mql = globalThis.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH_PX}px)`);
-    const apply = () => this.isMobile.set(mql.matches);
-    apply();
-    fromEvent(mql, 'change')
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        apply();
-        if (!mql.matches) {
-          this.mobileMenuOpen.set(false);
-        }
-      });
-  }
-
   protected onLogout(): void {
     this.auth.logout();
     void this.router.navigate(['/login']);
-  }
-
-  protected toggleCollapse(): void {
-    this.sidebarCollapsed.update((v) => !v);
-  }
-
-  protected openMobileMenu(): void {
-    this.mobileMenuOpen.set(true);
-  }
-
-  protected closeMobileMenu(): void {
-    this.mobileMenuOpen.set(false);
-  }
-
-  protected onNavLinkClick(): void {
-    if (this.isMobile()) {
-      this.closeMobileMenu();
-    }
   }
 }
 

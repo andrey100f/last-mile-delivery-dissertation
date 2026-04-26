@@ -44,7 +44,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
       },
       {
         label: 'Track delivery',
-        routerCommands: ['customer', 'tracking', 'demo'],
+        routerCommands: ['customer', 'tracking'],
         icon: 'pi pi-map-marker',
         roles: [UserRole.CUSTOMER],
       },
@@ -62,7 +62,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
       },
       {
         label: 'Active delivery',
-        routerCommands: ['courier', 'active', 'demo'],
+        routerCommands: ['courier', 'active'],
         icon: 'pi pi-send',
         roles: [UserRole.COURIER],
       },

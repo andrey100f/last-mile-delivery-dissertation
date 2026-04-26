@@ -1,0 +1,55 @@
+:host {
+  display: block;
+}
+
+/* 1px shell border (React `border`). Focus/error: color only, no --p-focus-ring (white+blue double shadow). */
+.login-input-shell {
+  box-sizing: border-box;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--p-surface-border);
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+
+  &:hover:not(:focus-within):not(:has(input.ng-invalid.ng-touched)) {
+    border-color: var(--p-text-muted);
+  }
+
+  /* Single contour only — no stacked shadows (avoids white gap from --p-focus-ring) */
+  &:focus-within:not(:has(input.ng-invalid.ng-touched)) {
+    border-color: var(--p-primary);
+    box-shadow: none;
+  }
+
+  &:has(input.ng-invalid.ng-touched) {
+    border-color: var(--p-danger);
+    box-shadow: none;
+  }
+
+  &:focus-within:has(input.ng-invalid.ng-touched) {
+    border-color: var(--p-danger);
+    box-shadow: none;
+  }
+
+  /* PrimeNG can draw its own border on the input — keep focus visuals on the shell only */
+  input,
+  input:focus,
+  input:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border: 0 none !important;
+  }
+
+  input::placeholder {
+    color: var(--p-text-muted);
+    opacity: 1;
+  }
+}
+
+:host ::ng-deep .login-input-shell input.p-inputtext,
+:host ::ng-deep .login-input-shell input.p-inputtext:enabled:focus,
+:host ::ng-deep .login-input-shell input.p-inputtext:enabled:hover {
+  border: 0 none !important;
+  box-shadow: none !important;
+}
