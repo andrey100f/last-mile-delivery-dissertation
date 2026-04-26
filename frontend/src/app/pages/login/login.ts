@@ -7,7 +7,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AUTH_RETURN_URL_SESSION_KEY } from '@core/auth/auth-redirect.service';
+import { sanitizeInternalReturnUrl } from '@core/auth/return-url';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
 import { MessageService } from 'primeng/api';
@@ -26,6 +28,7 @@ export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly messageService = inject(MessageService);
 
@@ -95,7 +98,7 @@ export class LoginPage {
         finalize(() => this.submitting.set(false)),
       )
       .subscribe({
-        next: () => this.navigateByRole(),
+        next: () => this.navigateAfterLogin(),
         error: () => {
           this.messageService.add({
             severity: 'error',
@@ -106,6 +109,19 @@ export class LoginPage {
           });
         },
       });
+  }
+
+  private navigateAfterLogin(): void {
+    const fromQuery = this.route.snapshot.queryParamMap.get('returnUrl');
+    const fromSession = sessionStorage.getItem(AUTH_RETURN_URL_SESSION_KEY);
+    const candidate = fromQuery?.trim() || fromSession || undefined;
+    const safe = candidate ? sanitizeInternalReturnUrl(candidate) : undefined;
+    if (safe) {
+      sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
+      void this.router.navigateByUrl(safe);
+      return;
+    }
+    this.navigateByRole();
   }
 
   private navigateByRole(): void {
