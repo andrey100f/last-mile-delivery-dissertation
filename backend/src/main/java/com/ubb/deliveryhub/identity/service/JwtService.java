@@ -24,7 +24,6 @@ public class JwtService {
         var now = Instant.now();
         return Jwts.builder()
             .subject(user.getId().toString())
-            .claim("role", user.getRole())
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusMillis(expiration)))
             .signWith(getSecretKey(), Jwts.SIG.HS256)

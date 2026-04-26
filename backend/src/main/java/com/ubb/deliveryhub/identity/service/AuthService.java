@@ -16,8 +16,13 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
 
-    public LoginResponseDto login(LoginRequestDto  loginRequestDto) {
-        var user =  repository.findByEmail(loginRequestDto.getEmail())
+    public LoginResponseDto login(LoginRequestDto loginRequestDto) {
+        if (loginRequestDto.getRole() == null) {
+            throw new AuthException("Invalid credentials");
+        }
+
+        var user = repository
+            .findByEmailAndRole(loginRequestDto.getEmail(), loginRequestDto.getRole())
             .orElse(null);
 
         if (user == null || !encoder.matches(loginRequestDto.getPassword(), user.getPasswordHash())) {
