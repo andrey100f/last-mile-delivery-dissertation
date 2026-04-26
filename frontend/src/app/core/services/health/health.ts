@@ -1,16 +1,13 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
-import {environment} from '../../../../environments/environment';
+import {BaseService} from '@core/services/base.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class HealthService {
-  private readonly _httpClient = inject(HttpClient);
-  private readonly _baseUrl = environment.apiUrl;
+export class HealthService extends BaseService {
 
   public getHealth(): Observable<{ status: string }> {
-    return this._httpClient.get<{ status: string }>(`${this._baseUrl}/actuator/health`);
+    return this.httpClient.get<{ status: string }>(`${this.baseUrl}/actuator/health`);
   }
 }

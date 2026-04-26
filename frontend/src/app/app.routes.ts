@@ -4,7 +4,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'welcome',
+    redirectTo: 'login',
   },
   {
     path: 'welcome',
@@ -21,6 +21,10 @@ export const routes: Routes = [
   {
     path: 'admin',
     loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes),
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login').then((m) => m.LoginPage),
   },
   {
     path: '**',

@@ -20,7 +20,8 @@
       "@features/*": ["./src/app/features/*"],
       "@admin-pages/*": ["./src/app/features/admin/pages/*"],
       "@courier-pages/*": ["./src/app/features/courier/pages/*"],
-      "@customer-pages/*": ["./src/app/features/customer/pages/*"]
+      "@customer-pages/*": ["./src/app/features/customer/pages/*"],
+      "@environment/*": ["./src/environments/*"]
     }
   },
   "angularCompilerOptions": {
