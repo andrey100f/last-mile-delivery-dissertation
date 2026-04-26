@@ -1,5 +1,10 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
+import { authInterceptor } from '@core/auth/auth.interceptor';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
@@ -11,7 +16,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     MessageService,
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withFetch()),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideRouter(routes, withViewTransitions()),
     providePrimeNG({
       ripple: true,

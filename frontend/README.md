@@ -79,6 +79,12 @@ frontend/
 
 HTTP calls will target **`/api`** on the dev server and be forwarded to the backend via a **proxy** (planned in issue **#23**). Until that is merged, configure the proxy locally or use absolute backend URLs as needed.
 
+## HTTP auth interceptor (#27)
+
+- **Bearer token:** After a successful login, the access token is stored in `sessionStorage` under `deliveryhub.accessToken`. All `HttpClient` requests that are **not** on the skip list receive `Authorization: Bearer <token>` when a token exists.
+- **Skip list (no Bearer):** paths whose URL (lowercased) contains `/auth/login`, `/auth/register`, or `/actuator/health`. Keep this list aligned with public backend routes so login traffic stays easy to debug and matches acceptance tests.
+- **401 policy:** Any **401** on a non–skip-listed request triggers `AuthService.logout()` (clears client session only), then a **single** navigation to `/login` (`replaceUrl: true`) with optional `returnUrl` query param. The same internal path is mirrored in `sessionStorage` under the key exported as `AUTH_RETURN_URL_SESSION_KEY` (`deliveryhub.returnUrl`) for task **#28** (post-login redirect). Token **refresh** and silent re-auth are **out of scope** here; an expired JWT is expected to surface as 401 from the API.
+
 ## Further reading
 
 - [Angular CLI](https://angular.dev/tools/cli)
