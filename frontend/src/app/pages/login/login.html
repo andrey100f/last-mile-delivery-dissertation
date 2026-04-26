@@ -1,0 +1,118 @@
+<div class="min-h-screen bg-p-surface-ground flex items-center justify-center p-6">
+  <div class="w-full max-w-[480px]">
+    <div class="text-center mb-8">
+      <div
+        class="inline-flex items-center justify-center w-16 h-16 bg-p-primary rounded-(--p-radius-lg) mb-4"
+      >
+        <span class="pi pi-box text-[32px] leading-none text-p-primary-text"></span>
+      </div>
+      <h1 class="text-[32px] font-semibold text-p-text-primary mb-2">DeliveryHub</h1>
+      <p class="text-[14px] text-p-text-secondary">Last-Mile Delivery Marketplace</p>
+    </div>
+
+    <div
+      class="rounded-(--p-radius-lg) overflow-hidden bg-p-surface-card border border-p-surface-border shadow-(--p-shadow-md)"
+    >
+      <div class="flex items-start gap-3 px-5 py-4 border-b border-p-surface-border">
+        <div class="flex-1 min-w-0">
+          <h3 class="text-[14px] font-semibold text-p-text-primary">Sign In</h3>
+          <p class="text-[12px] text-p-text-muted mt-0.5">Select your role and enter your credentials</p>
+        </div>
+      </div>
+
+      <div class="px-5 py-4">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
+          <div class="space-y-2">
+            <span class="text-[13px] font-medium text-p-text-secondary">Login as</span>
+            <div class="grid grid-cols-3 gap-2">
+              @for (role of roles; track role.id) {
+                <button
+                  type="button"
+                  (click)="selectRole(role.id)"
+                  class="p-3 rounded-(--p-radius-md) border transition-all duration-150 active:scale-[0.98]"
+                  [class.bg-p-primary-light]="form.controls.role.value === role.id"
+                  [class.border-p-primary]="form.controls.role.value === role.id"
+                  [class.text-p-primary]="form.controls.role.value === role.id"
+                  [class.bg-p-surface-card]="form.controls.role.value !== role.id"
+                  [class.border-p-surface-border]="form.controls.role.value !== role.id"
+                  [class.text-p-text-secondary]="form.controls.role.value !== role.id"
+                  [class.hover:border-p-text-muted]="form.controls.role.value !== role.id"
+                >
+                  <div class="flex flex-col items-center gap-1.5">
+                    <i [class]="role.icon + ' text-base'"></i>
+                    <span class="text-[12px] font-medium">{{ role.label }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+            <p class="text-[12px] text-p-text-muted">{{ roleDescription() }}</p>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="login-email" class="text-[13px] font-medium text-p-text-secondary">Email Address</label>
+            <div class="login-input-shell flex w-full min-h-[38px] items-center gap-2 rounded-(--p-radius-md) bg-p-surface-card">
+              <span
+                class="pointer-events-none flex shrink-0 items-center pl-3 text-[16px] leading-none text-p-text-muted pi pi-envelope"
+                aria-hidden="true"
+              ></span>
+              <input
+                pInputText
+                id="login-email"
+                type="email"
+                formControlName="email"
+                placeholder="Enter your email"
+                autocomplete="email"
+                class="min-h-[38px] min-w-0 flex-1 border-0 bg-transparent py-2 pr-3 pl-0 text-[14px] leading-normal text-p-text-primary shadow-none outline-none focus:outline-none focus-visible:outline-none focus:shadow-none focus-visible:shadow-none"
+              />
+            </div>
+            @if (form.controls.email.invalid && form.controls.email.touched) {
+              <span class="text-[12px] text-p-danger">Enter a valid email address.</span>
+            }
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="login-password" class="text-[13px] font-medium text-p-text-secondary">Password</label>
+            <div class="login-input-shell flex w-full min-h-[38px] items-center gap-2 rounded-(--p-radius-md) bg-p-surface-card">
+              <span
+                class="pointer-events-none flex shrink-0 items-center pl-3 text-[16px] leading-none text-p-text-muted pi pi-lock"
+                aria-hidden="true"
+              ></span>
+              <input
+                pInputText
+                id="login-password"
+                type="password"
+                formControlName="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                class="min-h-[38px] min-w-0 flex-1 border-0 bg-transparent py-2 pr-3 pl-0 text-[14px] leading-normal text-p-text-primary shadow-none outline-none focus:outline-none focus-visible:outline-none focus:shadow-none focus-visible:shadow-none"
+              />
+            </div>
+            @if (form.controls.password.invalid && form.controls.password.touched) {
+              <span class="text-[12px] text-p-danger">Password is required.</span>
+            }
+          </div>
+
+          <p-button
+            type="submit"
+            label="Sign In"
+            styleClass="w-full !h-11 !px-6 !text-[14px] !font-medium"
+            [loading]="submitting()"
+            [disabled]="submitting()"
+          />
+
+          <div class="text-center pt-2">
+            <p class="text-[13px] text-p-text-secondary m-0">
+              Don't have an account?
+              <button
+                type="button"
+                class="text-p-primary hover:text-p-primary-hover font-medium transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              >
+                Sign up
+              </button>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

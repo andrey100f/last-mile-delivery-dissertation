@@ -9,19 +9,19 @@ DELETE FROM users WHERE email IN (
 
 INSERT INTO users (id, email, password_hash, role, created_at, updated_at)
 VALUES
-    ('a0000001-0000-4000-8000-000000000001'::uuid,
+    ('7035f654-226e-45c2-930a-c9c3cfdc1be7',
      'customer@deliveryhub.local',
      '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
      'CUSTOMER',
      now(),
      now()),
-    ('a0000002-0000-4000-8000-000000000002'::uuid,
+    ('003efa09-9229-4910-99cf-cec6067305b6',
      'courier@deliveryhub.local',
      '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
      'COURIER',
      now(),
      now()),
-    ('a0000003-0000-4000-8000-000000000003'::uuid,
+    ('6fa506dc-70bf-40bb-8e9f-975df704f527',
      'admin@deliveryhub.local',
      '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG',
      'ADMIN',

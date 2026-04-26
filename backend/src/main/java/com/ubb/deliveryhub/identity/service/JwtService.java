@@ -23,7 +23,7 @@ public class JwtService {
     public String generateToken(User user) {
         var now = Instant.now();
         return Jwts.builder()
-            .subject(user.getId())
+            .subject(user.getId().toString())
             .claim("role", user.getRole())
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusMillis(expiration)))
