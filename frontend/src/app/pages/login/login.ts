@@ -9,13 +9,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AUTH_RETURN_URL_SESSION_KEY } from '@core/auth/auth-redirect.service';
-import { sanitizeInternalReturnUrl } from '@core/auth/return-url';
+import {
+  returnUrlAllowedForRole,
+  sanitizeInternalReturnUrl,
+} from '@core/auth/return-url';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
+import { UserService } from '@core/services/user/user';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
-import { finalize } from 'rxjs';
+import { finalize, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-login-page',
@@ -27,6 +31,7 @@ import { finalize } from 'rxjs';
 export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly userService = inject(UserService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -89,11 +94,12 @@ export class LoginPage {
       return;
     }
 
-    const { email, password } = this.form.getRawValue();
+    const { email, password, role } = this.form.getRawValue();
     this.submitting.set(true);
     this.auth
-      .login({ email, password })
+      .login({ email, password, role })
       .pipe(
+        switchMap(() => this.userService.refreshCurrentUser()),
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.submitting.set(false)),
       )
@@ -104,8 +110,8 @@ export class LoginPage {
             severity: 'error',
             summary: 'Authentication failed',
             detail:
-              'We could not sign you in. Please check your email and password, then try again.',
-            life: 6000,
+              'We could not sign you in. Check your email and password, and that Login as matches your account role in the system.',
+            life: 7000,
           });
         },
       });
@@ -114,11 +120,14 @@ export class LoginPage {
   private navigateAfterLogin(): void {
     const fromQuery = this.route.snapshot.queryParamMap.get('returnUrl');
     const fromSession = sessionStorage.getItem(AUTH_RETURN_URL_SESSION_KEY);
+    sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
+
     const candidate = fromQuery?.trim() || fromSession || undefined;
     const safe = candidate ? sanitizeInternalReturnUrl(candidate) : undefined;
-    if (safe) {
-      sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
-      void this.router.navigateByUrl(safe);
+    const role = this.form.controls.role.getRawValue();
+    const allowed = returnUrlAllowedForRole(safe, role);
+    if (allowed) {
+      void this.router.navigateByUrl(allowed);
       return;
     }
     this.navigateByRole();

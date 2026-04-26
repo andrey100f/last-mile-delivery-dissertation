@@ -1,0 +1,22 @@
+<div class="forbidden-wrap flex min-h-dvh items-center justify-center p-6">
+  <p-card
+    header="Access denied"
+    styleClass="w-full max-w-md shadow-md"
+  >
+    <p class="mb-4 text-sm text-muted-color">
+      This area is restricted. If you opened a bookmark or link meant for another role, use your own portal below.
+    </p>
+    <div class="flex flex-col gap-3">
+      @if (signedIn()) {
+        <p-button
+          type="button"
+          label="Go to your portal"
+          styleClass="w-full"
+          (onClick)="goToPortal()"
+        />
+      } @else {
+        <p-button type="button" label="Sign in" styleClass="w-full" (onClick)="goToLogin()" />
+      }
+    </div>
+  </p-card>
+</div>

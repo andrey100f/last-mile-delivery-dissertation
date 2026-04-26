@@ -16,8 +16,13 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
 
-    public LoginResponseDto login(LoginRequestDto  loginRequestDto) {
-        var user =  repository.findByEmail(loginRequestDto.getEmail())
+    public LoginResponseDto login(LoginRequestDto loginRequestDto) {
+        if (isMissingLoginFields(loginRequestDto)) {
+            throw new AuthException("Invalid credentials");
+        }
+
+        var user = repository
+            .findByEmailAndRole(loginRequestDto.getEmail(), loginRequestDto.getRole())
             .orElse(null);
 
         if (user == null || !encoder.matches(loginRequestDto.getPassword(), user.getPasswordHash())) {
@@ -27,6 +32,16 @@ public class AuthService {
         return LoginResponseDto.builder()
             .token(jwtService.generateToken(user))
             .build();
+    }
+
+    private static boolean isMissingLoginFields(LoginRequestDto dto) {
+        if (dto.getRole() == null) {
+            return true;
+        }
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            return true;
+        }
+        return dto.getPassword() == null || dto.getPassword().isBlank();
     }
 
 }

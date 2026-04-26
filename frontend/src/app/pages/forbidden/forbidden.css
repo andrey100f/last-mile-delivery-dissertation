@@ -1,0 +1,7 @@
+.forbidden-wrap {
+  background: var(--p-surface-50);
+}
+
+:host-context(.dark) .forbidden-wrap {
+  background: var(--p-surface-950);
+}
