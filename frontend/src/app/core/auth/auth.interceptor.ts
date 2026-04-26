@@ -5,9 +5,11 @@ import {
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth/auth';
+import { environment } from '@environment/environment';
 import { catchError, throwError } from 'rxjs';
 import { AuthRedirectService } from './auth-redirect.service';
 import { isAuthSkipped } from './auth-skip';
+import { shouldAttachBearerToRequest } from './bearer-eligible-url';
 import { sanitizeInternalReturnUrl } from './return-url';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -20,10 +22,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const token = auth.getAccessToken();
-  const outbound =
-    token !== null && token.length > 0
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : req;
+  const attachBearer =
+    token !== null &&
+    token.length > 0 &&
+    shouldAttachBearerToRequest(req.url, environment.apiUrl);
+  const outbound = attachBearer
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : req;
 
   return next(outbound).pipe(
     catchError((err: unknown) => {

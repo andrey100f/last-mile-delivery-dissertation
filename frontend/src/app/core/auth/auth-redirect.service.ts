@@ -2,7 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { sanitizeInternalReturnUrl } from './return-url';
 
-/** Session key written on 401 redirect; login / guards (#28) may read this if query params are stripped. */
+/**
+ * Session mirror for `returnUrl` when the query string is dropped. Cleared on each 401 redirect
+ * before writing a new value so a stale entry cannot survive. Read on successful login in
+ * `LoginPage` (query param takes precedence).
+ */
 export const AUTH_RETURN_URL_SESSION_KEY = 'deliveryhub.returnUrl';
 
 @Injectable({
@@ -13,7 +17,7 @@ export class AuthRedirectService {
   private loginRedirectInFlight = false;
 
   scheduleLoginRedirect(returnUrl: string | undefined): void {
-    const current = this.router.url.split('?')[0] ?? this.router.url;
+    const [current = this.router.url] = this.router.url.split('?');
     if (current === '/login' || current.endsWith('/login')) {
       return;
     }
@@ -21,6 +25,8 @@ export class AuthRedirectService {
       return;
     }
     this.loginRedirectInFlight = true;
+
+    sessionStorage.removeItem(AUTH_RETURN_URL_SESSION_KEY);
 
     const safeReturn = returnUrl ? sanitizeInternalReturnUrl(returnUrl) : undefined;
     if (safeReturn) {
