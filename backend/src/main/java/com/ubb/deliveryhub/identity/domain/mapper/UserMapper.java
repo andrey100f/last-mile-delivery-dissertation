@@ -4,9 +4,8 @@ import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.dto.UserDto;
 import org.mapstruct.Mapper;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface UserMapper {
 
     UserDto mapToDto(User user);
-
 }

@@ -1,34 +1,37 @@
 package com.ubb.deliveryhub.delivery.domain.embedded;
 
+import com.ubb.deliveryhub.delivery.domain.id.AddressContactId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Embeddable
-@Data
+@Getter
+@Setter
 public class AddressContact {
 
-    @Column(nullable = false, length = 255)
+    @Column(name = AddressContactId.LINE1, nullable = false)
     private String line1;
 
-    @Column(length = 255)
+    @Column(name = AddressContactId.LINE2)
     private String line2;
 
-    @Column(nullable = false, length = 128)
+    @Column(name = AddressContactId.CITY, nullable = false, length = 128)
     private String city;
 
-    @Column(length = 128)
+    @Column(name = AddressContactId.REGION, length = 128)
     private String region;
 
-    @Column(nullable = false, length = 32)
+    @Column(name = AddressContactId.POSTAL_CODE, nullable = false, length = 32)
     private String postalCode;
 
-    @Column(nullable = false, length = 2)
+    @Column(name = AddressContactId.COUNTRY, nullable = false, length = 2)
     private String country;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = AddressContactId.CONTACT_NAME, nullable = false)
     private String contactName;
 
-    @Column(nullable = false, length = 64)
+    @Column(name = AddressContactId.CONTACT_PHONE, nullable = false, length = 64)
     private String contactPhone;
 }

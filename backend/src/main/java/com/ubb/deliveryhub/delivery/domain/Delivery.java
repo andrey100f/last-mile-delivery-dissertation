@@ -1,9 +1,16 @@
 package com.ubb.deliveryhub.delivery.domain;
 
 import com.ubb.deliveryhub.delivery.domain.embedded.AddressContact;
+import com.ubb.deliveryhub.delivery.domain.id.AddressContactId;
+import com.ubb.deliveryhub.delivery.domain.id.DeliveryId;
 import com.ubb.deliveryhub.identity.domain.User;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -11,108 +18,115 @@ import java.util.UUID;
 
 @Entity
 @Table(
-    name = "deliveries",
+    name = DeliveryId.TABLE_NAME,
     indexes = {
-        @Index(name = "idx_deliveries_customer_status", columnList = "customer_id,status"),
-        @Index(name = "idx_deliveries_courier_status", columnList = "courier_id,status")
+        @Index(name = DeliveryId.IDX_CUSTOMER_STATUS,
+            columnList = DeliveryId.CUSTOMER_ID + "," + DeliveryId.STATUS),
+        @Index(name = DeliveryId.IDX_COURIER_STATUS,
+            columnList = DeliveryId.COURIER_ID + "," + DeliveryId.STATUS)
     }
 )
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 public class Delivery {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @EqualsAndHashCode.Include
+    @ToString.Include
     private UUID id;
 
-    @Column(name = "tracking_code", unique = true, length = 64)
+    @Column(name = DeliveryId.TRACKING_CODE, unique = true, length = 64)
     private String trackingCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = DeliveryId.CUSTOMER_ID, nullable = false)
     private User customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "courier_id")
+    @JoinColumn(name = DeliveryId.COURIER_ID)
     private User courier;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = DeliveryId.STATUS, nullable = false)
     private DeliveryStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "delivery_type", nullable = false, length = 32)
+    @Column(name = DeliveryId.DELIVERY_TYPE, nullable = false, length = 32)
     private DeliveryType deliveryType;
 
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "line1", column = @Column(name = "pickup_line1", nullable = false)),
-        @AttributeOverride(name = "line2", column = @Column(name = "pickup_line2")),
-        @AttributeOverride(name = "city", column = @Column(name = "pickup_city", nullable = false)),
-        @AttributeOverride(name = "region", column = @Column(name = "pickup_region")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "pickup_postal_code", nullable = false)),
-        @AttributeOverride(name = "country", column = @Column(name = "pickup_country", nullable = false, length = 2)),
-        @AttributeOverride(name = "contactName", column = @Column(name = "pickup_contact_name", nullable = false)),
-        @AttributeOverride(name = "contactPhone", column = @Column(name = "pickup_contact_phone", nullable = false))
+        @AttributeOverride(name = AddressContactId.Property.LINE1, column = @Column(name = DeliveryId.PICKUP_LINE1, nullable = false)),
+        @AttributeOverride(name = AddressContactId.Property.LINE2, column = @Column(name = DeliveryId.PICKUP_LINE2)),
+        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.PICKUP_CITY, nullable = false, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.REGION, column = @Column(name = DeliveryId.PICKUP_REGION, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.PICKUP_POSTAL_CODE, nullable = false, length = 32)),
+        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.PICKUP_COUNTRY, nullable = false, length = 2)),
+        @AttributeOverride(name = AddressContactId.Property.CONTACT_NAME, column = @Column(name = DeliveryId.PICKUP_CONTACT_NAME, nullable = false)),
+        @AttributeOverride(name = AddressContactId.Property.CONTACT_PHONE, column = @Column(name = DeliveryId.PICKUP_CONTACT_PHONE, nullable = false, length = 64))
     })
     private AddressContact pickup;
 
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "line1", column = @Column(name = "destination_line1", nullable = false)),
-        @AttributeOverride(name = "line2", column = @Column(name = "destination_line2")),
-        @AttributeOverride(name = "city", column = @Column(name = "destination_city", nullable = false)),
-        @AttributeOverride(name = "region", column = @Column(name = "destination_region")),
-        @AttributeOverride(name = "postalCode", column = @Column(name = "destination_postal_code", nullable = false)),
-        @AttributeOverride(name = "country", column = @Column(name = "destination_country", nullable = false, length = 2)),
-        @AttributeOverride(name = "contactName", column = @Column(name = "destination_contact_name", nullable = false)),
-        @AttributeOverride(name = "contactPhone", column = @Column(name = "destination_contact_phone", nullable = false))
+        @AttributeOverride(name = AddressContactId.Property.LINE1, column = @Column(name = DeliveryId.DESTINATION_LINE1, nullable = false)),
+        @AttributeOverride(name = AddressContactId.Property.LINE2, column = @Column(name = DeliveryId.DESTINATION_LINE2)),
+        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.DESTINATION_CITY, nullable = false, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.REGION, column = @Column(name = DeliveryId.DESTINATION_REGION, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.DESTINATION_POSTAL_CODE, nullable = false, length = 32)),
+        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.DESTINATION_COUNTRY, nullable = false, length = 2)),
+        @AttributeOverride(name = AddressContactId.Property.CONTACT_NAME, column = @Column(name = DeliveryId.DESTINATION_CONTACT_NAME, nullable = false)),
+        @AttributeOverride(name = AddressContactId.Property.CONTACT_PHONE, column = @Column(name = DeliveryId.DESTINATION_CONTACT_PHONE, nullable = false, length = 64))
     })
     private AddressContact destination;
 
-    @Column(name = "package_weight_kg", nullable = false, precision = 12, scale = 4)
+    @Column(name = DeliveryId.PACKAGE_WEIGHT_KG, nullable = false, precision = 12, scale = 4)
     private BigDecimal packageWeightKg;
 
-    @Column(name = "package_length_cm", precision = 12, scale = 2)
+    @Column(name = DeliveryId.PACKAGE_LENGTH_CM, precision = 12, scale = 2)
     private BigDecimal packageLengthCm;
 
-    @Column(name = "package_width_cm", precision = 12, scale = 2)
+    @Column(name = DeliveryId.PACKAGE_WIDTH_CM, precision = 12, scale = 2)
     private BigDecimal packageWidthCm;
 
-    @Column(name = "package_height_cm", precision = 12, scale = 2)
+    @Column(name = DeliveryId.PACKAGE_HEIGHT_CM, precision = 12, scale = 2)
     private BigDecimal packageHeightCm;
 
-    @Column(name = "package_description", length = 1000)
+    @Column(name = DeliveryId.PACKAGE_DESCRIPTION, length = 1000)
     private String packageDescription;
 
-    @Column(name = "package_fragile", nullable = false)
+    @Column(name = DeliveryId.PACKAGE_FRAGILE, nullable = false)
     private boolean packageFragile = false;
 
-    @Column(name = "base_amount", precision = 19, scale = 4)
+    @Column(name = DeliveryId.BASE_AMOUNT, precision = 19, scale = 4)
     private BigDecimal baseAmount;
 
-    @Column(name = "fee_amount", precision = 19, scale = 4)
+    @Column(name = DeliveryId.FEE_AMOUNT, precision = 19, scale = 4)
     private BigDecimal feeAmount;
 
-    @Column(name = "tax_amount", precision = 19, scale = 4)
+    @Column(name = DeliveryId.TAX_AMOUNT, precision = 19, scale = 4)
     private BigDecimal taxAmount;
 
-    @Column(name = "total_amount", precision = 19, scale = 4)
+    @Column(name = DeliveryId.TOTAL_AMOUNT, precision = 19, scale = 4)
     private BigDecimal totalAmount;
 
-    @Column(nullable = false, length = 3)
+    @Column(name = DeliveryId.CURRENCY, nullable = false, length = 3)
     private String currency = "RON";
 
-    @Column(name = "special_instructions", length = 2000)
+    @Column(name = DeliveryId.SPECIAL_INSTRUCTIONS, length = 2000)
     private String specialInstructions;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = DeliveryId.CREATED_AT, nullable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = DeliveryId.UPDATED_AT, nullable = false)
     private Instant updatedAt;
 
     @Version
-    @Column(nullable = false)
+    @Column(name = DeliveryId.VERSION, nullable = false)
     private Long version;
 
     @PrePersist
