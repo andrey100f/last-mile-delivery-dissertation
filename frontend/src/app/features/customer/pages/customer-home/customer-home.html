@@ -1,3 +1,101 @@
 <div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
   <app-page-top-bar title="Dashboard" />
+
+  <div class="p-5">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-p-text-primary">Active Deliveries</h3>
+      <a
+        class="text-sm font-medium text-p-primary transition-colors hover:text-p-primary-hover"
+        [routerLink]="['/customer/history']"
+      >
+        View All
+      </a>
+    </div>
+
+    <div
+      class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
+    >
+      <p-table [value]="deliveries()" [loading]="loading()" size="small" styleClass="delivery-list-table">
+        <ng-template #header>
+          <tr class="border-b border-p-surface-border bg-p-surface-ground">
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              ID
+            </th>
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              Route
+            </th>
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              Courier
+            </th>
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              Status
+            </th>
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              ETA
+            </th>
+            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+              Action
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-delivery>
+          <tr class="cursor-pointer text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
+            <td class="w-32 px-4 py-3.5 align-top">
+              <span class="text-[13px] font-medium text-p-primary">{{ delivery.id }}</span>
+            </td>
+            <td class="min-w-72 px-4 py-3.5 align-top">
+              <p class="text-[13px] text-p-text-primary">{{ delivery.destination }}</p>
+              <p class="mt-0.5 text-[11px] text-p-text-muted">{{ delivery.destinationHint }}</p>
+            </td>
+            <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+              {{ delivery.courierName ?? 'Not assigned' }}
+            </td>
+            <td class="w-36 px-4 py-3.5 align-top">
+              <app-status-tag [status]="delivery.status" size="sm" />
+            </td>
+            <td class="w-36 px-4 py-3.5 align-top text-[13px] text-p-text-secondary">
+              {{ delivery.eta }}
+            </td>
+            <td class="w-28 px-4 py-3.5 align-top">
+              <a
+                class="inline-flex items-center gap-1 text-[13px] font-medium text-p-primary transition-colors hover:text-p-primary-hover"
+                [routerLink]="['/customer/tracking']"
+              >
+                <i class="pi pi-chart-line text-[12px]"></i>
+                Track
+              </a>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="6">
+              <app-table-empty-state
+                title="No active deliveries"
+                message="Create a delivery to see it listed here."
+                icon="pi pi-truck"
+                actionLabel="Create delivery"
+                [actionRouterLink]="['/customer/create']"
+              />
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #loadingbody>
+          @for (_row of loadingSkeletonRows; track _row) {
+            <tr>
+              <td><p-skeleton height="1rem" width="5rem" /></td>
+              <td><p-skeleton height="1rem" width="12rem" /></td>
+              <td><p-skeleton height="1rem" width="6rem" /></td>
+              <td><p-skeleton height="1rem" width="6rem" /></td>
+              <td><p-skeleton height="1rem" width="7rem" /></td>
+              <td><p-skeleton height="1rem" width="4rem" /></td>
+            </tr>
+          }
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
 </div>
