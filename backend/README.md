@@ -116,4 +116,10 @@ Expected JSON includes `"status":"UP"`.
 
 ## Security note
 
-Spring Security is configured with **permit-all** for development (see `identity.config.SecurityConfig`). JWT and authenticated routes are planned for a later epic; do not rely on this configuration in production.
+JWT Bearer authentication is enforced for routes outside `/auth/**` and `/actuator/health`. Tokens are issued at login (`POST /api/auth/login`) and carry `sub` (user id) plus a `role` claim so `@PreAuthorize` can distinguish roles.
+
+## Delivery pricing (POST `/api/deliveries`)
+
+Pricing is computed only on the server (`PricingService`) and persisted as `base_amount`, `fee_amount`, `tax_amount`, `total_amount`, `currency` on `deliveries`. MVP rules are summarized in the Javadoc on `com.ubb.deliveryhub.delivery.service.PricingService` (tiered STANDARD transport by weight, EXPRESS surcharge + rush fee, fragile handling fee, 19% VAT on taxable amount).
+
+**Idempotency:** duplicate POSTs create separate deliveries (GitHub #31).

@@ -1,0 +1,73 @@
+package com.ubb.deliveryhub.delivery.service;
+
+import com.ubb.deliveryhub.delivery.domain.Delivery;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
+import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
+import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
+import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
+import com.ubb.deliveryhub.identity.domain.User;
+import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
+import com.ubb.deliveryhub.identity.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class DeliveryService {
+
+    private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int TRACKING_BODY_LEN = 10;
+    private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
+
+    private final DeliveryRepository deliveryRepository;
+    private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
+    private final UserRepository userRepository;
+    private final PricingService pricingService;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    @Transactional
+    public DeliveryDto createFromPrincipal(Authentication authentication, CreateDeliveryRequest request) {
+        UUID customerId = UUID.fromString(authentication.getName());
+        User customer = userRepository.findById(customerId)
+            .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(customerId)));
+
+        MoneySnapshot pricing = pricingService.calculate(request.getDeliveryType(), request.getPackageDetails());
+
+        for (int attempt = 0; attempt < TRACKING_CODE_SAVE_ATTEMPTS; attempt++) {
+            String trackingCode = "DH-" + randomAlphanumeric(TRACKING_BODY_LEN);
+            Delivery delivery = DeliveryMapper.newDeliveryEntity(customer, request, pricing, trackingCode);
+            delivery.setStatus(DeliveryStatus.CREATED);
+            try {
+                Delivery saved = deliveryRepository.save(delivery);
+                DeliveryStatusHistory history = new DeliveryStatusHistory();
+                history.setDelivery(saved);
+                history.setStatus(DeliveryStatus.CREATED);
+                history.setActor(customer);
+                deliveryStatusHistoryRepository.save(history);
+                return DeliveryMapper.toDto(saved);
+            } catch (DataIntegrityViolationException ex) {
+                if (attempt == TRACKING_CODE_SAVE_ATTEMPTS - 1) {
+                    throw ex;
+                }
+            }
+        }
+        throw new IllegalStateException("Could not persist delivery with a unique tracking code");
+    }
+
+    private String randomAlphanumeric(int len) {
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append(TRACKING_ALPHABET.charAt(secureRandom.nextInt(TRACKING_ALPHABET.length())));
+        }
+        return sb.toString();
+    }
+}
