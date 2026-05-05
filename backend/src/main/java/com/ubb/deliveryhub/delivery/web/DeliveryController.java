@@ -1,5 +1,6 @@
 package com.ubb.deliveryhub.delivery.web;
 
+import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
@@ -38,7 +39,11 @@ public class DeliveryController {
     @PreAuthorize("hasRole('CUSTOMER')")
     public Page<DeliverySummaryDto> listForCurrentCustomer(
         Authentication authentication,
-        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+        @PageableDefault(
+            size = DeliveryListDefaults.PAGE_SIZE,
+            sort = DeliveryListDefaults.SORT_PROPERTY,
+            direction = Sort.Direction.DESC
+        ) Pageable pageable,
         @RequestParam(required = false) DeliveryStatus status
     ) {
         return deliveryService.listForCurrentCustomer(authentication, pageable, status);

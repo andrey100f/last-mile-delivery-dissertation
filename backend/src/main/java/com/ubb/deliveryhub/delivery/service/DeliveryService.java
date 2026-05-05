@@ -1,5 +1,6 @@
 package com.ubb.deliveryhub.delivery.service;
 
+import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
@@ -9,6 +10,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
+import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.delivery.repository.DeliverySpecifications;
@@ -28,10 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,10 +46,6 @@ public class DeliveryService {
         "trackingCode"
     );
 
-    private static final String SORT_ALLOWED_LIST = ALLOWED_DELIVERY_LIST_SORT_PROPERTIES.stream()
-        .sorted(Comparator.naturalOrder())
-        .collect(Collectors.joining(", "));
-
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
@@ -63,7 +59,7 @@ public class DeliveryService {
 
     @Transactional
     public DeliveryDto createFromPrincipal(Authentication authentication, CreateDeliveryRequest request) {
-        UUID customerId = UUID.fromString(authentication.getName());
+        UUID customerId = principalUserId(authentication);
         User customer = userRepository.findById(customerId)
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(customerId)));
 
@@ -105,11 +101,18 @@ public class DeliveryService {
         Pageable pageable,
         DeliveryStatus statusFilter
     ) {
+        if (!pageable.isPaged()) {
+            throw new InvalidDeliveryPaginationException();
+        }
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
-        UUID customerId = UUID.fromString(authentication.getName());
+        UUID customerId = principalUserId(authentication);
         Specification<Delivery> spec = DeliverySpecifications.forCustomerWithOptionalStatus(customerId, statusFilter);
         return deliveryRepository.findAll(spec, effective).map(DeliveryMapper::toSummaryDto);
+    }
+
+    private static UUID principalUserId(Authentication authentication) {
+        return UUID.fromString(authentication.getName());
     }
 
     private static void assertAllowedSort(Sort sort) {
@@ -118,9 +121,7 @@ public class DeliveryService {
         }
         for (Sort.Order order : sort) {
             if (!ALLOWED_DELIVERY_LIST_SORT_PROPERTIES.contains(order.getProperty())) {
-                throw new InvalidDeliverySortException(
-                    "Invalid sort property: %s. Allowed: %s".formatted(order.getProperty(), SORT_ALLOWED_LIST)
-                );
+                throw new InvalidDeliverySortException(order.getProperty(), ALLOWED_DELIVERY_LIST_SORT_PROPERTIES);
             }
         }
     }
@@ -132,7 +133,7 @@ public class DeliveryService {
         return PageRequest.of(
             pageable.getPageNumber(),
             pageable.getPageSize(),
-            Sort.by(Sort.Direction.DESC, "createdAt")
+            Sort.by(Sort.Direction.DESC, DeliveryListDefaults.SORT_PROPERTY)
         );
     }
 
