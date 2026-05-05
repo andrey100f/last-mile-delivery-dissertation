@@ -9,6 +9,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.CourierSummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.PackageRequestDto;
 import com.ubb.deliveryhub.delivery.domain.dto.TimelineEntryDto;
 import com.ubb.deliveryhub.delivery.domain.embedded.AddressContact;
@@ -66,6 +67,21 @@ public final class DeliveryMapper {
         a.setContactName(dto.getContactName());
         a.setContactPhone(dto.getContactPhone());
         return a;
+    }
+
+    public static DeliverySummaryDto toSummaryDto(Delivery d) {
+        String pickupCity = d.getPickup() != null ? d.getPickup().getCity() : null;
+        String destinationCity = d.getDestination() != null ? d.getDestination().getCity() : null;
+        return DeliverySummaryDto.builder()
+            .id(d.getId().toString())
+            .status(d.getStatus().name())
+            .deliveryType(d.getDeliveryType().name())
+            .createdAt(d.getCreatedAt())
+            .totalAmount(d.getTotalAmount())
+            .currency(d.getCurrency())
+            .pickupCity(pickupCity)
+            .destinationCity(destinationCity)
+            .build();
     }
 
     public static DeliveryDto toDto(Delivery d) {

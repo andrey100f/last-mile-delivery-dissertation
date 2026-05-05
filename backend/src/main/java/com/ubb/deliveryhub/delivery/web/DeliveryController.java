@@ -1,11 +1,18 @@
 package com.ubb.deliveryhub.delivery.web;
 
+import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.service.DeliveryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -26,6 +34,20 @@ import java.util.UUID;
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
+
+    @GetMapping
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public Page<DeliverySummaryDto> listForCurrentCustomer(
+        Authentication authentication,
+        @PageableDefault(
+            size = DeliveryListDefaults.PAGE_SIZE,
+            sort = DeliveryListDefaults.SORT_PROPERTY,
+            direction = Sort.Direction.DESC
+        ) Pageable pageable,
+        @RequestParam(required = false) DeliveryStatus status
+    ) {
+        return deliveryService.listForCurrentCustomer(authentication, pageable, status);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
