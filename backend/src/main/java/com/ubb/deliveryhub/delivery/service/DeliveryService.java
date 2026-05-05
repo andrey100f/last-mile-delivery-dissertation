@@ -5,7 +5,9 @@ import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
 import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
 import com.ubb.deliveryhub.identity.domain.User;
@@ -32,6 +34,7 @@ public class DeliveryService {
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final UserRepository userRepository;
     private final PricingService pricingService;
+    private final DeliveryAuthorization deliveryAuthorization;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
@@ -61,6 +64,15 @@ public class DeliveryService {
             }
         }
         throw new IllegalStateException("Could not persist delivery with a unique tracking code");
+    }
+
+    @Transactional(readOnly = true)
+    public DeliveryDetailDto getByIdForCurrentUser(UUID id, Authentication authentication) {
+        Delivery delivery = deliveryRepository.findWithCustomerAndCourierById(id)
+            .orElseThrow(DeliveryNotFoundException::new);
+        deliveryAuthorization.assertCanView(delivery, authentication);
+        var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(id);
+        return DeliveryMapper.toDetailDto(delivery, history);
     }
 
     private String randomAlphanumeric(int len) {
