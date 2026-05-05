@@ -1,0 +1,20 @@
+@if (variant() === 'tag') {
+  <p-tag
+    [value]="presentation().label"
+    [severity]="presentation().severity"
+    [icon]="icon()"
+    [styleClass]="styleClass()"
+  />
+} @else {
+  <span
+    class="inline-flex items-center gap-1.5 rounded-full font-semibold"
+    [class]="styleClass() + ' ' + textColorClass() + ' ' + bgColorClass()"
+  >
+    <span
+      class="inline-block rounded-full"
+      [class]="dotSizeClass() + ' ' + dotColorClass()"
+      aria-hidden="true"
+    ></span>
+    {{ presentation().label }}
+  </span>
+}
