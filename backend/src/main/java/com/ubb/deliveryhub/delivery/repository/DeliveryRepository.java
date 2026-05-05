@@ -12,6 +12,4 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     Page<Delivery> findByCustomer_Id(UUID customerId, Pageable pageable);
 
     boolean existsByCustomer_IdAndId(UUID customerId, UUID id);
-
-    boolean existsByTrackingCode(String trackingCode);
 }

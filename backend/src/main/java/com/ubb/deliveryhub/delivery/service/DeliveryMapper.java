@@ -10,7 +10,13 @@ import com.ubb.deliveryhub.delivery.domain.dto.PackageRequestDto;
 import com.ubb.deliveryhub.delivery.domain.embedded.AddressContact;
 import com.ubb.deliveryhub.identity.domain.User;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 public final class DeliveryMapper {
+
+    private static final int SCALE_WEIGHT_KG = 4;
+    private static final int SCALE_CM = 2;
 
     private DeliveryMapper() {
     }
@@ -29,10 +35,10 @@ public final class DeliveryMapper {
         d.setPickup(toEmbedded(request.getPickup()));
         d.setDestination(toEmbedded(request.getDestination()));
         PackageRequestDto pkg = request.getPackageDetails();
-        d.setPackageWeightKg(pkg.getWeightKg());
-        d.setPackageLengthCm(pkg.getLengthCm());
-        d.setPackageWidthCm(pkg.getWidthCm());
-        d.setPackageHeightCm(pkg.getHeightCm());
+        d.setPackageWeightKg(normalizeWeightKg(pkg.getWeightKg()));
+        d.setPackageLengthCm(normalizeCm(pkg.getLengthCm()));
+        d.setPackageWidthCm(normalizeCm(pkg.getWidthCm()));
+        d.setPackageHeightCm(normalizeCm(pkg.getHeightCm()));
         d.setPackageDescription(pkg.getDescription());
         d.setPackageFragile(pkg.isFragile());
         d.setSpecialInstructions(request.getSpecialInstructions());
@@ -80,6 +86,20 @@ public final class DeliveryMapper {
             .createdAt(d.getCreatedAt())
             .updatedAt(d.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * Matches {@link PricingService} weight rounding so persisted kg aligns with the pricing snapshot.
+     */
+    static BigDecimal normalizeWeightKg(BigDecimal weightKg) {
+        return weightKg.setScale(SCALE_WEIGHT_KG, RoundingMode.HALF_UP);
+    }
+
+    static BigDecimal normalizeCm(BigDecimal cm) {
+        if (cm == null) {
+            return null;
+        }
+        return cm.setScale(SCALE_CM, RoundingMode.HALF_UP);
     }
 
     private static AddressContactDto toDto(AddressContact a) {

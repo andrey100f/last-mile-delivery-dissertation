@@ -3,6 +3,7 @@ package com.ubb.deliveryhub.delivery.domain.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -15,12 +16,15 @@ public class PackageRequestDto {
     @Positive(message = "must be greater than 0")
     private BigDecimal weightKg;
 
+    @PositiveOrZero
     @DecimalMax(value = "999999")
     private BigDecimal lengthCm;
 
+    @PositiveOrZero
     @DecimalMax(value = "999999")
     private BigDecimal widthCm;
 
+    @PositiveOrZero
     @DecimalMax(value = "999999")
     private BigDecimal heightCm;
 

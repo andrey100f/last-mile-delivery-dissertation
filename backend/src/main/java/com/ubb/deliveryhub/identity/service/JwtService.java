@@ -49,7 +49,12 @@ public class JwtService {
         if (role == null || role.isBlank()) {
             throw new JwtException("Missing role claim");
         }
-        UUID userId = UUID.fromString(claims.getSubject());
+        final UUID userId;
+        try {
+            userId = UUID.fromString(claims.getSubject());
+        } catch (IllegalArgumentException e) {
+            throw new JwtException("Invalid subject claim", e);
+        }
         return new ParsedJwt(userId, role);
     }
 

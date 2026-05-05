@@ -12,6 +12,7 @@ import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class DeliveryService {
 
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
+    private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
@@ -39,30 +41,26 @@ public class DeliveryService {
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(customerId)));
 
         MoneySnapshot pricing = pricingService.calculate(request.getDeliveryType(), request.getPackageDetails());
-        String trackingCode = generateUniqueTrackingCode();
 
-        Delivery delivery = DeliveryMapper.newDeliveryEntity(customer, request, pricing, trackingCode);
-        delivery.setStatus(DeliveryStatus.CREATED);
-
-        Delivery saved = deliveryRepository.save(delivery);
-
-        DeliveryStatusHistory history = new DeliveryStatusHistory();
-        history.setDelivery(saved);
-        history.setStatus(DeliveryStatus.CREATED);
-        history.setActor(customer);
-        deliveryStatusHistoryRepository.save(history);
-
-        return DeliveryMapper.toDto(saved);
-    }
-
-    private String generateUniqueTrackingCode() {
-        for (int attempt = 0; attempt < 12; attempt++) {
-            String candidate = "DH-" + randomAlphanumeric(TRACKING_BODY_LEN);
-            if (!deliveryRepository.existsByTrackingCode(candidate)) {
-                return candidate;
+        for (int attempt = 0; attempt < TRACKING_CODE_SAVE_ATTEMPTS; attempt++) {
+            String trackingCode = "DH-" + randomAlphanumeric(TRACKING_BODY_LEN);
+            Delivery delivery = DeliveryMapper.newDeliveryEntity(customer, request, pricing, trackingCode);
+            delivery.setStatus(DeliveryStatus.CREATED);
+            try {
+                Delivery saved = deliveryRepository.save(delivery);
+                DeliveryStatusHistory history = new DeliveryStatusHistory();
+                history.setDelivery(saved);
+                history.setStatus(DeliveryStatus.CREATED);
+                history.setActor(customer);
+                deliveryStatusHistoryRepository.save(history);
+                return DeliveryMapper.toDto(saved);
+            } catch (DataIntegrityViolationException ex) {
+                if (attempt == TRACKING_CODE_SAVE_ATTEMPTS - 1) {
+                    throw ex;
+                }
             }
         }
-        throw new IllegalStateException("Could not allocate unique tracking code");
+        throw new IllegalStateException("Could not persist delivery with a unique tracking code");
     }
 
     private String randomAlphanumeric(int len) {

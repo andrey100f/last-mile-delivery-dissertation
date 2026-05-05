@@ -38,7 +38,7 @@ public class PricingService {
     private static final BigDecimal VAT_RATE = new BigDecimal("0.19");
     private static final BigDecimal EXPRESS_TRANSPORT_MULTIPLIER = new BigDecimal("1.25");
     private static final BigDecimal EXPRESS_RUSH_FLAT = new BigDecimal("18.00");
-    private static final BigDecimal FRAGILE_FEE = new BigDecimal("5.00");
+    private static final BigDecimal FRAGILE_FEE = new BigDecimal("5.0000");
     private static final String CURRENCY = "RON";
 
     public MoneySnapshot calculate(DeliveryType deliveryType, PackageRequestDto pkg) {
