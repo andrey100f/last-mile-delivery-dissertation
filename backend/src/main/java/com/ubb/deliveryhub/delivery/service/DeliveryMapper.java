@@ -1,0 +1,100 @@
+package com.ubb.deliveryhub.delivery.service;
+
+import com.ubb.deliveryhub.delivery.domain.Delivery;
+import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
+import com.ubb.deliveryhub.delivery.domain.dto.AddressContactDto;
+import com.ubb.deliveryhub.delivery.domain.dto.AddressContactRequestDto;
+import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.PackageRequestDto;
+import com.ubb.deliveryhub.delivery.domain.embedded.AddressContact;
+import com.ubb.deliveryhub.identity.domain.User;
+
+public final class DeliveryMapper {
+
+    private DeliveryMapper() {
+    }
+
+    public static Delivery newDeliveryEntity(
+        User customer,
+        CreateDeliveryRequest request,
+        MoneySnapshot pricing,
+        String trackingCode
+    ) {
+        Delivery d = new Delivery();
+        d.setCustomer(customer);
+        d.setCourier(null);
+        d.setTrackingCode(trackingCode);
+        d.setDeliveryType(request.getDeliveryType());
+        d.setPickup(toEmbedded(request.getPickup()));
+        d.setDestination(toEmbedded(request.getDestination()));
+        PackageRequestDto pkg = request.getPackageDetails();
+        d.setPackageWeightKg(pkg.getWeightKg());
+        d.setPackageLengthCm(pkg.getLengthCm());
+        d.setPackageWidthCm(pkg.getWidthCm());
+        d.setPackageHeightCm(pkg.getHeightCm());
+        d.setPackageDescription(pkg.getDescription());
+        d.setPackageFragile(pkg.isFragile());
+        d.setSpecialInstructions(request.getSpecialInstructions());
+        d.setBaseAmount(pricing.baseAmount());
+        d.setFeeAmount(pricing.feeAmount());
+        d.setTaxAmount(pricing.taxAmount());
+        d.setTotalAmount(pricing.totalAmount());
+        d.setCurrency(pricing.currency());
+        return d;
+    }
+
+    public static AddressContact toEmbedded(AddressContactRequestDto dto) {
+        AddressContact a = new AddressContact();
+        a.setLine1(dto.getLine1());
+        a.setLine2(dto.getLine2());
+        a.setCity(dto.getCity());
+        a.setRegion(dto.getRegion());
+        a.setPostalCode(dto.getPostalCode());
+        a.setCountry(dto.getCountry());
+        a.setContactName(dto.getContactName());
+        a.setContactPhone(dto.getContactPhone());
+        return a;
+    }
+
+    public static DeliveryDto toDto(Delivery d) {
+        return DeliveryDto.builder()
+            .id(d.getId().toString())
+            .trackingCode(d.getTrackingCode())
+            .status(d.getStatus().name())
+            .deliveryType(d.getDeliveryType().name())
+            .pickup(toDto(d.getPickup()))
+            .destination(toDto(d.getDestination()))
+            .packageWeightKg(d.getPackageWeightKg())
+            .packageLengthCm(d.getPackageLengthCm())
+            .packageWidthCm(d.getPackageWidthCm())
+            .packageHeightCm(d.getPackageHeightCm())
+            .packageDescription(d.getPackageDescription())
+            .packageFragile(d.isPackageFragile())
+            .baseAmount(d.getBaseAmount())
+            .feeAmount(d.getFeeAmount())
+            .taxAmount(d.getTaxAmount())
+            .totalAmount(d.getTotalAmount())
+            .currency(d.getCurrency())
+            .specialInstructions(d.getSpecialInstructions())
+            .createdAt(d.getCreatedAt())
+            .updatedAt(d.getUpdatedAt())
+            .build();
+    }
+
+    private static AddressContactDto toDto(AddressContact a) {
+        if (a == null) {
+            return null;
+        }
+        return AddressContactDto.builder()
+            .line1(a.getLine1())
+            .line2(a.getLine2())
+            .city(a.getCity())
+            .region(a.getRegion())
+            .postalCode(a.getPostalCode())
+            .country(a.getCountry())
+            .contactName(a.getContactName())
+            .contactPhone(a.getContactPhone())
+            .build();
+    }
+}
