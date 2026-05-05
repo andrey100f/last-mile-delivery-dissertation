@@ -15,7 +15,7 @@
     <div
       class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
     >
-      <p-table [value]="deliveries" [loading]="loading()" size="small" styleClass="delivery-list-table">
+      <p-table [value]="deliveries()" [loading]="loading()" size="small" styleClass="delivery-list-table">
         <ng-template #header>
           <tr class="border-b border-p-surface-border bg-p-surface-ground">
             <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
@@ -60,8 +60,7 @@
             <td class="w-28 px-4 py-3.5 align-top">
               <a
                 class="inline-flex items-center gap-1 text-[13px] font-medium text-p-primary transition-colors hover:text-p-primary-hover"
-                href="#"
-                (click)="$event.preventDefault()"
+                [routerLink]="['/customer/tracking']"
               >
                 <i class="pi pi-chart-line text-[12px]"></i>
                 Track

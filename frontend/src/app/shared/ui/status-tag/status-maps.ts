@@ -15,6 +15,7 @@ export enum DeliveryStatus {
   IN_TRANSIT = 'IN_TRANSIT',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
+  FAILED = 'FAILED',
 }
 
 export interface StatusPresentation {
@@ -54,6 +55,11 @@ export const DELIVERY_STATUS_MAP: Readonly<Record<DeliveryStatus, StatusPresenta
       label: 'Cancelled',
       severity: 'danger',
       icon: 'pi pi-times-circle',
+    },
+    [DeliveryStatus.FAILED]: {
+      label: 'Failed',
+      severity: 'danger',
+      icon: 'pi pi-exclamation-triangle',
     },
   };
 

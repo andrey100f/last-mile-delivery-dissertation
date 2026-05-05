@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-bar.component';
 import {
   DeliveryStatus,
@@ -29,7 +29,9 @@ interface CourierRequestRow {
 })
 export class CourierHome {
   protected readonly loading = signal(false);
-  protected readonly currentStatus = DeliveryStatus.IN_TRANSIT;
-  protected readonly availableRequests: CourierRequestRow[] = [];
+  protected readonly availableRequests = signal<CourierRequestRow[]>([]);
+  protected readonly currentStatus = computed<string | DeliveryStatus | null>(
+    () => this.availableRequests()[0]?.status ?? null,
+  );
   protected readonly loadingSkeletonRows = [0, 1, 2];
 }

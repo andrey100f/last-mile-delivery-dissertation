@@ -37,6 +37,13 @@ export class StatusTagComponent {
     this.showIcon() ? this.presentation().icon : undefined,
   );
 
+  protected readonly dotVariantIconClass = computed(() => {
+    if (!this.showIcon()) {
+      return undefined;
+    }
+    return this.presentation().icon;
+  });
+
   protected readonly styleClass = computed(() => {
     switch (this.size()) {
       case 'sm':

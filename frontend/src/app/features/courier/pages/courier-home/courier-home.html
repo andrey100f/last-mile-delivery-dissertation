@@ -9,7 +9,11 @@
         <p class="text-xs text-p-text-muted">Current assignment</p>
         <p class="text-sm font-semibold text-p-text-primary">Courier status</p>
       </div>
-      <app-status-tag [status]="currentStatus" [showIcon]="true" />
+      @if (currentStatus(); as status) {
+        <app-status-tag [status]="status" [showIcon]="true" />
+      } @else {
+        <span class="text-sm text-p-text-muted">No active assignment</span>
+      }
     </div>
 
     <div
@@ -22,7 +26,7 @@
         </p>
       </div>
 
-      <p-table [value]="availableRequests" [loading]="loading()" size="small">
+      <p-table [value]="availableRequests()" [loading]="loading()" size="small">
         <ng-template #header>
           <tr>
             <th>Request</th>
@@ -48,7 +52,7 @@
             <td colspan="4">
               <app-table-empty-state
                 title="No requests available"
-                message="New deliveries ready for pickup will appear here."
+                message="Pickup requests will appear here when courier assignment APIs are available."
                 icon="pi pi-search"
               />
             </td>
