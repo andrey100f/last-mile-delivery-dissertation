@@ -7,24 +7,48 @@ import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
+import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
+import com.ubb.deliveryhub.delivery.repository.DeliverySpecifications;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.util.Comparator;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
+
+    private static final Set<String> ALLOWED_DELIVERY_LIST_SORT_PROPERTIES = Set.of(
+        "createdAt",
+        "updatedAt",
+        "status",
+        "deliveryType",
+        "totalAmount",
+        "trackingCode"
+    );
+
+    private static final String SORT_ALLOWED_LIST = ALLOWED_DELIVERY_LIST_SORT_PROPERTIES.stream()
+        .sorted(Comparator.naturalOrder())
+        .collect(Collectors.joining(", "));
 
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
@@ -73,6 +97,43 @@ public class DeliveryService {
         deliveryAuthorization.assertCanView(delivery, authentication);
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(id);
         return DeliveryMapper.toDetailDto(delivery, history);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DeliverySummaryDto> listForCurrentCustomer(
+        Authentication authentication,
+        Pageable pageable,
+        DeliveryStatus statusFilter
+    ) {
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDefaultSort(pageable);
+        UUID customerId = UUID.fromString(authentication.getName());
+        Specification<Delivery> spec = DeliverySpecifications.forCustomerWithOptionalStatus(customerId, statusFilter);
+        return deliveryRepository.findAll(spec, effective).map(DeliveryMapper::toSummaryDto);
+    }
+
+    private static void assertAllowedSort(Sort sort) {
+        if (sort == null || sort.isUnsorted()) {
+            return;
+        }
+        for (Sort.Order order : sort) {
+            if (!ALLOWED_DELIVERY_LIST_SORT_PROPERTIES.contains(order.getProperty())) {
+                throw new InvalidDeliverySortException(
+                    "Invalid sort property: %s. Allowed: %s".formatted(order.getProperty(), SORT_ALLOWED_LIST)
+                );
+            }
+        }
+    }
+
+    private static Pageable applyDefaultSort(Pageable pageable) {
+        if (!pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(Sort.Direction.DESC, "createdAt")
+        );
     }
 
     private String randomAlphanumeric(int len) {
