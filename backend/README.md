@@ -118,8 +118,16 @@ Expected JSON includes `"status":"UP"`.
 
 JWT Bearer authentication is enforced for routes outside `/auth/**` and `/actuator/health`. Tokens are issued at login (`POST /api/auth/login`) and carry `sub` (user id) plus a `role` claim so `@PreAuthorize` can distinguish roles.
 
-## Delivery pricing (POST `/api/deliveries`)
+## Delivery create payload (POST `/api/deliveries`)
 
-Pricing is computed only on the server (`PricingService`) and persisted as `base_amount`, `fee_amount`, `tax_amount`, `total_amount`, `currency` on `deliveries`. MVP rules are summarized in the Javadoc on `com.ubb.deliveryhub.delivery.service.PricingService` (tiered STANDARD transport by weight, EXPRESS surcharge + rush fee, fragile handling fee, 19% VAT on taxable amount).
+The create endpoint accepts the simplified frontend request shape:
+
+- `pickup`: `line1`, `contactName`, `contactPhone`
+- `destination`: `line1`, `contactName`, `contactPhone`
+- `package`: `weightKg`, `description`
+- `deliveryType`, `specialInstructions`
+- `pricing`: `baseAmount`, `feeAmount`, `taxAmount`, `totalAmount`, `currency`
+
+Pricing ownership is client-side for this flow: backend validates the pricing snapshot and persists it directly to `deliveries` (`base_amount`, `fee_amount`, `tax_amount`, `total_amount`, `currency`) without server-side recalculation.
 
 **Idempotency:** duplicate POSTs create separate deliveries (GitHub #31).

@@ -61,10 +61,10 @@ public class Delivery {
     @AttributeOverrides({
         @AttributeOverride(name = AddressContactId.Property.LINE1, column = @Column(name = DeliveryId.PICKUP_LINE1, nullable = false)),
         @AttributeOverride(name = AddressContactId.Property.LINE2, column = @Column(name = DeliveryId.PICKUP_LINE2)),
-        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.PICKUP_CITY, nullable = false, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.PICKUP_CITY, length = 128)),
         @AttributeOverride(name = AddressContactId.Property.REGION, column = @Column(name = DeliveryId.PICKUP_REGION, length = 128)),
-        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.PICKUP_POSTAL_CODE, nullable = false, length = 32)),
-        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.PICKUP_COUNTRY, nullable = false, length = 2)),
+        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.PICKUP_POSTAL_CODE, length = 32)),
+        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.PICKUP_COUNTRY, length = 2)),
         @AttributeOverride(name = AddressContactId.Property.CONTACT_NAME, column = @Column(name = DeliveryId.PICKUP_CONTACT_NAME, nullable = false)),
         @AttributeOverride(name = AddressContactId.Property.CONTACT_PHONE, column = @Column(name = DeliveryId.PICKUP_CONTACT_PHONE, nullable = false, length = 64))
     })
@@ -74,10 +74,10 @@ public class Delivery {
     @AttributeOverrides({
         @AttributeOverride(name = AddressContactId.Property.LINE1, column = @Column(name = DeliveryId.DESTINATION_LINE1, nullable = false)),
         @AttributeOverride(name = AddressContactId.Property.LINE2, column = @Column(name = DeliveryId.DESTINATION_LINE2)),
-        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.DESTINATION_CITY, nullable = false, length = 128)),
+        @AttributeOverride(name = AddressContactId.Property.CITY, column = @Column(name = DeliveryId.DESTINATION_CITY, length = 128)),
         @AttributeOverride(name = AddressContactId.Property.REGION, column = @Column(name = DeliveryId.DESTINATION_REGION, length = 128)),
-        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.DESTINATION_POSTAL_CODE, nullable = false, length = 32)),
-        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.DESTINATION_COUNTRY, nullable = false, length = 2)),
+        @AttributeOverride(name = AddressContactId.Property.POSTAL_CODE, column = @Column(name = DeliveryId.DESTINATION_POSTAL_CODE, length = 32)),
+        @AttributeOverride(name = AddressContactId.Property.COUNTRY, column = @Column(name = DeliveryId.DESTINATION_COUNTRY, length = 2)),
         @AttributeOverride(name = AddressContactId.Property.CONTACT_NAME, column = @Column(name = DeliveryId.DESTINATION_CONTACT_NAME, nullable = false)),
         @AttributeOverride(name = AddressContactId.Property.CONTACT_PHONE, column = @Column(name = DeliveryId.DESTINATION_CONTACT_PHONE, nullable = false, length = 64))
     })

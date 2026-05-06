@@ -4,7 +4,6 @@ import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
-import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
@@ -53,7 +52,6 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final UserRepository userRepository;
-    private final PricingService pricingService;
     private final DeliveryAuthorization deliveryAuthorization;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -63,11 +61,9 @@ public class DeliveryService {
         User customer = userRepository.findById(customerId)
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(customerId)));
 
-        MoneySnapshot pricing = pricingService.calculate(request.getDeliveryType(), request.getPackageDetails());
-
         for (int attempt = 0; attempt < TRACKING_CODE_SAVE_ATTEMPTS; attempt++) {
             String trackingCode = "DH-" + randomAlphanumeric(TRACKING_BODY_LEN);
-            Delivery delivery = DeliveryMapper.newDeliveryEntity(customer, request, pricing, trackingCode);
+            Delivery delivery = DeliveryMapper.newDeliveryEntity(customer, request, trackingCode);
             delivery.setStatus(DeliveryStatus.CREATED);
             try {
                 Delivery saved = deliveryRepository.save(delivery);

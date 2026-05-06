@@ -2,7 +2,6 @@ package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
-import com.ubb.deliveryhub.delivery.domain.MoneySnapshot;
 import com.ubb.deliveryhub.delivery.domain.dto.AddressContactDto;
 import com.ubb.deliveryhub.delivery.domain.dto.AddressContactRequestDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CourierSummaryDto;
@@ -22,7 +21,6 @@ import java.util.List;
 public final class DeliveryMapper {
 
     private static final int SCALE_WEIGHT_KG = 4;
-    private static final int SCALE_CM = 2;
 
     private DeliveryMapper() {
     }
@@ -30,7 +28,6 @@ public final class DeliveryMapper {
     public static Delivery newDeliveryEntity(
         User customer,
         CreateDeliveryRequest request,
-        MoneySnapshot pricing,
         String trackingCode
     ) {
         Delivery d = new Delivery();
@@ -40,30 +37,30 @@ public final class DeliveryMapper {
         d.setDeliveryType(request.getDeliveryType());
         d.setPickup(toEmbedded(request.getPickup()));
         d.setDestination(toEmbedded(request.getDestination()));
-        PackageRequestDto pkg = request.getPackageDetails();
+        PackageRequestDto pkg = request.getPackageData();
         d.setPackageWeightKg(normalizeWeightKg(pkg.getWeightKg()));
-        d.setPackageLengthCm(normalizeCm(pkg.getLengthCm()));
-        d.setPackageWidthCm(normalizeCm(pkg.getWidthCm()));
-        d.setPackageHeightCm(normalizeCm(pkg.getHeightCm()));
+        d.setPackageLengthCm(null);
+        d.setPackageWidthCm(null);
+        d.setPackageHeightCm(null);
         d.setPackageDescription(pkg.getDescription());
-        d.setPackageFragile(pkg.isFragile());
+        d.setPackageFragile(false);
         d.setSpecialInstructions(request.getSpecialInstructions());
-        d.setBaseAmount(pricing.baseAmount());
-        d.setFeeAmount(pricing.feeAmount());
-        d.setTaxAmount(pricing.taxAmount());
-        d.setTotalAmount(pricing.totalAmount());
-        d.setCurrency(pricing.currency());
+        d.setBaseAmount(request.getPricing().getBaseAmount());
+        d.setFeeAmount(request.getPricing().getFeeAmount());
+        d.setTaxAmount(request.getPricing().getTaxAmount());
+        d.setTotalAmount(request.getPricing().getTotalAmount());
+        d.setCurrency(request.getPricing().getCurrency());
         return d;
     }
 
     public static AddressContact toEmbedded(AddressContactRequestDto dto) {
         AddressContact a = new AddressContact();
         a.setLine1(dto.getLine1());
-        a.setLine2(dto.getLine2());
-        a.setCity(dto.getCity());
-        a.setRegion(dto.getRegion());
-        a.setPostalCode(dto.getPostalCode());
-        a.setCountry(dto.getCountry());
+        a.setLine2(null);
+        a.setCity(null);
+        a.setRegion(null);
+        a.setPostalCode(null);
+        a.setCountry(null);
         a.setContactName(dto.getContactName());
         a.setContactPhone(dto.getContactPhone());
         return a;
@@ -154,18 +151,8 @@ public final class DeliveryMapper {
             .build();
     }
 
-    /**
-     * Matches {@link PricingService} weight rounding so persisted kg aligns with the pricing snapshot.
-     */
     static BigDecimal normalizeWeightKg(BigDecimal weightKg) {
         return weightKg.setScale(SCALE_WEIGHT_KG, RoundingMode.HALF_UP);
-    }
-
-    static BigDecimal normalizeCm(BigDecimal cm) {
-        if (cm == null) {
-            return null;
-        }
-        return cm.setScale(SCALE_CM, RoundingMode.HALF_UP);
     }
 
     private static AddressContactDto toDto(AddressContact a) {

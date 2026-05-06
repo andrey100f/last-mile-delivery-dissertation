@@ -21,11 +21,15 @@ public class CreateDeliveryRequest {
     @NotNull
     @Valid
     @JsonProperty("package")
-    private PackageRequestDto packageDetails;
+    private PackageRequestDto packageData;
 
     @NotNull
     private DeliveryType deliveryType;
 
     @Size(max = 2000)
     private String specialInstructions;
+
+    @NotNull
+    @Valid
+    private PricingRequestDto pricing;
 }

@@ -9,17 +9,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * <p>Deterministic, side-effect-free pricing used only server-side (never trust client totals).</p>
+ * <p>Deterministic, side-effect-free pricing utility retained for reference and potential reuse.</p>
+ * <p>Create-delivery currently persists a client-provided pricing snapshot directly.</p>
  *
  * <h2>MVP rules (dissertation / prototype)</h2>
  * <ul>
  *   <li><b>STANDARD</b> — transport charge grows with weight using simple tiers (RON).</li>
  *   <li><b>EXPRESS</b> — applies a rush surcharge on top of the STANDARD transport component.</li>
- *   <li><b>Fragile</b> — adds a flat handling fee.</li>
- *   <li><b>VAT</b> — fixed 19% applied to (transport + surcharges + fragile fee).</li>
+ *   <li><b>VAT</b> — fixed 19% applied to the computed transport amount.</li>
  * </ul>
  *
- * <p><b>Tiered STANDARD transport (weight kg → base before express/fragile/VAT):</b></p>
+ * <p><b>Tiered STANDARD transport (weight kg → base before express/VAT):</b></p>
  * <pre>
  * w ≤ 2   → 12.00 RON
  * 2 &lt; w ≤ 15 → 12 + (w − 2) × 3
@@ -38,7 +38,6 @@ public class PricingService {
     private static final BigDecimal VAT_RATE = new BigDecimal("0.19");
     private static final BigDecimal EXPRESS_TRANSPORT_MULTIPLIER = new BigDecimal("1.25");
     private static final BigDecimal EXPRESS_RUSH_FLAT = new BigDecimal("18.00");
-    private static final BigDecimal FRAGILE_FEE = new BigDecimal("5.0000");
     private static final String CURRENCY = "RON";
 
     public MoneySnapshot calculate(DeliveryType deliveryType, PackageRequestDto pkg) {
@@ -48,10 +47,8 @@ public class PricingService {
             transport = transport.multiply(EXPRESS_TRANSPORT_MULTIPLIER).add(EXPRESS_RUSH_FLAT).setScale(4, RoundingMode.HALF_UP);
         }
 
-        BigDecimal fragileFee = pkg.isFragile() ? FRAGILE_FEE : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
-
         BigDecimal baseAmount = transport;
-        BigDecimal feeAmount = fragileFee;
+        BigDecimal feeAmount = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
 
         BigDecimal taxable = baseAmount.add(feeAmount);
         BigDecimal taxAmount = taxable.multiply(VAT_RATE).setScale(4, RoundingMode.HALF_UP);
