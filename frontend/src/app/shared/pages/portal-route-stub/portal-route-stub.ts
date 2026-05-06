@@ -34,6 +34,6 @@ export class PortalRouteStub {
 
   private readTitle(): string {
     const t = this.route.snapshot.data['title'] ?? this.route.snapshot.data['pageTitle'];
-    return typeof t === 'string' && t.length > 0 ? t : 'Page';
+    return typeof t === 'string' && t.trim().length > 0 ? t : 'Page';
   }
 }

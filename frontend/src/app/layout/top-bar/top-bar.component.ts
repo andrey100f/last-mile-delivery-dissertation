@@ -18,6 +18,6 @@ export class TopBarComponent {
 
   protected logout(): void {
     this.authService.logout();
-    void this.router.navigate(['/login']);
+    void this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 }
