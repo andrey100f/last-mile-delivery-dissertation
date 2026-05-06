@@ -1,0 +1,25 @@
+<header
+  class="top-bar sticky top-0 z-(--layout-topbar-z-index) flex min-h-(--topbar-height) shrink-0 items-center gap-3 border-b border-p-surface-border bg-p-surface-section px-5"
+  role="banner"
+>
+  <div class="min-w-0 flex-1">
+    <h1 class="truncate text-base font-semibold leading-tight text-p-text-primary">{{ title() }}</h1>
+    @if (subtitle(); as subtitleText) {
+      <p class="mt-1 truncate text-xs leading-snug text-p-text-muted">{{ subtitleText }}</p>
+    }
+  </div>
+
+  <ng-content select="[topbar-actions]"></ng-content>
+
+  <div class="flex items-center gap-2">
+    <button
+      type="button"
+      class="inline-flex cursor-pointer items-center gap-2 rounded-(--p-radius-md) px-3 py-2 text-sm font-medium text-p-text-secondary transition-colors hover:bg-p-surface-hover hover:text-[var(--p-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-p-primary focus-visible:ring-offset-2 focus-visible:ring-offset-p-surface-section"
+      aria-label="Log out"
+      (click)="logout()"
+    >
+      <i class="pi pi-sign-out text-sm" aria-hidden="true"></i>
+      <span>Log out</span>
+    </button>
+  </div>
+</header>

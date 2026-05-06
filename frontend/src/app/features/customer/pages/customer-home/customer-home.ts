@@ -3,7 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { DeliveryService } from '@core/services/delivery/delivery';
 import { DeliverySummaryDto } from '@core/services/enum/delivery.types';
-import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-bar.component';
 import {
   DeliveryStatus,
   StatusTagComponent,
@@ -25,7 +24,6 @@ interface CustomerDeliveryRow {
 @Component({
   selector: 'app-customer-home',
   imports: [
-    PageTopBarComponent,
     TableModule,
     StatusTagComponent,
     TableEmptyStateComponent,

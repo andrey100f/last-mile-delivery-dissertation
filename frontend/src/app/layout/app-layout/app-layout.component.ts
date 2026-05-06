@@ -1,14 +1,24 @@
 import { NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
 import { navSectionsForRole } from '@core/navigation/app-nav.utils';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
 import { UserService } from '@core/services/user/user';
+import { filter } from 'rxjs';
+import { displayNameFromEmail, initialsFromEmail } from '../layout-user.utils';
+import { TopBarComponent } from '../top-bar/top-bar.component';
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgClass, TopBarComponent],
   templateUrl: './app-layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -16,8 +26,11 @@ export class AppLayoutComponent {
   private readonly auth = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly navSections = computed(() => navSectionsForRole(this.auth.sessionRole()));
+  protected readonly pageTitle = signal('Dashboard');
+  protected readonly pageSubtitle = signal<string | null>(null);
 
   protected readonly rolePortalTagline = computed(() => {
     switch (this.auth.sessionRole()) {
@@ -45,29 +58,39 @@ export class AppLayoutComponent {
     };
   });
 
-  protected onLogout(): void {
-    this.auth.logout();
-    void this.router.navigate(['/login']);
+  constructor() {
+    this.refreshRouteHeader();
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.refreshRouteHeader());
   }
-}
 
-function initialsFromEmail(email: string): string {
-  const local = email.split('@')[0] ?? email;
-  const cleaned = local.replace(/[^a-zA-Z0-9]/g, '');
-  if (cleaned.length >= 2) {
-    return (cleaned[0] + cleaned[1]).toUpperCase();
+  private refreshRouteHeader(): void {
+    this.pageTitle.set(this.readCurrentPageTitle());
+    this.pageSubtitle.set(this.readCurrentPageSubtitle());
   }
-  if (local.length >= 2) {
-    return local.slice(0, 2).toUpperCase();
-  }
-  return local.slice(0, 1).toUpperCase() || '?';
-}
 
-function displayNameFromEmail(email: string): string {
-  const local = email.split('@')[0] ?? email;
-  return local
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
+  private readCurrentPageTitle(): string {
+    const title = this.readLeafDataValue('title') ?? this.readLeafDataValue('pageTitle');
+    if (title !== null) {
+      return title;
+    }
+    return 'Dashboard';
+  }
+
+  private readCurrentPageSubtitle(): string | null {
+    return this.readLeafDataValue('subtitle');
+  }
+
+  private readLeafDataValue(key: string): string | null {
+    let activeRoute = this.router.routerState.snapshot.root;
+    while (activeRoute.firstChild) {
+      activeRoute = activeRoute.firstChild;
+    }
+    const value = activeRoute.data?.[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
 }
