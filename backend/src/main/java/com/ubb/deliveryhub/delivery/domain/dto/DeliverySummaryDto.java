@@ -8,6 +8,7 @@ import java.time.Instant;
 
 /**
  * Row shape for customer delivery lists (#33 / Angular #35); camelCase for JSON.
+ * Route rendering uses destinationLine1 (main) and pickupLine1 (hint).
  */
 @Value
 @Builder
@@ -18,6 +19,6 @@ public class DeliverySummaryDto {
     Instant createdAt;
     BigDecimal totalAmount;
     String currency;
-    String pickupCity;
-    String destinationCity;
+    String pickupLine1;
+    String destinationLine1;
 }

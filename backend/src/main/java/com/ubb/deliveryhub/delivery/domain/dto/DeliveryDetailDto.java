@@ -21,11 +21,7 @@ public class DeliveryDetailDto {
     AddressContactDto pickup;
     AddressContactDto destination;
     BigDecimal packageWeightKg;
-    BigDecimal packageLengthCm;
-    BigDecimal packageWidthCm;
-    BigDecimal packageHeightCm;
     String packageDescription;
-    boolean packageFragile;
     BigDecimal baseAmount;
     BigDecimal feeAmount;
     BigDecimal taxAmount;

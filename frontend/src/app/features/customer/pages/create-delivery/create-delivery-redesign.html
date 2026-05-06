@@ -1,0 +1,206 @@
+<div class="create-page">
+  <div class="mx-auto w-full max-w-[1200px] p-4 md:p-6">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div class="space-y-5 lg:col-span-2">
+          <p-card formGroupName="pickup" class="section-card">
+            <div class="section-header">
+              <div class="card-title">
+                <span class="title-icon title-icon-success"><i class="pi pi-map-marker"></i></span>
+                <span class="card-title-text">Pickup Information</span>
+              </div>
+            </div>
+            <div class="section-body space-y-3">
+              <div>
+                <label class="field-label" for="pickup-line1">Pickup Address</label>
+                <input
+                  id="pickup-line1"
+                  pInputText
+                  class="w-full"
+                  [class.input-invalid]="isFieldInvalid('pickup.line1')"
+                  formControlName="line1"
+                  placeholder="Enter full address"
+                />
+                @if (fieldError('pickup.line1'); as error) { <small class="field-error">{{ error }}</small> }
+              </div>
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label class="field-label" for="pickup-contactName">Contact Name</label>
+                  <input
+                    id="pickup-contactName"
+                    pInputText
+                    class="w-full"
+                    [class.input-invalid]="isFieldInvalid('pickup.contactName')"
+                    formControlName="contactName"
+                    placeholder="Enter name"
+                  />
+                  @if (fieldError('pickup.contactName'); as error) { <small class="field-error">{{ error }}</small> }
+                </div>
+                <div>
+                  <label class="field-label" for="pickup-contactPhone">Contact Phone</label>
+                  <input
+                    id="pickup-contactPhone"
+                    pInputText
+                    class="w-full"
+                    [class.input-invalid]="isFieldInvalid('pickup.contactPhone')"
+                    formControlName="contactPhone"
+                    placeholder="Enter phone"
+                  />
+                  @if (fieldError('pickup.contactPhone'); as error) { <small class="field-error">{{ error }}</small> }
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card formGroupName="destination" class="section-card">
+            <div class="section-header">
+              <div class="card-title">
+                <span class="title-icon title-icon-danger"><i class="pi pi-map-marker"></i></span>
+                <span class="card-title-text">Destination Information</span>
+              </div>
+            </div>
+            <div class="section-body space-y-3">
+              <div>
+                <label class="field-label" for="destination-line1">Destination Address</label>
+                <input
+                  id="destination-line1"
+                  pInputText
+                  class="w-full"
+                  [class.input-invalid]="isFieldInvalid('destination.line1')"
+                  formControlName="line1"
+                  placeholder="Enter full address"
+                />
+                @if (fieldError('destination.line1'); as error) { <small class="field-error">{{ error }}</small> }
+              </div>
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label class="field-label" for="destination-contactName">Contact Name</label>
+                  <input
+                    id="destination-contactName"
+                    pInputText
+                    class="w-full"
+                    [class.input-invalid]="isFieldInvalid('destination.contactName')"
+                    formControlName="contactName"
+                    placeholder="Enter name"
+                  />
+                  @if (fieldError('destination.contactName'); as error) { <small class="field-error">{{ error }}</small> }
+                </div>
+                <div>
+                  <label class="field-label" for="destination-contactPhone">Contact Phone</label>
+                  <input
+                    id="destination-contactPhone"
+                    pInputText
+                    class="w-full"
+                    [class.input-invalid]="isFieldInvalid('destination.contactPhone')"
+                    formControlName="contactPhone"
+                    placeholder="Enter phone"
+                  />
+                  @if (fieldError('destination.contactPhone'); as error) { <small class="field-error">{{ error }}</small> }
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card formGroupName="package" class="section-card">
+            <div class="section-header">
+              <div class="card-title">
+                <span class="title-icon title-icon-info"><i class="pi pi-box"></i></span>
+                <span class="card-title-text">Package Details</span>
+              </div>
+            </div>
+            <div class="section-body space-y-3">
+              <div>
+                <label class="field-label" for="package-description">Package Description</label>
+                <textarea
+                  id="package-description"
+                  pTextarea
+                  rows="3"
+                  class="w-full"
+                  [class.input-invalid]="isFieldInvalid('package.description')"
+                  formControlName="description"
+                  placeholder="Describe the package contents"
+                ></textarea>
+                @if (fieldError('package.description'); as error) { <small class="field-error">{{ error }}</small> }
+              </div>
+              <div>
+                <label class="field-label" for="package-weightKg">Estimated Weight (kg)</label>
+                <p-inputnumber
+                  inputId="package-weightKg"
+                  [min]="0.01"
+                  [minFractionDigits]="2"
+                  [maxFractionDigits]="2"
+                  [useGrouping]="false"
+                  [inputStyleClass]="isFieldInvalid('package.weightKg') ? 'input-invalid' : ''"
+                  formControlName="weightKg"
+                />
+                @if (fieldError('package.weightKg'); as error) { <small class="field-error">{{ error }}</small> }
+              </div>
+              <div>
+                <label class="field-label" for="specialInstructions">Special Instructions (Optional)</label>
+                <textarea
+                  id="specialInstructions"
+                  pTextarea
+                  rows="3"
+                  class="w-full"
+                  [class.input-invalid]="isFieldInvalid('specialInstructions')"
+                  [formControl]="form.controls.specialInstructions"
+                  placeholder="Any special handling instructions"
+                ></textarea>
+              </div>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="space-y-5">
+          <p-card class="section-card">
+            <div class="section-header">
+              <div class="card-title">
+                <span class="card-title-text">Delivery Type</span>
+              </div>
+            </div>
+            <div class="section-body space-y-2">
+              @for (type of deliveryTypeCards; track type.value) {
+                <button type="button" class="type-option" [class.type-option-active]="isDeliveryTypeSelected(type.value)" (click)="selectDeliveryType(type.value)">
+                  <div class="mb-1 flex items-center justify-between">
+                    <span class="type-option-title text-[13px] font-semibold">{{ type.label }}</span>
+                    <i class="pi pi-clock text-[12px] text-p-text-muted"></i>
+                  </div>
+                  <div class="type-option-meta flex items-center justify-between text-[12px] text-p-text-muted">
+                    <span>{{ type.eta }}</span>
+                    <span class="font-semibold">${{ type.previewBase }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          </p-card>
+
+          <p-card class="section-card">
+            <div class="section-header">
+              <div class="card-title">
+                <span class="title-icon title-icon-success"><i class="pi pi-dollar"></i></span>
+                <span class="card-title-text">Price Summary</span>
+              </div>
+            </div>
+            <div class="section-body">
+              <div class="summary-row"><span>Base Price</span><span class="value">${{ previewPricing().baseAmount.toFixed(2) }}</span></div>
+              <div class="summary-row"><span>Service Fee</span><span class="value">${{ previewPricing().feeAmount.toFixed(2) }}</span></div>
+              <div class="summary-row"><span>Tax (10%)</span><span class="value">${{ previewPricing().taxAmount.toFixed(2) }}</span></div>
+              <div class="summary-total"><span>Total</span><span>${{ previewPricing().totalAmount.toFixed(2) }}</span></div>
+            </div>
+          </p-card>
+
+          <div class="action-buttons">
+            <p-button type="submit" label="Create Delivery Request" styleClass="w-full" [loading]="saving()" [disabled]="saving()" />
+            <p-button
+              type="button"
+              label="Cancel"
+              styleClass="w-full cancel-btn"
+              [outlined]="true"
+              (onClick)="cancel()"
+            />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

@@ -43,8 +43,10 @@
               <span class="text-[13px] font-medium text-p-primary">{{ delivery.id }}</span>
             </td>
             <td class="min-w-72 px-4 py-3.5 align-top">
-              <p class="text-[13px] text-p-text-primary">{{ delivery.destination }}</p>
-              <p class="mt-0.5 text-[11px] text-p-text-muted">{{ delivery.destinationHint }}</p>
+              <div class="flex flex-col items-start gap-0.5">
+                <span class="text-[13px] leading-5 text-p-text-primary">{{ delivery.destination }}</span>
+                <span class="text-[11px] leading-4 text-p-text-muted">{{ delivery.destinationHint }}</span>
+              </div>
             </td>
             <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
               {{ delivery.courierName ?? 'Not assigned' }}
