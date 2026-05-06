@@ -8,7 +8,10 @@ const loadStub = () =>
 export const customerRoutes: Routes = [
   {
     path: '',
-    data: { pageTitle: 'Dashboard' },
+    data: {
+      pageTitle: 'Dashboard',
+      subtitle: "Welcome back! Here's your delivery overview",
+    },
     loadComponent: () =>
       import('./pages/customer-home/customer-home').then((m) => m.CustomerHome),
   },

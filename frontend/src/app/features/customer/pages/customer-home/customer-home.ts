@@ -71,14 +71,51 @@ export class CustomerHome {
   }
 
   private mapDeliveryRow(delivery: DeliverySummaryDto): CustomerDeliveryRow {
+    const pickup = this.toDisplayPlace(
+      delivery.pickupLine1,
+      'Pickup address',
+    );
+    const destination = this.toDisplayPlace(
+      delivery.destinationLine1,
+      'Destination address',
+    );
+
     return {
       id: this.toDeliveryCode(delivery.id),
-      destination: delivery.pickupCity,
-      destinationHint: `to ${delivery.destinationCity}`,
+      destination,
+      destinationHint: `from ${pickup}`,
       courierName: undefined,
       status: delivery.status,
-      eta: 'N/A',
+      eta: this.toEtaLabel(delivery),
     };
+  }
+
+  private toEtaLabel(delivery: DeliverySummaryDto): string {
+    switch (delivery.status) {
+      case DeliveryStatus.CREATED:
+        return 'Waiting for courier';
+      case DeliveryStatus.ASSIGNED:
+        return 'Courier en route';
+      case DeliveryStatus.PICKED_UP:
+      case DeliveryStatus.IN_TRANSIT:
+        return delivery.deliveryType === 'EXPRESS' ? '1 hour' : '2-4 hours';
+      case DeliveryStatus.DELIVERED:
+        return 'Delivered';
+      case DeliveryStatus.CANCELLED:
+        return 'Cancelled';
+      case DeliveryStatus.FAILED:
+        return 'Delivery issue';
+      default:
+        return 'To be confirmed';
+    }
+  }
+
+  private toDisplayPlace(
+    value: string | null | undefined,
+    fallback: string,
+  ): string {
+    const normalized = value?.trim();
+    return normalized && normalized.length > 0 ? normalized : fallback;
   }
 
   private toDeliveryCode(id: string): string {

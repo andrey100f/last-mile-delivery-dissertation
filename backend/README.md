@@ -130,4 +130,11 @@ The create endpoint accepts the simplified frontend request shape:
 
 Pricing ownership is client-side for this flow: backend validates the pricing snapshot and persists it directly to `deliveries` (`base_amount`, `fee_amount`, `tax_amount`, `total_amount`, `currency`) without server-side recalculation.
 
+## Delivery list payload (GET `/api/deliveries`)
+
+List rows include route-friendly address fields in camelCase:
+
+- `destinationLine1` (main route text)
+- `pickupLine1` (route hint, e.g. "from ...")
+
 **Idempotency:** duplicate POSTs create separate deliveries (GitHub #31).

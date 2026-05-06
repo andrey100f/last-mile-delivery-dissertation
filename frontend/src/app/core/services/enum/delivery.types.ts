@@ -13,8 +13,8 @@ export interface DeliverySummaryDto {
   createdAt: string;
   totalAmount: number;
   currency: string;
-  pickupCity: string;
-  destinationCity: string;
+  pickupLine1: string;
+  destinationLine1: string;
 }
 
 export interface DeliveryListQuery {
@@ -27,22 +27,13 @@ export type DeliveryType = 'STANDARD' | 'EXPRESS';
 
 export interface AddressContactRequest {
   line1: string;
-  line2?: string;
-  city?: string;
-  region?: string;
-  postalCode?: string;
-  country?: string;
   contactName: string;
   contactPhone: string;
 }
 
 export interface PackageRequest {
   weightKg: number;
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
-  description?: string;
-  fragile?: boolean;
+  description: string;
 }
 
 export interface CreateDeliveryRequest {
@@ -51,6 +42,13 @@ export interface CreateDeliveryRequest {
   package: PackageRequest;
   deliveryType: DeliveryType;
   specialInstructions?: string;
+  pricing: {
+    baseAmount: number;
+    feeAmount: number;
+    taxAmount: number;
+    totalAmount: number;
+    currency: string;
+  };
 }
 
 export interface DeliveryCreatedResponse {
@@ -58,38 +56,9 @@ export interface DeliveryCreatedResponse {
   trackingCode: string;
   status: string;
   deliveryType: DeliveryType;
-  pickup: {
-    line1: string;
-    line2?: string;
-    city: string;
-    region?: string;
-    postalCode: string;
-    country: string;
-    contactName: string;
-    contactPhone: string;
-  };
-  destination: {
-    line1: string;
-    line2?: string;
-    city: string;
-    region?: string;
-    postalCode: string;
-    country: string;
-    contactName: string;
-    contactPhone: string;
-  };
-  packageWeightKg: number;
-  packageLengthCm?: number;
-  packageWidthCm?: number;
-  packageHeightCm?: number;
-  packageDescription?: string;
-  packageFragile: boolean;
   baseAmount: number;
   feeAmount: number;
   taxAmount: number;
   totalAmount: number;
   currency: string;
-  specialInstructions?: string;
-  createdAt: string;
-  updatedAt: string;
 }

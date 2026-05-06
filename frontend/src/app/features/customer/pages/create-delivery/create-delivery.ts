@@ -46,7 +46,6 @@ export class CreateDeliveryPage {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly saving = signal(false);
-  protected readonly latestPricing = signal<DeliveryCreatedResponse | null>(null);
   protected readonly selectedDeliveryType = signal<DeliveryType>('STANDARD');
 
   protected readonly deliveryTypeCards: {
@@ -204,6 +203,7 @@ export class CreateDeliveryPage {
 
   private buildPayload(): CreateDeliveryRequest {
     const raw = this.form.getRawValue();
+    const pricing = this.previewPricing();
     return {
       pickup: {
         line1: raw.pickup.line1.trim(),
@@ -217,15 +217,21 @@ export class CreateDeliveryPage {
       },
       package: {
         weightKg: raw.package.weightKg,
-        description: this.toOptional(raw.package.description),
+        description: raw.package.description.trim(),
       },
       deliveryType: raw.deliveryType,
       specialInstructions: this.toOptional(raw.specialInstructions),
+      pricing: {
+        baseAmount: pricing.baseAmount,
+        feeAmount: pricing.feeAmount,
+        taxAmount: pricing.taxAmount,
+        totalAmount: pricing.totalAmount,
+        currency: pricing.currency,
+      },
     };
   }
 
   private handleCreateSuccess(response: DeliveryCreatedResponse): void {
-    this.latestPricing.set(response);
     this.messageService.add({
       severity: 'success',
       summary: 'Delivery created',

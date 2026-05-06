@@ -39,11 +39,7 @@ public final class DeliveryMapper {
         d.setDestination(toEmbedded(request.getDestination()));
         PackageRequestDto pkg = request.getPackageData();
         d.setPackageWeightKg(normalizeWeightKg(pkg.getWeightKg()));
-        d.setPackageLengthCm(null);
-        d.setPackageWidthCm(null);
-        d.setPackageHeightCm(null);
         d.setPackageDescription(pkg.getDescription());
-        d.setPackageFragile(false);
         d.setSpecialInstructions(request.getSpecialInstructions());
         d.setBaseAmount(request.getPricing().getBaseAmount());
         d.setFeeAmount(request.getPricing().getFeeAmount());
@@ -56,19 +52,14 @@ public final class DeliveryMapper {
     public static AddressContact toEmbedded(AddressContactRequestDto dto) {
         AddressContact a = new AddressContact();
         a.setLine1(dto.getLine1());
-        a.setLine2(null);
-        a.setCity(null);
-        a.setRegion(null);
-        a.setPostalCode(null);
-        a.setCountry(null);
         a.setContactName(dto.getContactName());
         a.setContactPhone(dto.getContactPhone());
         return a;
     }
 
     public static DeliverySummaryDto toSummaryDto(Delivery d) {
-        String pickupCity = d.getPickup() != null ? d.getPickup().getCity() : null;
-        String destinationCity = d.getDestination() != null ? d.getDestination().getCity() : null;
+        String pickupLine1 = d.getPickup() != null ? d.getPickup().getLine1() : null;
+        String destinationLine1 = d.getDestination() != null ? d.getDestination().getLine1() : null;
         return DeliverySummaryDto.builder()
             .id(d.getId().toString())
             .status(d.getStatus().name())
@@ -76,8 +67,8 @@ public final class DeliveryMapper {
             .createdAt(d.getCreatedAt())
             .totalAmount(d.getTotalAmount())
             .currency(d.getCurrency())
-            .pickupCity(pickupCity)
-            .destinationCity(destinationCity)
+            .pickupLine1(pickupLine1)
+            .destinationLine1(destinationLine1)
             .build();
     }
 
@@ -90,11 +81,7 @@ public final class DeliveryMapper {
             .pickup(toDto(d.getPickup()))
             .destination(toDto(d.getDestination()))
             .packageWeightKg(d.getPackageWeightKg())
-            .packageLengthCm(d.getPackageLengthCm())
-            .packageWidthCm(d.getPackageWidthCm())
-            .packageHeightCm(d.getPackageHeightCm())
             .packageDescription(d.getPackageDescription())
-            .packageFragile(d.isPackageFragile())
             .baseAmount(d.getBaseAmount())
             .feeAmount(d.getFeeAmount())
             .taxAmount(d.getTaxAmount())
@@ -122,11 +109,7 @@ public final class DeliveryMapper {
             .pickup(toDto(d.getPickup()))
             .destination(toDto(d.getDestination()))
             .packageWeightKg(d.getPackageWeightKg())
-            .packageLengthCm(d.getPackageLengthCm())
-            .packageWidthCm(d.getPackageWidthCm())
-            .packageHeightCm(d.getPackageHeightCm())
             .packageDescription(d.getPackageDescription())
-            .packageFragile(d.isPackageFragile())
             .baseAmount(d.getBaseAmount())
             .feeAmount(d.getFeeAmount())
             .taxAmount(d.getTaxAmount())
@@ -161,11 +144,6 @@ public final class DeliveryMapper {
         }
         return AddressContactDto.builder()
             .line1(a.getLine1())
-            .line2(a.getLine2())
-            .city(a.getCity())
-            .region(a.getRegion())
-            .postalCode(a.getPostalCode())
-            .country(a.getCountry())
             .contactName(a.getContactName())
             .contactPhone(a.getContactPhone())
             .build();

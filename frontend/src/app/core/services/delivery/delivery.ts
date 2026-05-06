@@ -124,6 +124,6 @@ export class DeliveryService extends BaseService {
     return serverField
       .replaceAll('[', '.')
       .replaceAll(']', '')
-      .replace(/^packageDetails(\.|$)/, 'package$1');
+      .replace(/^package(Data|Details)(\.|$)/, 'package$2');
   }
 }
