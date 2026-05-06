@@ -14,8 +14,14 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'create',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Create New Delivery' },
+    loadComponent: () =>
+      import('./pages/create-delivery/create-delivery').then(
+        (m) => m.CreateDeliveryPage,
+      ),
+    data: {
+      pageTitle: 'Create New Delivery',
+      subtitle: 'Fill in the delivery details below',
+    },
   },
   {
     path: 'tracking',

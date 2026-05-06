@@ -1,0 +1,183 @@
+:host {
+  display: block;
+}
+
+.create-page {
+  background: var(--p-surface-ground);
+}
+
+p-inputnumber {
+  width: 100%;
+}
+
+.field-label {
+  margin-bottom: 0.25rem;
+  display: block;
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.field-error {
+  margin-top: 0.25rem;
+  display: block;
+  font-size: 0.75rem;
+  color: var(--p-red-500);
+}
+
+:host ::ng-deep .input-invalid {
+  border-color: var(--p-red-500) !important;
+}
+
+:host ::ng-deep .input-invalid:enabled:focus {
+  border-color: var(--p-red-500) !important;
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--p-red-500) 20%, transparent);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.card-title-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  line-height: 1;
+}
+
+.title-icon {
+  display: inline-flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--p-content-border-radius);
+  font-size: 0.75rem;
+}
+
+.title-icon i {
+  line-height: 1;
+}
+
+.title-icon-success {
+  background: color-mix(in srgb, var(--p-green-500) 18%, transparent);
+  color: var(--p-green-600);
+}
+
+.title-icon-danger {
+  background: color-mix(in srgb, var(--p-red-500) 18%, transparent);
+  color: var(--p-red-600);
+}
+
+.title-icon-info {
+  background: color-mix(in srgb, var(--p-cyan-500) 18%, transparent);
+  color: var(--p-cyan-600);
+}
+
+.type-option {
+  width: 100%;
+  cursor: pointer;
+  border-radius: var(--p-content-border-radius);
+  border: 1px solid var(--p-surface-border);
+  background: var(--p-surface-card);
+  padding: 0.75rem;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.type-option:hover {
+  border-color: var(--p-primary-color);
+}
+
+.type-option-active {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-primary-color) 50%, transparent);
+}
+
+.type-option-active .type-option-title {
+  color: var(--p-primary-color);
+}
+
+.type-option-active .type-option-meta {
+  color: color-mix(in srgb, var(--p-primary-color) 70%, var(--p-text-muted-color));
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+  padding-block: 0.25rem;
+}
+
+.summary-row .value {
+  color: var(--p-text-color);
+  font-weight: 500;
+}
+
+.summary-total {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--p-surface-border);
+  padding-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--p-text-color);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.summary-total span:last-child {
+  color: var(--p-primary-color);
+  font-size: 1.125rem;
+}
+
+:host ::ng-deep .section-card.p-card {
+  border: 1px solid var(--p-surface-border);
+  box-shadow: none;
+}
+
+:host ::ng-deep .section-card .p-card-body {
+  padding: 0;
+}
+
+:host ::ng-deep .section-card .p-card-content {
+  padding: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  min-height: 3.75rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--p-surface-border) 65%, #aeb7c2);
+}
+
+.section-body {
+  padding: 0.875rem 1rem 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+:host ::ng-deep .cancel-btn.p-button {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 5%, #ffffff);
+  color: var(--p-primary-color);
+}
+
+:host ::ng-deep .cancel-btn.p-button:hover {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, #ffffff);
+  color: var(--p-primary-color);
+}
