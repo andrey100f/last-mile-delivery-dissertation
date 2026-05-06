@@ -8,6 +8,7 @@ const loadStub = () =>
 export const courierRoutes: Routes = [
   {
     path: '',
+    data: { pageTitle: 'Dashboard' },
     loadComponent: () =>
       import('./pages/courier-home/courier-home').then((m) => m.CourierHome),
   },

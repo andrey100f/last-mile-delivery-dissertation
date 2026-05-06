@@ -8,6 +8,7 @@ const loadStub = () =>
 export const adminRoutes: Routes = [
   {
     path: '',
+    data: { pageTitle: 'Dashboard' },
     loadComponent: () =>
       import('./pages/admin-home/admin-home').then((m) => m.AdminHome),
   },

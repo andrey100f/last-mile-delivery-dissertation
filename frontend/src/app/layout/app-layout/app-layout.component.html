@@ -1,6 +1,6 @@
 <div class="flex h-screen flex-row overflow-hidden bg-p-surface-ground">
   <aside
-    class="flex h-screen w-63 shrink-0 flex-col border-r border-p-surface-border bg-p-surface-section"
+    class="z-(--layout-sidebar-z-index) flex h-screen w-63 shrink-0 flex-col border-r border-p-surface-border bg-p-surface-section"
     aria-label="Application sidebar"
   >
     <div
@@ -72,20 +72,15 @@
           <p class="truncate text-xs text-p-text-muted">{{ sidebarUser().line2 }}</p>
         </div>
       </div>
-      <button
-        type="button"
-        class="app-layout-logout mt-2 flex w-full cursor-pointer items-center gap-2.5 rounded-(--p-radius-md) px-2.5 py-2 text-left text-sm font-medium text-p-text-secondary transition-colors duration-150 hover:bg-p-surface-hover hover:text-[var(--p-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-p-primary focus-visible:ring-offset-2 focus-visible:ring-offset-p-surface-section"
-        (click)="onLogout()"
-      >
-        <i class="pi pi-sign-out shrink-0 text-lg" aria-hidden="true"></i>
-        <span>Log out</span>
-      </button>
     </div>
   </aside>
 
   <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-    <main class="min-h-0 flex-1 overflow-y-auto">
-      <router-outlet />
+    <app-top-bar [title]="pageTitle()" [subtitle]="pageSubtitle()" />
+    <main class="min-h-0 flex-1 overflow-y-auto bg-p-surface-ground">
+      <div class="min-h-full">
+        <router-outlet />
+      </div>
     </main>
   </div>
 </div>

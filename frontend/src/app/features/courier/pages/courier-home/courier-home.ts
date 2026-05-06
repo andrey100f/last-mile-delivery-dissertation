@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { PageTopBarComponent } from '../../../../layout/page-top-bar/page-top-bar.component';
 import {
   DeliveryStatus,
   StatusTagComponent,
@@ -18,7 +17,6 @@ interface CourierRequestRow {
 @Component({
   selector: 'app-courier-home',
   imports: [
-    PageTopBarComponent,
     StatusTagComponent,
     TableModule,
     TableEmptyStateComponent,
