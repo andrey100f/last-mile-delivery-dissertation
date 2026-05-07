@@ -33,6 +33,20 @@ public class DeliveryStateMachine {
         }
     }
 
+    public boolean canTransition(DeliveryStatus from, DeliveryStatus to) {
+        return allowedTargetsFrom(from).contains(to);
+    }
+
+    public Set<DeliveryStatus> statusesTransitioningTo(DeliveryStatus targetStatus) {
+        EnumSet<DeliveryStatus> result = EnumSet.noneOf(DeliveryStatus.class);
+        for (Map.Entry<DeliveryStatus, Set<DeliveryStatus>> entry : allowedTransitions.entrySet()) {
+            if (entry.getValue().contains(targetStatus)) {
+                result.add(entry.getKey());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
     public Set<DeliveryStatus> allowedTargetsFrom(DeliveryStatus from) {
         return Set.copyOf(allowedTransitions.getOrDefault(from, Set.of()));
     }

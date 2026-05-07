@@ -13,7 +13,7 @@ public class UpdateDeliveryStatusRequest {
     private DeliveryStatusAction action;
 
     @AssertTrue(message = "Provide exactly one of targetStatus or action")
-    public boolean isExactlyOneStatusInputProvided() {
+    public boolean isValid() {
         return (targetStatus == null) != (action == null);
     }
 

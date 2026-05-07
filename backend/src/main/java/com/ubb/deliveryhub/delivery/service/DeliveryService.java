@@ -57,7 +57,6 @@ public class DeliveryService {
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
-    private static final Set<DeliveryStatus> ASSIGNABLE_STATUSES = Set.of(DeliveryStatus.CREATED);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
@@ -129,7 +128,8 @@ public class DeliveryService {
         }
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
-        return deliveryRepository.findAvailableForCourier(ASSIGNABLE_STATUSES, deliveryType, effective)
+        Set<DeliveryStatus> assignableStatuses = deliveryStateMachine.statusesTransitioningTo(DeliveryStatus.ASSIGNED);
+        return deliveryRepository.findAvailableForCourier(assignableStatuses, deliveryType, effective)
             .map(DeliveryMapper::toAvailableDto);
     }
 
@@ -142,7 +142,8 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findWithCustomerAndCourierByIdForUpdate(deliveryId)
             .orElseThrow(DeliveryNotFoundException::new);
 
-        if (delivery.getCourier() != null || !ASSIGNABLE_STATUSES.contains(delivery.getStatus())) {
+        if (delivery.getCourier() != null
+            || !deliveryStateMachine.canTransition(delivery.getStatus(), DeliveryStatus.ASSIGNED)) {
             throw new DeliveryTakenException();
         }
 
