@@ -2,6 +2,8 @@ package com.ubb.deliveryhub.delivery.web;
 
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
+import com.ubb.deliveryhub.delivery.domain.DeliveryType;
+import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
@@ -47,6 +49,19 @@ public class DeliveryController {
         @RequestParam(required = false) DeliveryStatus status
     ) {
         return deliveryService.listForCurrentCustomer(authentication, pageable, status);
+    }
+
+    @GetMapping("/available")
+    @PreAuthorize("hasRole('COURIER')")
+    public Page<AvailableDeliveryDto> listAvailableForCurrentCourier(
+        @PageableDefault(
+            size = DeliveryListDefaults.PAGE_SIZE,
+            sort = DeliveryListDefaults.SORT_PROPERTY,
+            direction = Sort.Direction.DESC
+        ) Pageable pageable,
+        @RequestParam(required = false) DeliveryType deliveryType
+    ) {
+        return deliveryService.listAvailableForCurrentCourier(pageable, deliveryType);
     }
 
     @PostMapping

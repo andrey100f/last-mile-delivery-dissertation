@@ -138,3 +138,19 @@ List rows include route-friendly address fields in camelCase:
 - `pickupLine1` (route hint, e.g. "from ...")
 
 **Idempotency:** duplicate POSTs create separate deliveries (GitHub #31).
+
+## Courier available deliveries (GET `/api/deliveries/available`)
+
+Courier role only (`ROLE_COURIER`). Returns a paged list of assignable deliveries:
+
+- only `CREATED` rows
+- only unassigned rows (`courier_id IS NULL`)
+- optional filter: `deliveryType=STANDARD|EXPRESS`
+- supports pageable query params (`page`, `size`, `sort`)
+
+Response rows include:
+
+- identity/status: `id`, `status`, `deliveryType`
+- route summary: `pickupLine1`, `destinationLine1`
+- pricing snapshot: `baseAmount`, `feeAmount`, `taxAmount`, `totalAmount`, `currency`
+- placeholders for future matching signals: `distanceKm`, `etaMinutes` (`null` in current implementation)

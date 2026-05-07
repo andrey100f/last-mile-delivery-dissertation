@@ -3,7 +3,9 @@ package com.ubb.deliveryhub.delivery.service;
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
+import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
+import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
@@ -29,8 +31,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +109,27 @@ public class DeliveryService {
         UUID customerId = principalUserId(authentication);
         Specification<Delivery> spec = DeliverySpecifications.forCustomerWithOptionalStatus(customerId, statusFilter);
         return deliveryRepository.findAll(spec, effective).map(DeliveryMapper::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AvailableDeliveryDto> listAvailableForCurrentCourier(
+        Pageable pageable,
+        DeliveryType deliveryType
+    ) {
+        if (!pageable.isPaged()) {
+            throw new InvalidDeliveryPaginationException();
+        }
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDefaultSort(pageable);
+        Set<DeliveryStatus> assignableStatuses = Arrays.stream(DeliveryStatus.values())
+            .filter(status -> isAssignable(status, null))
+            .collect(Collectors.toUnmodifiableSet());
+        return deliveryRepository.findAvailableForCourier(assignableStatuses, deliveryType, effective)
+            .map(DeliveryMapper::toAvailableDto);
+    }
+
+    static boolean isAssignable(DeliveryStatus status, UUID assignedCourierId) {
+        return status == DeliveryStatus.CREATED && assignedCourierId == null;
     }
 
     private static UUID principalUserId(Authentication authentication) {
