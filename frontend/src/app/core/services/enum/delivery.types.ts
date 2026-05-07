@@ -91,10 +91,19 @@ export interface DeliveryDetailDto {
   timeline: DeliveryStatusHistoryItemDto[];
 }
 
+export type DeliveryStatusValue =
+  | 'CREATED'
+  | 'ASSIGNED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'FAILED';
+
 export type DeliveryStatusAction = 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED';
 
 export interface UpdateDeliveryStatusRequest {
-  targetStatus?: string;
+  targetStatus?: DeliveryStatusValue;
   action?: DeliveryStatusAction;
 }
 

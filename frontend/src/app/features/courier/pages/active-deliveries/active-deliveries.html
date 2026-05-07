@@ -16,6 +16,15 @@
           </article>
         }
       </div>
+    } @else if (loadError(); as errorMessage) {
+      <div class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)">
+        <div class="flex flex-col gap-3">
+          <p class="text-sm font-semibold text-p-text-primary">{{ errorMessage }}</p>
+          <div>
+            <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+          </div>
+        </div>
+      </div>
     } @else if (activeDeliveries().length === 0) {
       <div class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)">
         <app-table-empty-state

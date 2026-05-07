@@ -12,6 +12,28 @@ import {
 } from '@core/services/enum/delivery.types';
 import { map, Observable } from 'rxjs';
 
+type DeliveryDetailResponse = Partial<DeliveryDetailDto> & {
+  delivery_status_history?: unknown[];
+  pickupAddress?: unknown;
+  destinationAddress?: unknown;
+  packageData?: unknown;
+  packageDetails?: unknown;
+  packageWeightKg?: unknown;
+  packageDescription?: unknown;
+  publicTrackingCode?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  pickupLine1?: unknown;
+  destinationLine1?: unknown;
+  pricing?: {
+    baseAmount?: unknown;
+    feeAmount?: unknown;
+    taxAmount?: unknown;
+    totalAmount?: unknown;
+    currency?: unknown;
+  };
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -56,94 +78,67 @@ export class DeliveryService extends BaseService {
 
   getById(id: string): Observable<DeliveryDetailDto> {
     return this.httpClient
-      .get<
-        Partial<DeliveryDetailDto> & {
-          delivery_status_history?: unknown[];
-          pickupAddress?: unknown;
-          destinationAddress?: unknown;
-          packageData?: unknown;
-          packageDetails?: unknown;
-          packageWeightKg?: unknown;
-          packageDescription?: unknown;
-          publicTrackingCode?: unknown;
-          createdAt?: unknown;
-          updatedAt?: unknown;
-          pickupLine1?: unknown;
-          destinationLine1?: unknown;
-          pricing?: {
-            baseAmount?: unknown;
-            feeAmount?: unknown;
-            taxAmount?: unknown;
-            totalAmount?: unknown;
-            currency?: unknown;
-          };
-        }
-      >(
-        `${this.baseUrl}/deliveries/${id}`,
-      )
-      .pipe(
-        map((response) => {
-          const timelineSource =
-            response.timeline ?? response.delivery_status_history ?? [];
-          const pickupSource = response.pickup ?? response.pickupAddress;
-          const destinationSource =
-            response.destination ?? response.destinationAddress;
-          const packageSource =
-            response.package ?? response.packageData ?? response.packageDetails;
-          const pricing = response.pricing ?? {};
+      .get<DeliveryDetailResponse>(`${this.baseUrl}/deliveries/${id}`)
+      .pipe(map((response) => this.normalizeDetailResponse(id, response)));
+  }
 
-          return {
-            id: typeof response.id === 'string' ? response.id : id,
-            trackingCode:
-              typeof response.trackingCode === 'string'
-                ? response.trackingCode
-                : typeof response.publicTrackingCode === 'string'
-                  ? response.publicTrackingCode
-                  : null,
-            status:
-              typeof response.status === 'string' ? response.status : 'CREATED',
-            createdAt: this.toIsoDateString(response.createdAt),
-            updatedAt: this.toIsoDateString(response.updatedAt),
-            pickup: this.toAddressDto(pickupSource, response.pickupLine1),
-            destination: this.toAddressDto(
-              destinationSource,
-              response.destinationLine1,
-            ),
-            package: this.toPackageDto(packageSource, {
-              weightKg: response.packageWeightKg,
-              description: response.packageDescription,
-              specialInstructions: response.specialInstructions,
-            }),
-            specialInstructions:
-              typeof response.specialInstructions === 'string'
-                ? response.specialInstructions
-                : null,
-            deliveryType:
-              typeof response.deliveryType === 'string'
-                ? response.deliveryType
-                : 'STANDARD',
-            baseAmount: this.toNumber(response.baseAmount, pricing.baseAmount),
-            feeAmount: this.toNumber(response.feeAmount, pricing.feeAmount),
-            taxAmount: this.toNumber(response.taxAmount, pricing.taxAmount),
-            totalAmount: this.toNumber(response.totalAmount, pricing.totalAmount),
-            currency:
-              typeof response.currency === 'string'
-                ? response.currency
-                : typeof pricing.currency === 'string'
-                  ? pricing.currency
-                  : 'USD',
-            courier:
-              response.courier && typeof response.courier === 'object'
-                ? this.toCourierDto(response.courier)
-                : null,
-            timeline: Array.isArray(timelineSource)
-              ? timelineSource
-                  .map((item) => this.toTimelineEntry(item))
-                  .filter((item): item is NonNullable<typeof item> => !!item)
-              : [],
-          } satisfies DeliveryDetailDto;
-        }),
-      );
+  normalizeDetailResponse(
+    id: string,
+    response: DeliveryDetailResponse,
+  ): DeliveryDetailDto {
+    const timelineSource = response.timeline ?? response.delivery_status_history ?? [];
+    const pickupSource = response.pickup ?? response.pickupAddress;
+    const destinationSource = response.destination ?? response.destinationAddress;
+    const packageSource =
+      response.package ?? response.packageData ?? response.packageDetails;
+    const pricing = response.pricing ?? {};
+
+    return {
+      id: typeof response.id === 'string' ? response.id : id,
+      trackingCode:
+        typeof response.trackingCode === 'string'
+          ? response.trackingCode
+          : typeof response.publicTrackingCode === 'string'
+            ? response.publicTrackingCode
+            : null,
+      status: typeof response.status === 'string' ? response.status : 'CREATED',
+      createdAt: this.toIsoDateString(response.createdAt),
+      updatedAt: this.toIsoDateString(response.updatedAt),
+      pickup: this.toAddressDto(pickupSource, response.pickupLine1),
+      destination: this.toAddressDto(destinationSource, response.destinationLine1),
+      package: this.toPackageDto(packageSource, {
+        weightKg: response.packageWeightKg,
+        description: response.packageDescription,
+        specialInstructions: response.specialInstructions,
+      }),
+      specialInstructions:
+        typeof response.specialInstructions === 'string'
+          ? response.specialInstructions
+          : null,
+      deliveryType:
+        typeof response.deliveryType === 'string'
+          ? response.deliveryType
+          : 'STANDARD',
+      baseAmount: this.toNumber(response.baseAmount, pricing.baseAmount),
+      feeAmount: this.toNumber(response.feeAmount, pricing.feeAmount),
+      taxAmount: this.toNumber(response.taxAmount, pricing.taxAmount),
+      totalAmount: this.toNumber(response.totalAmount, pricing.totalAmount),
+      currency:
+        typeof response.currency === 'string'
+          ? response.currency
+          : typeof pricing.currency === 'string'
+            ? pricing.currency
+            : 'USD',
+      courier:
+        response.courier && typeof response.courier === 'object'
+          ? this.toCourierDto(response.courier)
+          : null,
+      timeline: Array.isArray(timelineSource)
+        ? timelineSource
+            .map((item) => this.toTimelineEntry(item))
+            .filter((item): item is NonNullable<typeof item> => !!item)
+        : [],
+    } satisfies DeliveryDetailDto;
   }
 
   applyValidationErrors(

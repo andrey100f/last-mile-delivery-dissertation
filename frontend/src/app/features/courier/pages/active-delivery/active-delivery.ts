@@ -224,7 +224,6 @@ export class ActiveDeliveryPage {
       recordedAt: historyByStatus.get(status) ?? null,
     }));
   });
-  protected readonly currentAction = computed(() => this.allowedActions()[0] ?? null);
   protected readonly pickupCompleted = computed(() => {
     const status = this.currentStatus();
     if (
@@ -300,7 +299,9 @@ export class ActiveDeliveryPage {
   }
 
   protected reload(): void {
-    this.loadDetail(this.route.snapshot.paramMap).subscribe();
+    this.loadDetail(this.route.snapshot.paramMap)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
   }
 
   protected goToRequests(): void {

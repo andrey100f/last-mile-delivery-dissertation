@@ -101,18 +101,6 @@
                           {{ step.recordedAt ? (step.recordedAt | date: 'HH:mm') : '-' }}
                         </p>
                       </div>
-                      @if (step.current && currentAction(); as action) {
-                        <div class="mt-3">
-                          <p-button
-                            [label]="action.label"
-                            [icon]="action.icon"
-                            size="small"
-                            [loading]="pendingActionId() === action.id"
-                            [disabled]="actionPending()"
-                            (onClick)="onActionClick(action)"
-                          />
-                        </div>
-                      }
                     </div>
                   }
                 </div>

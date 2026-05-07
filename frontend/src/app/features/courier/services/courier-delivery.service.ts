@@ -10,7 +10,7 @@ import {
   PageDto,
   UpdateDeliveryStatusRequest,
 } from '@core/services/enum/delivery.types';
-import { Observable, switchMap } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export interface CourierDeliveryUiError {
   status: number;
@@ -95,8 +95,17 @@ export class CourierDeliveryService extends BaseService {
     payload: UpdateDeliveryStatusRequest | { action: DeliveryStatusAction },
   ): Observable<DeliveryDetailDto> {
     return this.httpClient
-      .patch<DeliveryDetailDto>(`${this.baseUrl}/deliveries/${id}/status`, payload)
-      .pipe(switchMap(() => this.getDeliveryDetail(id)));
+      .patch<unknown>(`${this.baseUrl}/deliveries/${id}/status`, payload)
+      .pipe(
+        map((response) =>
+          this.deliveryService.normalizeDetailResponse(
+            id,
+            response as Parameters<
+              DeliveryService['normalizeDetailResponse']
+            >[1],
+          ),
+        ),
+      );
   }
 
   toUiError(error: unknown): CourierDeliveryUiError {

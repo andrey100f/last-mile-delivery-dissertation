@@ -14,6 +14,7 @@ import {
 } from '@core/services/enum/delivery.types';
 import { StatusTagComponent, TableEmptyStateComponent } from '@shared/ui/public-api';
 import { formatDeliveryCode } from '@shared/utils/delivery-code';
+import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
 import { catchError, finalize, of } from 'rxjs';
@@ -39,8 +40,10 @@ export class ActiveDeliveriesPage {
   private readonly courierDeliveryService = inject(CourierDeliveryService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
 
   protected readonly activeLoading = signal(false);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly activeDeliveries = signal<CourierActiveDeliveryCard[]>([]);
   protected readonly activeLoadingSkeletonCards = [0, 1, 2, 3];
 
@@ -52,8 +55,13 @@ export class ActiveDeliveriesPage {
     void this.router.navigate(['/courier/active', deliveryId]);
   }
 
+  protected retry(): void {
+    this.loadActiveDeliveries();
+  }
+
   private loadActiveDeliveries(): void {
     this.activeLoading.set(true);
+    this.loadError.set(null);
     this.courierDeliveryService
       .getActive({
         page: 0,
@@ -62,15 +70,22 @@ export class ActiveDeliveriesPage {
       })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        catchError(() =>
-          of<PageDto<CourierAvailableDeliveryDto>>({
+        catchError(() => {
+          this.loadError.set('Could not load active deliveries. Please retry.');
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Active deliveries unavailable',
+            detail: 'Please retry in a few moments.',
+            life: 4000,
+          });
+          return of<PageDto<CourierAvailableDeliveryDto>>({
             content: [],
             totalElements: 0,
             totalPages: 0,
             size: 0,
             number: 0,
-          }),
-        ),
+          });
+        }),
         finalize(() => this.activeLoading.set(false)),
       )
       .subscribe((response) => {
