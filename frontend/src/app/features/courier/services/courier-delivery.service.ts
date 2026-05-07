@@ -6,13 +6,20 @@ import {
   CourierAvailableDeliveriesQuery,
   CourierAvailableDeliveryDto,
   DeliveryDetailDto,
+  DeliveryStatusAction,
   PageDto,
+  UpdateDeliveryStatusRequest,
 } from '@core/services/enum/delivery.types';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 
 export interface CourierDeliveryUiError {
   status: number;
-  type: 'DELIVERY_TAKEN' | 'GENERIC';
+  type:
+    | 'DELIVERY_TAKEN'
+    | 'INVALID_STATUS_TRANSITION'
+    | 'ACCESS_DENIED'
+    | 'NOT_FOUND'
+    | 'GENERIC';
   code: string | null;
   detail: string | null;
 }
@@ -49,6 +56,29 @@ export class CourierDeliveryService extends BaseService {
     );
   }
 
+  getActive(
+    params: Pick<CourierAvailableDeliveriesQuery, 'page' | 'size' | 'sort'> = {},
+  ): Observable<PageDto<CourierAvailableDeliveryDto>> {
+    let queryParams = new HttpParams();
+
+    if (params.page !== undefined) {
+      queryParams = queryParams.set('page', params.page);
+    }
+    if (params.size !== undefined) {
+      queryParams = queryParams.set('size', params.size);
+    }
+    if (params.sort && params.sort.length > 0) {
+      queryParams = queryParams.set('sort', params.sort);
+    }
+
+    return this.httpClient.get<PageDto<CourierAvailableDeliveryDto>>(
+      `${this.baseUrl}/deliveries/active`,
+      {
+        params: queryParams,
+      },
+    );
+  }
+
   getDeliveryDetail(id: string): Observable<DeliveryDetailDto> {
     return this.deliveryService.getById(id);
   }
@@ -58,6 +88,15 @@ export class CourierDeliveryService extends BaseService {
       `${this.baseUrl}/deliveries/${id}/accept`,
       {},
     );
+  }
+
+  updateStatus(
+    id: string,
+    payload: UpdateDeliveryStatusRequest | { action: DeliveryStatusAction },
+  ): Observable<DeliveryDetailDto> {
+    return this.httpClient
+      .patch<DeliveryDetailDto>(`${this.baseUrl}/deliveries/${id}/status`, payload)
+      .pipe(switchMap(() => this.getDeliveryDetail(id)));
   }
 
   toUiError(error: unknown): CourierDeliveryUiError {
@@ -76,10 +115,22 @@ export class CourierDeliveryService extends BaseService {
       error.status === 409 &&
       (code === 'DELIVERY_TAKEN' ||
         detail?.toUpperCase().includes('DELIVERY_TAKEN') === true);
+    const isInvalidTransition =
+      error.status === 400 &&
+      (code === 'INVALID_STATUS_TRANSITION' ||
+        detail?.toUpperCase().includes('INVALID STATUS TRANSITION') === true);
 
     return {
       status: error.status,
-      type: isTakenConflict ? 'DELIVERY_TAKEN' : 'GENERIC',
+      type: isTakenConflict
+        ? 'DELIVERY_TAKEN'
+        : isInvalidTransition
+          ? 'INVALID_STATUS_TRANSITION'
+          : error.status === 403
+            ? 'ACCESS_DENIED'
+            : error.status === 404
+              ? 'NOT_FOUND'
+              : 'GENERIC',
       code,
       detail,
     };

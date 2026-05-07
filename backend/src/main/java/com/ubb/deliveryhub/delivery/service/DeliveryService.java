@@ -133,6 +133,26 @@ public class DeliveryService {
             .map(DeliveryMapper::toAvailableDto);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AvailableDeliveryDto> listActiveForCurrentCourier(
+        Authentication authentication,
+        Pageable pageable
+    ) {
+        if (!pageable.isPaged()) {
+            throw new InvalidDeliveryPaginationException();
+        }
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDefaultSort(pageable);
+        UUID courierId = principalUserId(authentication);
+        Set<DeliveryStatus> activeStatuses = Set.of(
+            DeliveryStatus.ASSIGNED,
+            DeliveryStatus.PICKED_UP,
+            DeliveryStatus.IN_TRANSIT
+        );
+        return deliveryRepository.findActiveForCourier(courierId, activeStatuses, effective)
+            .map(DeliveryMapper::toAvailableDto);
+    }
+
     @Transactional
     public DeliveryDetailDto acceptForCurrentCourier(UUID deliveryId, Authentication authentication) {
         UUID courierId = principalUserId(authentication);

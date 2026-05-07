@@ -27,22 +27,22 @@ export interface StatusPresentation {
 export const DELIVERY_STATUS_MAP: Readonly<Record<DeliveryStatus, StatusPresentation>> =
   {
     [DeliveryStatus.CREATED]: {
-      label: 'Pending',
+      label: 'Created',
       severity: 'warn',
       icon: 'pi pi-plus-circle',
     },
     [DeliveryStatus.ASSIGNED]: {
-      label: 'In Progress',
+      label: 'Assigned',
       severity: 'info',
       icon: 'pi pi-user-plus',
     },
     [DeliveryStatus.PICKED_UP]: {
-      label: 'In Progress',
+      label: 'Picked Up',
       severity: 'info',
       icon: 'pi pi-box',
     },
     [DeliveryStatus.IN_TRANSIT]: {
-      label: 'In Progress',
+      label: 'In Transit',
       severity: 'info',
       icon: 'pi pi-send',
     },

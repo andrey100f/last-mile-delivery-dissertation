@@ -36,12 +36,18 @@ export const courierRoutes: Routes = [
   },
   {
     path: 'active',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Active delivery' },
+    loadComponent: () =>
+      import('./pages/active-deliveries/active-deliveries').then(
+        (m) => m.ActiveDeliveriesPage,
+      ),
+    data: { pageTitle: 'Active deliveries' },
   },
   {
     path: 'active/:id',
-    loadComponent: loadStub,
+    loadComponent: () =>
+      import('./pages/active-delivery/active-delivery').then(
+        (m) => m.ActiveDeliveryPage,
+      ),
     data: { pageTitle: 'Active delivery' },
   },
   {

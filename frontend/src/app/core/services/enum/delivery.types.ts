@@ -91,6 +91,13 @@ export interface DeliveryDetailDto {
   timeline: DeliveryStatusHistoryItemDto[];
 }
 
+export type DeliveryStatusAction = 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED';
+
+export interface UpdateDeliveryStatusRequest {
+  targetStatus?: string;
+  action?: DeliveryStatusAction;
+}
+
 export type DeliveryType = 'STANDARD' | 'EXPRESS';
 
 export interface AddressContactRequest {

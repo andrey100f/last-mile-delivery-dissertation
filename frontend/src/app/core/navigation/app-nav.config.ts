@@ -61,10 +61,11 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         roles: [UserRole.COURIER],
       },
       {
-        label: 'Active delivery',
+        label: 'Active Deliveries',
         routerCommands: ['courier', 'active'],
         icon: 'pi pi-send',
         roles: [UserRole.COURIER],
+        linkActiveExact: true,
       },
       {
         label: 'Earnings',

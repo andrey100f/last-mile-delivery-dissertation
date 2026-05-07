@@ -66,6 +66,19 @@ public class DeliveryController {
         return deliveryService.listAvailableForCurrentCourier(pageable, deliveryType);
     }
 
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('COURIER')")
+    public Page<AvailableDeliveryDto> listActiveForCurrentCourier(
+        Authentication authentication,
+        @PageableDefault(
+            size = DeliveryListDefaults.PAGE_SIZE,
+            sort = DeliveryListDefaults.SORT_PROPERTY,
+            direction = Sort.Direction.DESC
+        ) Pageable pageable
+    ) {
+        return deliveryService.listActiveForCurrentCourier(authentication, pageable);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<DeliveryDto> create(

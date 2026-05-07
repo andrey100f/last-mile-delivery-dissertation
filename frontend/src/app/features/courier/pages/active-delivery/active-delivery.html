@@ -1,0 +1,271 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <p-confirmDialog />
+
+  <div class="mx-auto w-full max-w-[1100px] p-5">
+    @if (loading()) {
+      <div class="grid gap-4">
+        @for (_row of skeletonRows; track _row) {
+          <p-card>
+            <div class="grid gap-2">
+              <p-skeleton width="11rem" height="1rem" />
+              <p-skeleton width="100%" height="1.2rem" />
+              <p-skeleton width="80%" height="1.2rem" />
+            </div>
+          </p-card>
+        }
+      </div>
+    } @else if (error(); as errorState) {
+      <p-card>
+        <div class="flex flex-col gap-3 p-1">
+          <h2 class="text-lg font-semibold text-p-text-primary">{{ errorState.title }}</h2>
+          <p class="text-sm text-p-text-muted">{{ errorState.message }}</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <p-button label="Retry" icon="pi pi-refresh" (onClick)="reload()" />
+            <p-button [routerLink]="['/courier/requests']" label="Back to requests" />
+          </div>
+        </div>
+      </p-card>
+    } @else if (detail(); as delivery) {
+      <div class="space-y-4">
+        <p-card>
+          <div class="grid gap-3 md:grid-cols-3">
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded-(--p-radius-md) bg-cyan-50 text-cyan-600"
+              >
+                <i class="pi pi-truck text-sm" aria-hidden="true"></i>
+              </span>
+              <div>
+                <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Delivery ID</p>
+                <p class="text-lg font-semibold text-p-text-primary">{{ deliveryCode() }}</p>
+              </div>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Status</p>
+              <app-status-tag [status]="delivery.status" variant="tag" size="md" [showIcon]="true" />
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Weight</p>
+              <p class="text-sm font-semibold text-p-text-primary">{{ delivery.package.weightKg }} kg</p>
+            </div>
+          </div>
+        </p-card>
+
+        <div class="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
+          <div class="space-y-4">
+            <p-card>
+              <div class="space-y-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Delivery Progress</h3>
+                  <p class="text-xs text-p-text-muted">Update status as you complete each step</p>
+                </div>
+                <div class="border-t border-p-surface-border pt-3">
+                  <div class="mb-2 flex items-center justify-between text-xs text-p-text-muted">
+                    <span>Completion</span>
+                    <span>{{ completionPercent() }}%</span>
+                  </div>
+                  <div class="h-2 rounded-full bg-slate-100">
+                    <div
+                      class="h-full rounded-full bg-blue-500 transition-all duration-300"
+                      [style.width.%]="completionPercent()"
+                    ></div>
+                  </div>
+                </div>
+                <div class="space-y-3 border-t border-p-surface-border pt-3">
+                  @for (step of timelineSteps(); track step.status) {
+                    <div
+                      class="rounded-md border p-3"
+                      [class.border-blue-200]="step.current"
+                      [class.bg-blue-50/60]="step.current"
+                      [class.border-p-surface-border]="!step.current"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-2">
+                          <span
+                            class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px]"
+                            [class.bg-emerald-100]="step.completed && !step.current"
+                            [class.text-emerald-700]="step.completed && !step.current"
+                            [class.bg-blue-100]="step.current"
+                            [class.text-blue-700]="step.current"
+                            [class.bg-slate-100]="!step.completed && !step.current"
+                            [class.text-slate-500]="!step.completed && !step.current"
+                          >
+                            <i [class]="step.icon"></i>
+                          </span>
+                          <div>
+                            <p class="text-sm font-semibold text-p-text-primary">{{ step.title }}</p>
+                            <p class="text-xs text-p-text-muted">{{ step.description }}</p>
+                          </div>
+                        </div>
+                        <p class="text-xs text-p-text-muted">
+                          {{ step.recordedAt ? (step.recordedAt | date: 'HH:mm') : '-' }}
+                        </p>
+                      </div>
+                      @if (step.current && currentAction(); as action) {
+                        <div class="mt-3">
+                          <p-button
+                            [label]="action.label"
+                            [icon]="action.icon"
+                            size="small"
+                            [loading]="pendingActionId() === action.id"
+                            [disabled]="actionPending()"
+                            (onClick)="onActionClick(action)"
+                          />
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </p-card>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <p-card>
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-map-marker text-[11px] text-emerald-600" aria-hidden="true"></i>
+                    <h3 class="text-sm font-semibold text-p-text-primary">Pickup</h3>
+                    @if (pickupCompleted()) {
+                      <span
+                        class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                      >
+                        Completed
+                      </span>
+                    }
+                  </div>
+                  <div class="border-t border-p-surface-border pt-3">
+                    <p class="text-sm text-p-text-primary">{{ delivery.pickup.line1 }}</p>
+                    <p class="mt-1 text-xs text-p-text-muted">Contact: {{ delivery.pickup.contactName }}</p>
+                  </div>
+                </div>
+              </p-card>
+
+              <p-card>
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-map-marker text-[11px] text-rose-600" aria-hidden="true"></i>
+                    <h3 class="text-sm font-semibold text-p-text-primary">Destination</h3>
+                    @if (destinationDelivered()) {
+                      <span
+                        class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                      >
+                        Delivered
+                      </span>
+                    }
+                  </div>
+                  <div class="border-t border-p-surface-border pt-3">
+                    <p class="text-sm text-p-text-primary">{{ delivery.destination.line1 }}</p>
+                    <p class="mt-1 text-xs text-p-text-muted">
+                      Contact: {{ delivery.destination.contactName }}
+                    </p>
+                  </div>
+                </div>
+              </p-card>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <p-card>
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-users text-[11px] text-cyan-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Contact Information</h3>
+                </div>
+                <div class="grid gap-3 border-t border-p-surface-border pt-3 md:grid-cols-2">
+                  <div>
+                    <p class="text-[11px] text-p-text-muted">Pickup contact</p>
+                    <p class="text-sm font-semibold text-p-text-primary">{{ delivery.pickup.contactName }}</p>
+                    <p class="text-xs text-p-text-muted">{{ delivery.pickup.contactPhone }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] text-p-text-muted">Destination contact</p>
+                    <p class="text-sm font-semibold text-p-text-primary">{{ delivery.destination.contactName }}</p>
+                    <p class="text-xs text-p-text-muted">{{ delivery.destination.contactPhone }}</p>
+                  </div>
+                </div>
+              </div>
+            </p-card>
+
+            <p-card>
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-exclamation-triangle text-[11px] text-amber-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Package Instructions</h3>
+                </div>
+                <div class="space-y-2 border-t border-p-surface-border pt-3">
+                  <div class="rounded-md bg-amber-50 p-2">
+                    <p class="text-xs font-semibold text-amber-800">Special handling</p>
+                    <p class="text-xs text-amber-700">
+                      {{ delivery.specialInstructions || delivery.package.specialInstructions || 'None provided.' }}
+                    </p>
+                  </div>
+                  <p class="text-xs text-p-text-muted">
+                    {{ delivery.package.description || 'Package' }} ({{ delivery.package.weightKg }} kg)
+                  </p>
+                </div>
+              </div>
+            </p-card>
+
+            <p-card>
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-dollar text-[11px] text-emerald-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Earnings</h3>
+                </div>
+                <div class="space-y-2 border-t border-p-surface-border pt-3">
+                  <div class="flex items-center justify-between text-sm text-p-text-secondary">
+                    <span>Base payment</span>
+                    <span>{{ delivery.baseAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-sm text-p-text-secondary">
+                    <span>Distance bonus</span>
+                    <span>{{ delivery.feeAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
+                  </div>
+                  <div
+                    class="flex items-center justify-between border-t border-p-surface-border pt-2 text-base font-semibold text-emerald-600"
+                  >
+                    <span>Total payout</span>
+                    <span>{{
+                      delivery.totalAmount | currency: delivery.currency : 'symbol' : '1.2-2'
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+            </p-card>
+
+            <div class="space-y-2">
+              @for (action of allowedActions(); track action.id) {
+                <p-button
+                  [label]="action.label"
+                  [icon]="action.icon"
+                  [severity]="action.severity"
+                  styleClass="w-full"
+                  [loading]="pendingActionId() === action.id"
+                  [disabled]="actionPending()"
+                  (onClick)="onActionClick(action)"
+                />
+              }
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <p-button
+                label="Go To Active Deliveries"
+                styleClass="w-full !border-blue-500 !text-blue-500 !bg-transparent hover:!bg-blue-50"
+                [outlined]="true"
+                [disabled]="actionPending()"
+                (onClick)="goToActiveDeliveries()"
+              />
+              <p-button
+                label="Go To Available Requests"
+                styleClass="w-full !border-slate-300 !text-slate-600 !bg-transparent hover:!bg-slate-100"
+                [outlined]="true"
+                [disabled]="actionPending()"
+                (onClick)="goToRequests()"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
