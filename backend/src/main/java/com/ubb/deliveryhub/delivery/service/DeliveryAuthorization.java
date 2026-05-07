@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.domain.Delivery;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.embedded.UserRole;
 import org.springframework.security.access.AccessDeniedException;
@@ -38,6 +39,10 @@ public class DeliveryAuthorization {
         if (hasRole(authentication, UserRole.COURIER)) {
             User assigned = delivery.getCourier();
             if (assigned != null && assigned.getId().equals(principalId)) {
+                return;
+            }
+            // Allow couriers to open details for currently available requests.
+            if (assigned == null && delivery.getStatus() == DeliveryStatus.CREATED) {
                 return;
             }
             throw new AccessDeniedException("Access denied");

@@ -24,6 +24,31 @@ export interface DeliveryListQuery {
   status?: string;
 }
 
+export interface CourierAvailableDeliveriesQuery {
+  page?: number;
+  size?: number;
+  sort?: string;
+  deliveryType?: DeliveryType;
+}
+
+export interface CourierAvailableDeliveryDto {
+  id: string;
+  status: string;
+  deliveryType: DeliveryType;
+  pickupLine1: string;
+  destinationLine1: string;
+  baseAmount: number;
+  feeAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency: string;
+}
+
+export interface CourierAcceptDeliveryResponse {
+  id: string;
+  status: string;
+}
+
 export interface DeliveryAddressDto {
   line1: string;
   contactName: string;

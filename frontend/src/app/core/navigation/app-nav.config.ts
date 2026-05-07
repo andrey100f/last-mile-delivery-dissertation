@@ -55,7 +55,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         roles: [UserRole.CUSTOMER],
       },
       {
-        label: 'Requests',
+        label: 'Available Requests',
         routerCommands: ['courier', 'requests'],
         icon: 'pi pi-inbox',
         roles: [UserRole.COURIER],
