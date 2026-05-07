@@ -35,14 +35,8 @@ export class DeliveryService extends BaseService {
     if (query.sort !== undefined && query.sort.length > 0) {
       params = params.set('sort', query.sort);
     }
-    if (query.status !== undefined) {
-      const statuses = Array.isArray(query.status) ? query.status : [query.status];
-      for (const status of statuses) {
-        if (status.length === 0) {
-          continue;
-        }
-        params = params.append('status', status);
-      }
+    if (query.status !== undefined && query.status.length > 0) {
+      params = params.set('status', query.status);
     }
 
     return this.httpClient.get<PageDto<DeliverySummaryDto>>(

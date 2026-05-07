@@ -126,7 +126,7 @@ HTTP calls will target **`/api`** on the dev server and be forwarded to the back
 
 ## Customer dashboard data strategy (#35)
 
-- The customer dashboard at `/customer` uses `GET /api/v1/deliveries` through `DeliveryService.list({ page, size, sort })`.
+- The customer dashboard at `/customer` uses `GET /api/deliveries` through `DeliveryService.list({ page, size, sort })`.
 - Current implementation follows strategy **A** (MVP-safe): the frontend requests the latest page (`sort=createdAt,desc`) and filters active statuses client-side.
 - Terminal statuses excluded from the active table are `DELIVERED`, `CANCELLED`, and `FAILED`.
 - The table links use real delivery ids for `/customer/delivery/:id` and `/customer/tracking/:id`; tracking/detail pages can remain stubs until dedicated tasks are delivered.

@@ -83,7 +83,11 @@
             <ng-template #body let-delivery>
               <tr
                 class="cursor-pointer text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover"
-                [routerLink]="['/customer/delivery', delivery.id]"
+                role="link"
+                tabindex="0"
+                (click)="openDeliveryDetails(delivery.id)"
+                (keydown.enter)="openDeliveryDetails(delivery.id)"
+                (keydown.space)="onRowSpace($event, delivery.id)"
               >
                 <td class="w-44 px-4 py-3.5 align-top">
                   <span class="text-[13px] font-medium text-p-primary">{{ delivery.shortId }}</span>
@@ -98,7 +102,7 @@
                   {{ delivery.courierName }}
                 </td>
                 <td class="w-36 px-4 py-3.5 align-top text-[13px] font-medium text-p-text-primary">
-                  {{ formatAmount(delivery.totalAmount, delivery.currency) }}
+                  {{ delivery.totalAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}
                 </td>
                 <td class="w-36 px-4 py-3.5 align-top">
                   <app-status-tag [status]="delivery.status" size="sm" />

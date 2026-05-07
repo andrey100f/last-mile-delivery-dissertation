@@ -1,3 +1,4 @@
+import { CurrencyPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DeliveryService } from '@core/services/delivery/delivery';
 import {
   DeliverySummaryDto,
@@ -15,6 +16,7 @@ import {
 } from '@core/services/enum/delivery.types';
 import {
   DeliveryStatus,
+  normalizeDeliveryStatus,
   StatusTagComponent,
   TableEmptyStateComponent,
 } from '@shared/ui/public-api';
@@ -44,6 +46,7 @@ interface DashboardStatCard {
 @Component({
   selector: 'app-customer-home',
   imports: [
+    CurrencyPipe,
     TableModule,
     StatusTagComponent,
     TableEmptyStateComponent,
@@ -62,6 +65,7 @@ export class CustomerHome {
 
   private readonly deliveryService = inject(DeliveryService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
   protected readonly deliveries = signal<CustomerDeliveryRow[]>([]);
@@ -73,7 +77,8 @@ export class CustomerHome {
     const activeDeliveries = this.deliveries().length;
     const fetched = this.pageDeliveries();
     const pendingPickup = fetched.filter(
-      (delivery) => this.normalizeStatus(delivery.status) === DeliveryStatus.CREATED,
+      (delivery) =>
+        normalizeDeliveryStatus(delivery.status) === DeliveryStatus.CREATED,
     ).length;
 
     return [
@@ -103,6 +108,15 @@ export class CustomerHome {
 
   constructor() {
     this.loadCustomerDeliveries();
+  }
+
+  protected openDeliveryDetails(deliveryId: string): void {
+    void this.router.navigate(['/customer/delivery', deliveryId]);
+  }
+
+  protected onRowSpace(event: Event, deliveryId: string): void {
+    event.preventDefault();
+    this.openDeliveryDetails(deliveryId);
   }
 
   private loadCustomerDeliveries(): void {
@@ -149,11 +163,7 @@ export class CustomerHome {
   }
 
   private isActiveDeliveryStatus(status: string | DeliveryStatus): boolean {
-    return !CustomerHome.TERMINAL_STATUSES.has(this.normalizeStatus(status));
-  }
-
-  private normalizeStatus(status: string | DeliveryStatus): string {
-    return status.trim().toUpperCase().replaceAll('-', '_').replaceAll(' ', '_');
+    return !CustomerHome.TERMINAL_STATUSES.has(normalizeDeliveryStatus(status));
   }
 
   private emptyPage(): PageDto<DeliverySummaryDto> {
@@ -176,18 +186,5 @@ export class CustomerHome {
 
   private toDeliveryCode(id: string): string {
     return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
-  }
-
-  protected formatAmount(value: number, currency: string): string {
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
-    } catch {
-      return `${value.toFixed(2)} ${currency}`;
-    }
   }
 }

@@ -21,7 +21,7 @@ export interface DeliveryListQuery {
   page?: number;
   size?: number;
   sort?: string;
-  status?: string | readonly string[];
+  status?: string;
 }
 
 export type DeliveryType = 'STANDARD' | 'EXPRESS';
