@@ -44,11 +44,6 @@ export interface CourierAvailableDeliveryDto {
   currency: string;
 }
 
-export interface CourierAcceptDeliveryResponse {
-  id: string;
-  status: string;
-}
-
 export interface DeliveryAddressDto {
   line1: string;
   contactName: string;

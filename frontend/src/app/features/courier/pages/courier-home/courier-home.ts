@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { DeliveryType } from '@core/services/enum/delivery.types';
 import { TableEmptyStateComponent } from '@shared/ui/public-api';
+import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { catchError, finalize, of } from 'rxjs';
@@ -75,7 +76,7 @@ export class CourierHome {
         this.availableRequests.set(
           response.content.map((item) => ({
             id: item.id,
-            shortId: this.toDeliveryCode(item.id),
+            shortId: formatDeliveryCode(item.id),
             destination: this.toDisplayPlace(item.destinationLine1),
             destinationHint: `from ${this.toDisplayPlace(item.pickupLine1)}`,
             deliveryType: this.normalizeDeliveryType(item.deliveryType),
@@ -93,10 +94,6 @@ export class CourierHome {
   protected onRowSpace(event: Event, deliveryId: string): void {
     event.preventDefault();
     this.openDetails(deliveryId);
-  }
-
-  private toDeliveryCode(id: string): string {
-    return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
   }
 
   private normalizeDeliveryType(value: unknown): DeliveryType {

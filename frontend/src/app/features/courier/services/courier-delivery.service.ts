@@ -3,7 +3,6 @@ import { Injectable, inject } from '@angular/core';
 import { BaseService } from '@core/services/base.service';
 import { DeliveryService } from '@core/services/delivery/delivery';
 import {
-  CourierAcceptDeliveryResponse,
   CourierAvailableDeliveriesQuery,
   CourierAvailableDeliveryDto,
   DeliveryDetailDto,
@@ -54,8 +53,8 @@ export class CourierDeliveryService extends BaseService {
     return this.deliveryService.getById(id);
   }
 
-  acceptDelivery(id: string): Observable<CourierAcceptDeliveryResponse> {
-    return this.httpClient.post<CourierAcceptDeliveryResponse>(
+  acceptDelivery(id: string): Observable<DeliveryDetailDto> {
+    return this.httpClient.post<DeliveryDetailDto>(
       `${this.baseUrl}/deliveries/${id}/accept`,
       {},
     );

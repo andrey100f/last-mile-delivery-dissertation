@@ -14,6 +14,7 @@ import {
   PageDto,
 } from '@core/services/enum/delivery.types';
 import { TableEmptyStateComponent } from '@shared/ui/public-api';
+import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
@@ -172,7 +173,7 @@ export class DeliveryRequestsPage {
         this.requests.set(
           content.map((item) => ({
             id: item.id,
-            shortId: this.toDeliveryCode(item.id),
+            shortId: formatDeliveryCode(item.id),
             status: item.status || 'CREATED',
             deliveryType: item.deliveryType ?? 'STANDARD',
             pickupLine1: this.toDisplayPlace(item.pickupLine1),
@@ -191,10 +192,6 @@ export class DeliveryRequestsPage {
   private toDisplayPlace(value: string | null | undefined): string {
     const normalized = value?.trim();
     return normalized && normalized.length > 0 ? normalized : 'Address unavailable';
-  }
-
-  private toDeliveryCode(id: string): string {
-    return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
   }
 
   private async navigateToActiveDelivery(deliveryId: string): Promise<void> {

@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { DeliveryDetailDto } from '@core/services/enum/delivery.types';
 import { DeliveryStatus, normalizeDeliveryStatus } from '@shared/ui/public-api';
+import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
@@ -175,7 +176,7 @@ export class CourierDeliveryDetailPage {
           return;
         }
         this.pageHeaderService.setOverride(
-          `Delivery Request ${this.toDeliveryCode(detail.id)}`,
+          `Delivery Request ${formatDeliveryCode(detail.id)}`,
           'Review delivery details before accepting',
         );
       }),
@@ -188,9 +189,5 @@ export class CourierDeliveryDetailPage {
     if (!navigated) {
       await this.router.navigate(['/courier/delivery', deliveryId]);
     }
-  }
-
-  private toDeliveryCode(id: string): string {
-    return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
   }
 }
