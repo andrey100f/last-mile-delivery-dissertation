@@ -1,3 +1,73 @@
 .top-bar {
   box-shadow: var(--p-shadow-sm);
 }
+
+.top-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary-color) 65%, white);
+  background: transparent;
+  color: var(--p-primary-color);
+  padding: 0.52rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.top-action-btn:hover {
+  background: color-mix(in srgb, var(--p-primary-color) 12%, white);
+  border-color: var(--p-primary-color);
+}
+
+.top-action-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--p-primary-color) 25%, transparent),
+    0 0 0 4px var(--p-surface-section);
+}
+
+.top-action-btn-icon {
+  font-size: 0.95rem;
+}
+
+.top-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--p-red-500) 65%, white);
+  background: transparent;
+  color: var(--p-red-600);
+  padding: 0.52rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.top-logout-btn:hover {
+  background: color-mix(in srgb, var(--p-red-500) 12%, white);
+  border-color: var(--p-red-500);
+}
+
+.top-logout-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--p-red-500) 25%, transparent),
+    0 0 0 4px var(--p-surface-section);
+}
+
+.top-logout-btn-icon {
+  font-size: 0.95rem;
+}

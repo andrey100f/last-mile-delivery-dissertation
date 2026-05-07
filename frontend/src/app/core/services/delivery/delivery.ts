@@ -5,11 +5,12 @@ import { BaseService } from '@core/services/base.service';
 import {
   CreateDeliveryRequest,
   DeliveryCreatedResponse,
+  DeliveryDetailDto,
   DeliveryListQuery,
   DeliverySummaryDto,
   PageDto,
 } from '@core/services/enum/delivery.types';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -51,6 +52,94 @@ export class DeliveryService extends BaseService {
     query: DeliveryListQuery = {},
   ): Observable<PageDto<DeliverySummaryDto>> {
     return this.list(query);
+  }
+
+  getById(id: string): Observable<DeliveryDetailDto> {
+    return this.httpClient
+      .get<
+        Partial<DeliveryDetailDto> & {
+          delivery_status_history?: unknown[];
+          pickupAddress?: unknown;
+          destinationAddress?: unknown;
+          packageData?: unknown;
+          packageDetails?: unknown;
+          packageWeightKg?: unknown;
+          packageDescription?: unknown;
+          publicTrackingCode?: unknown;
+          pickupLine1?: unknown;
+          destinationLine1?: unknown;
+          pricing?: {
+            baseAmount?: unknown;
+            feeAmount?: unknown;
+            taxAmount?: unknown;
+            totalAmount?: unknown;
+            currency?: unknown;
+          };
+        }
+      >(
+        `${this.baseUrl}/deliveries/${id}`,
+      )
+      .pipe(
+        map((response) => {
+          const timelineSource =
+            response.timeline ?? response.delivery_status_history ?? [];
+          const pickupSource = response.pickup ?? response.pickupAddress;
+          const destinationSource =
+            response.destination ?? response.destinationAddress;
+          const packageSource =
+            response.package ?? response.packageData ?? response.packageDetails;
+          const pricing = response.pricing ?? {};
+
+          return {
+            id: typeof response.id === 'string' ? response.id : id,
+            trackingCode:
+              typeof response.trackingCode === 'string'
+                ? response.trackingCode
+                : typeof response.publicTrackingCode === 'string'
+                  ? response.publicTrackingCode
+                  : null,
+            status:
+              typeof response.status === 'string' ? response.status : 'CREATED',
+            pickup: this.toAddressDto(pickupSource, response.pickupLine1),
+            destination: this.toAddressDto(
+              destinationSource,
+              response.destinationLine1,
+            ),
+            package: this.toPackageDto(packageSource, {
+              weightKg: response.packageWeightKg,
+              description: response.packageDescription,
+              specialInstructions: response.specialInstructions,
+            }),
+            specialInstructions:
+              typeof response.specialInstructions === 'string'
+                ? response.specialInstructions
+                : null,
+            deliveryType:
+              typeof response.deliveryType === 'string'
+                ? response.deliveryType
+                : 'STANDARD',
+            baseAmount: this.toNumber(response.baseAmount, pricing.baseAmount),
+            feeAmount: this.toNumber(response.feeAmount, pricing.feeAmount),
+            taxAmount: this.toNumber(response.taxAmount, pricing.taxAmount),
+            totalAmount: this.toNumber(response.totalAmount, pricing.totalAmount),
+            currency:
+              typeof response.currency === 'string'
+                ? response.currency
+                : typeof pricing.currency === 'string'
+                  ? pricing.currency
+                  : 'USD',
+            courier:
+              response.courier && typeof response.courier === 'object'
+                ? this.toCourierDto(response.courier)
+                : null,
+            timeline: Array.isArray(timelineSource)
+              ? timelineSource
+                  .map((item) => this.toTimelineEntry(item))
+                  .filter((item): item is NonNullable<typeof item> => !!item)
+              : [],
+          } satisfies DeliveryDetailDto;
+        }),
+      );
   }
 
   applyValidationErrors(
@@ -132,5 +221,177 @@ export class DeliveryService extends BaseService {
       .replaceAll('[', '.')
       .replaceAll(']', '')
       .replace(/^package(Data|Details)(\.|$)/, 'package$2');
+  }
+
+  private toTimelineEntry(item: unknown): { status: string; recordedAt: string } | null {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+
+    const entry = item as {
+      status?: unknown;
+      recordedAt?: unknown;
+      recorded_at?: unknown;
+    };
+    const status = typeof entry.status === 'string' ? entry.status : null;
+    const recordedAtRaw =
+      typeof entry.recordedAt === 'string'
+        ? entry.recordedAt
+        : typeof entry.recorded_at === 'string'
+          ? entry.recorded_at
+          : null;
+
+    if (!status || !recordedAtRaw) {
+      return null;
+    }
+
+    return {
+      status,
+      recordedAt: recordedAtRaw,
+    };
+  }
+
+  private toAddressDto(
+    source: unknown,
+    fallbackLine1?: unknown,
+  ): DeliveryDetailDto['pickup'] {
+    if (!source || typeof source !== 'object') {
+      return {
+        line1: typeof fallbackLine1 === 'string' ? fallbackLine1 : '-',
+        contactName: '-',
+        contactPhone: '-',
+      };
+    }
+
+    const value = source as {
+      line1?: unknown;
+      contactName?: unknown;
+      contactPhone?: unknown;
+    };
+
+    return {
+      line1:
+        typeof value.line1 === 'string'
+          ? value.line1
+          : typeof fallbackLine1 === 'string'
+            ? fallbackLine1
+            : '-',
+      contactName:
+        typeof value.contactName === 'string' ? value.contactName : '-',
+      contactPhone:
+        typeof value.contactPhone === 'string' ? value.contactPhone : '-',
+    };
+  }
+
+  private toPackageDto(
+    source: unknown,
+    fallback?: {
+      weightKg?: unknown;
+      description?: unknown;
+      specialInstructions?: unknown;
+    },
+  ): DeliveryDetailDto['package'] {
+    if (!source || typeof source !== 'object') {
+      return {
+        description:
+          typeof fallback?.description === 'string' ? fallback.description : null,
+        weightKg: this.toNumber(fallback?.weightKg),
+        lengthCm: null,
+        widthCm: null,
+        heightCm: null,
+        fragile: null,
+        specialInstructions:
+          typeof fallback?.specialInstructions === 'string'
+            ? fallback.specialInstructions
+            : null,
+      };
+    }
+
+    const value = source as {
+      description?: unknown;
+      weightKg?: unknown;
+      lengthCm?: unknown;
+      widthCm?: unknown;
+      heightCm?: unknown;
+      fragile?: unknown;
+      specialInstructions?: unknown;
+    };
+
+    return {
+      description:
+        typeof value.description === 'string'
+          ? value.description
+          : typeof fallback?.description === 'string'
+            ? fallback.description
+            : null,
+      weightKg: this.toNumber(value.weightKg, fallback?.weightKg),
+      lengthCm: this.toNullableNumber(value.lengthCm),
+      widthCm: this.toNullableNumber(value.widthCm),
+      heightCm: this.toNullableNumber(value.heightCm),
+      fragile:
+        typeof value.fragile === 'boolean'
+          ? value.fragile
+          : value.fragile === 'true'
+            ? true
+            : value.fragile === 'false'
+              ? false
+              : null,
+      specialInstructions:
+        typeof value.specialInstructions === 'string'
+          ? value.specialInstructions
+          : typeof fallback?.specialInstructions === 'string'
+            ? fallback.specialInstructions
+            : null,
+    };
+  }
+
+  private toCourierDto(source: unknown): DeliveryDetailDto['courier'] {
+    if (!source || typeof source !== 'object') {
+      return null;
+    }
+
+    const value = source as {
+      id?: unknown;
+      fullName?: unknown;
+      displayName?: unknown;
+      phone?: unknown;
+    };
+
+    const id = typeof value.id === 'string' ? value.id : '';
+    const fullName =
+      typeof value.fullName === 'string'
+        ? value.fullName
+        : typeof value.displayName === 'string'
+          ? value.displayName
+          : 'Courier';
+
+    return {
+      id,
+      fullName,
+      phone: typeof value.phone === 'string' ? value.phone : null,
+    };
+  }
+
+  private toNullableNumber(value: unknown): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    return this.toNumber(value);
+  }
+
+  private toNumber(primary: unknown, fallback?: unknown): number {
+    const values = [primary, fallback];
+    for (const value of values) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+    }
+    return 0;
   }
 }

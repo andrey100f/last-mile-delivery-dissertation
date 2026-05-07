@@ -12,13 +12,26 @@
   <ng-content select="[topbar-actions]"></ng-content>
 
   <div class="flex items-center gap-2">
+    @if (action(); as topAction) {
+      <button
+        type="button"
+        class="top-action-btn"
+        (click)="runHeaderAction()"
+      >
+        @if (topAction.icon) {
+          <i [class]="topAction.icon + ' top-action-btn-icon'" aria-hidden="true"></i>
+        }
+        <span>{{ topAction.label }}</span>
+      </button>
+    }
+
     <button
       type="button"
-      class="inline-flex cursor-pointer items-center gap-2 rounded-(--p-radius-md) px-3 py-2 text-sm font-medium text-p-text-secondary transition-colors hover:bg-p-surface-hover hover:text-[var(--p-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-p-primary focus-visible:ring-offset-2 focus-visible:ring-offset-p-surface-section"
+      class="top-logout-btn"
       aria-label="Log out"
       (click)="logout()"
     >
-      <i class="pi pi-sign-out text-sm" aria-hidden="true"></i>
+      <i class="pi pi-sign-out top-logout-btn-icon" aria-hidden="true"></i>
       <span>Log out</span>
     </button>
   </div>

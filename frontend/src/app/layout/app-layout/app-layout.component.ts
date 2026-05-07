@@ -12,6 +12,7 @@ import { navSectionsForRole } from '@core/navigation/app-nav.utils';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
 import { UserService } from '@core/services/user/user';
+import { PageHeaderService } from '../page-header/page-header.service';
 import { filter } from 'rxjs';
 import { displayNameFromEmail, initialsFromEmail } from '../layout-user.utils';
 import { TopBarComponent } from '../top-bar/top-bar.component';
@@ -27,10 +28,18 @@ export class AppLayoutComponent {
   private readonly userService = inject(UserService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly pageHeaderService = inject(PageHeaderService);
 
   protected readonly navSections = computed(() => navSectionsForRole(this.auth.sessionRole()));
-  protected readonly pageTitle = signal('Dashboard');
-  protected readonly pageSubtitle = signal<string | null>(null);
+  private readonly routeTitle = signal('Dashboard');
+  private readonly routeSubtitle = signal<string | null>(null);
+  protected readonly pageTitle = computed(
+    () => this.pageHeaderService.titleOverride() ?? this.routeTitle(),
+  );
+  protected readonly pageSubtitle = computed(() => {
+    const override = this.pageHeaderService.subtitleOverride();
+    return override === undefined ? this.routeSubtitle() : override;
+  });
 
   protected readonly rolePortalTagline = computed(() => {
     switch (this.auth.sessionRole()) {
@@ -69,8 +78,8 @@ export class AppLayoutComponent {
   }
 
   private refreshRouteHeader(): void {
-    this.pageTitle.set(this.readCurrentPageTitle());
-    this.pageSubtitle.set(this.readCurrentPageSubtitle());
+    this.routeTitle.set(this.readCurrentPageTitle());
+    this.routeSubtitle.set(this.readCurrentPageSubtitle());
   }
 
   private readCurrentPageTitle(): string {
