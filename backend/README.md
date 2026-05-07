@@ -154,3 +154,17 @@ Response rows include:
 - route summary: `pickupLine1`, `destinationLine1`
 - pricing snapshot: `baseAmount`, `feeAmount`, `taxAmount`, `totalAmount`, `currency`
 - placeholders for future matching signals: `distanceKm`, `etaMinutes` (`null` in current implementation)
+
+## Courier accept delivery (POST `/api/deliveries/{id}/accept`)
+
+Courier role only (`ROLE_COURIER`). Accept is transactional and concurrency-safe using a pessimistic row lock (`PESSIMISTIC_WRITE`) on the selected delivery:
+
+- acquires lock on delivery row by id
+- re-checks assignable conditions under lock (`status=CREATED`, `courier_id IS NULL`)
+- sets assignment atomically (`courier_id=current courier`, `status=ASSIGNED`)
+- appends `ASSIGNED` entry in `delivery_status_history` in the same transaction
+
+Conflict semantics:
+
+- returns `409 Conflict` with RFC 7807 payload and stable machine code `DELIVERY_TAKEN` when another courier already claimed the delivery or it is no longer assignable
+- returns `404` when delivery id does not exist

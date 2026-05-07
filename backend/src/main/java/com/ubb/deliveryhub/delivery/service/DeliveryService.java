@@ -11,6 +11,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
+import com.ubb.deliveryhub.delivery.domain.exception.DeliveryTakenException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
@@ -122,6 +123,33 @@ public class DeliveryService {
         Pageable effective = applyDefaultSort(pageable);
         return deliveryRepository.findAvailableForCourier(ASSIGNABLE_STATUSES, deliveryType, effective)
             .map(DeliveryMapper::toAvailableDto);
+    }
+
+    @Transactional
+    public DeliveryDetailDto acceptForCurrentCourier(UUID deliveryId, Authentication authentication) {
+        UUID courierId = principalUserId(authentication);
+        User courier = userRepository.findById(courierId)
+            .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(courierId)));
+
+        Delivery delivery = deliveryRepository.findWithCustomerAndCourierByIdForUpdate(deliveryId)
+            .orElseThrow(DeliveryNotFoundException::new);
+
+        if (delivery.getCourier() != null || !ASSIGNABLE_STATUSES.contains(delivery.getStatus())) {
+            throw new DeliveryTakenException();
+        }
+
+        delivery.setCourier(courier);
+        delivery.setStatus(DeliveryStatus.ASSIGNED);
+
+        DeliveryStatusHistory historyEntry = new DeliveryStatusHistory();
+        historyEntry.setDelivery(delivery);
+        historyEntry.setStatus(DeliveryStatus.ASSIGNED);
+        historyEntry.setActor(courier);
+        deliveryStatusHistoryRepository.save(historyEntry);
+
+        Delivery saved = deliveryRepository.save(delivery);
+        var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
+        return DeliveryMapper.toDetailDto(saved, history);
     }
 
     private static UUID principalUserId(Authentication authentication) {
