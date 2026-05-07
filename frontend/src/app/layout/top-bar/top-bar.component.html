@@ -3,7 +3,12 @@
   role="banner"
 >
   <div class="min-w-0 flex-1">
-    <h1 class="truncate text-base font-semibold leading-tight text-p-text-primary">{{ title() }}</h1>
+    <h1 class="truncate text-base font-semibold leading-tight text-p-text-primary">
+      {{ titleParts().beforeCode }}
+      @if (titleParts().code; as deliveryCode) {
+        <span class="top-title-delivery-code">{{ deliveryCode }}</span>
+      }
+    </h1>
     @if (subtitle(); as subtitleText) {
       <p class="mt-1 truncate text-xs leading-snug text-p-text-muted">{{ subtitleText }}</p>
     }

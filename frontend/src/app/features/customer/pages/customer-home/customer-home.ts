@@ -20,6 +20,7 @@ import {
   StatusTagComponent,
   TableEmptyStateComponent,
 } from '@shared/ui/public-api';
+import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { catchError, finalize, of } from 'rxjs';
@@ -152,7 +153,7 @@ export class CustomerHome {
 
     return {
       id: delivery.id,
-      shortId: this.toDeliveryCode(delivery.id),
+      shortId: formatDeliveryCode(delivery.id),
       status: delivery.status,
       destination,
       destinationHint: `from ${pickup}`,
@@ -182,9 +183,5 @@ export class CustomerHome {
   ): string {
     const normalized = value?.trim();
     return normalized && normalized.length > 0 ? normalized : fallback;
-  }
-
-  private toDeliveryCode(id: string): string {
-    return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
   }
 }

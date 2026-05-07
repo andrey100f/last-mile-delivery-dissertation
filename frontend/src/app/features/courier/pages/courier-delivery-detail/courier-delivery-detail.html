@@ -1,0 +1,168 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="mx-auto w-full max-w-[1100px] p-5">
+    @if (loading()) {
+      <div class="grid gap-4">
+        @for (_row of skeletonRows; track _row) {
+          <p-card>
+            <div class="grid gap-2">
+              <p-skeleton width="10rem" height="1rem" />
+              <p-skeleton width="100%" height="1.2rem" />
+              <p-skeleton width="70%" height="1.2rem" />
+            </div>
+          </p-card>
+        }
+      </div>
+    } @else if (error(); as errorState) {
+      <p-card>
+        <div class="flex flex-col gap-3 p-1">
+          <h2 class="text-lg font-semibold text-p-text-primary">{{ errorState.title }}</h2>
+          <p class="text-sm text-p-text-muted">{{ errorState.message }}</p>
+          <div class="mt-2">
+            <a pButton [routerLink]="['/courier/requests']" label="Back to requests"></a>
+          </div>
+        </div>
+      </p-card>
+    } @else if (detail(); as delivery) {
+      <div class="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div class="space-y-4">
+          <p-card>
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-50 text-blue-500">
+                  <i class="pi pi-box text-[10px]" aria-hidden="true"></i>
+                </span>
+                <h3 class="text-sm font-semibold text-p-text-primary">Delivery Information</h3>
+              </div>
+              <div class="space-y-2 border-t border-p-surface-border pt-3">
+                <div>
+                  <p class="text-[11px] text-p-text-muted">Package Description</p>
+                  <p class="text-sm text-p-text-primary">{{ delivery.package.description || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-[11px] text-p-text-muted">Weight</p>
+                  <p class="text-sm text-p-text-primary">{{ delivery.package.weightKg }} kg</p>
+                </div>
+                <div>
+                  <p class="text-[11px] text-p-text-muted">Special instructions</p>
+                  <p class="text-sm text-p-text-primary">
+                    {{ delivery.specialInstructions || delivery.package.specialInstructions || '-' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <p-card>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-map-marker text-[11px] text-emerald-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Pickup Location</h3>
+                </div>
+                <div class="border-t border-p-surface-border pt-3">
+                  <p class="text-[11px] text-p-text-muted">Address</p>
+                  <p class="text-sm text-p-text-primary">{{ delivery.pickup.line1 }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-user text-[11px] text-p-text-muted" aria-hidden="true"></i>
+                  <p class="text-sm text-p-text-primary">{{ delivery.pickup.contactName }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-phone text-[11px] text-p-text-muted" aria-hidden="true"></i>
+                  <p class="text-sm text-p-text-primary">{{ delivery.pickup.contactPhone }}</p>
+                </div>
+              </div>
+            </p-card>
+
+            <p-card>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-map-marker text-[11px] text-rose-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Destination</h3>
+                </div>
+                <div class="border-t border-p-surface-border pt-3">
+                  <p class="text-[11px] text-p-text-muted">Address</p>
+                  <p class="text-sm text-p-text-primary">{{ delivery.destination.line1 }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-user text-[11px] text-p-text-muted" aria-hidden="true"></i>
+                  <p class="text-sm text-p-text-primary">{{ delivery.destination.contactName }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-phone text-[11px] text-p-text-muted" aria-hidden="true"></i>
+                  <p class="text-sm text-p-text-primary">{{ delivery.destination.contactPhone }}</p>
+                </div>
+              </div>
+            </p-card>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <p-card>
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-dollar text-[11px] text-emerald-600" aria-hidden="true"></i>
+                <h3 class="text-sm font-semibold text-p-text-primary">Earnings</h3>
+              </div>
+              <div class="space-y-2 border-t border-p-surface-border pt-3">
+                <div class="flex items-center justify-between text-sm text-p-text-secondary">
+                  <span>Base Payment</span>
+                  <span>{{ delivery.baseAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
+                </div>
+                <div
+                  class="flex items-center justify-between border-t border-p-surface-border pt-2 text-base font-semibold text-emerald-600"
+                >
+                  <span>Your Earnings</span>
+                  <span>{{
+                    delivery.totalAmount | currency: delivery.currency : 'symbol' : '1.2-2'
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card>
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-clock text-[11px] text-cyan-600" aria-hidden="true"></i>
+                <h3 class="text-sm font-semibold text-p-text-primary">Delivery Details</h3>
+              </div>
+              <div class="space-y-2 border-t border-p-surface-border pt-3 text-sm">
+                <div>
+                  <p class="text-[11px] text-p-text-muted">Delivery Type</p>
+                  <p class="text-p-text-primary">
+                    {{ delivery.deliveryType === 'EXPRESS' ? 'Express' : 'Standard' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            </p-card>
+
+          <div class="mt-1 flex flex-col gap-3">
+            <p-button
+              label="Accept Delivery"
+              styleClass="w-full !bg-emerald-500 hover:!bg-emerald-600 !border-emerald-500 hover:!border-emerald-600"
+              [loading]="accepting()"
+              [disabled]="!canAccept() || accepting()"
+              (onClick)="acceptDelivery()"
+            />
+            <p-button
+              label="Decline"
+              severity="danger"
+              [outlined]="true"
+              styleClass="w-full !rounded-md !border-red-500 !text-red-600 !bg-transparent hover:!bg-red-50"
+              (onClick)="declineRequest()"
+            />
+            <p-button
+              label="Go Back To Available Requests"
+              severity="primary"
+              [outlined]="true"
+              styleClass="w-full !rounded-md !border-blue-500 !text-blue-500 !bg-transparent hover:!bg-blue-50"
+              (onClick)="goBack()"
+            />
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

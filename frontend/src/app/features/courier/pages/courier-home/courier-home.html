@@ -1,73 +1,104 @@
 <div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
-  <div class="space-y-4 p-5">
-    <div
-      class="flex items-center justify-between rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-4 py-3"
-    >
-      <div>
-        <p class="text-xs text-p-text-muted">Current assignment</p>
-        <p class="text-sm font-semibold text-p-text-primary">Courier status</p>
-      </div>
-      @if (currentStatus(); as status) {
-        <app-status-tag [status]="status" [showIcon]="true" />
-      } @else {
-        <span class="text-sm text-p-text-muted">No active assignment</span>
-      }
-    </div>
-
-    <div
-      class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
-    >
-      <div class="border-b border-p-surface-border px-4 py-3">
-        <h2 class="text-sm font-semibold text-p-text-primary">Available requests</h2>
-        <p class="mt-1 text-xs text-p-text-muted">
-          Shared empty/loading table pattern for list pages.
-        </p>
+  <div class="p-5">
+    <section>
+      <div class="mb-3">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-p-text-primary">Available Requests</h3>
+          <a
+            [routerLink]="['/courier/requests']"
+            class="inline-flex items-center justify-center rounded-(--p-radius-md) px-4 py-2 text-sm font-semibold text-blue-500 transition-colors hover:bg-slate-100 hover:text-blue-600"
+          >
+            View All
+          </a>
+        </div>
       </div>
 
-      <p-table [value]="availableRequests()" [loading]="loading()" size="small">
-        <ng-template #header>
-          <tr>
-            <th>Request</th>
-            <th>Pickup</th>
-            <th>Dropoff</th>
-            <th>Status</th>
-          </tr>
-        </ng-template>
-
-        <ng-template #body let-request>
-          <tr>
-            <td class="font-medium text-p-text-primary">{{ request.id }}</td>
-            <td>{{ request.pickup }}</td>
-            <td>{{ request.dropoff }}</td>
-            <td>
-              <app-status-tag [status]="request.status" size="sm" />
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="4">
-              <app-table-empty-state
-                title="No requests available"
-                message="Pickup requests will appear here when courier assignment APIs are available."
-                icon="pi pi-search"
-              />
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template #loadingbody>
-          @for (_row of loadingSkeletonRows; track _row) {
-            <tr>
-              <td><p-skeleton height="1rem" width="5rem" /></td>
-              <td><p-skeleton height="1rem" width="7rem" /></td>
-              <td><p-skeleton height="1rem" width="7rem" /></td>
-              <td><p-skeleton height="1rem" width="5rem" /></td>
+      <div
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
+      >
+        <p-table [value]="availableRequests()" [loading]="loading()" size="small" styleClass="delivery-list-table">
+          <ng-template #header>
+            <tr class="border-b border-p-surface-border bg-p-surface-ground">
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                ID
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Route
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Priority
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Payment
+              </th>
             </tr>
-          }
-        </ng-template>
-      </p-table>
-    </div>
+          </ng-template>
+
+          <ng-template #body let-request>
+            <tr
+              class="cursor-pointer text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover"
+              role="link"
+              tabindex="0"
+              (click)="openDetails(request.id)"
+              (keydown.enter)="openDetails(request.id)"
+              (keydown.space)="onRowSpace($event, request.id)"
+            >
+              <td class="w-44 px-4 py-3.5 align-top">
+                <span class="text-[13px] font-medium text-p-primary">{{ request.shortId }}</span>
+              </td>
+              <td class="min-w-72 px-4 py-3.5 align-top">
+                <div class="flex flex-col items-start gap-0.5">
+                  <span class="text-[13px] leading-5 text-p-text-primary">{{ request.destination }}</span>
+                  <span class="text-[11px] leading-4 text-p-text-muted">{{ request.destinationHint }}</span>
+                </div>
+              </td>
+              <td class="w-40 px-4 py-3.5 align-top">
+                @if (request.deliveryType === 'EXPRESS') {
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                  >
+                    <i class="pi pi-bolt text-[10px]" aria-hidden="true"></i>
+                    Express
+                  </span>
+                } @else {
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                  >
+                    <i class="pi pi-box text-[10px]" aria-hidden="true"></i>
+                    Standard
+                  </span>
+                }
+              </td>
+              <td class="w-36 px-4 py-3.5 align-top text-[13px] font-semibold text-emerald-600">
+                {{ request.totalAmount | currency: request.currency : 'symbol' : '1.2-2' }}
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4">
+                <app-table-empty-state
+                  title="No available requests"
+                  message="New requests will show up here when they are unassigned."
+                  icon="pi pi-search"
+                />
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #loadingbody>
+            @for (_row of loadingSkeletonRows; track _row) {
+              <tr>
+                <td><p-skeleton height="1rem" width="8rem" /></td>
+                <td><p-skeleton height="1rem" width="12rem" /></td>
+                <td><p-skeleton height="1rem" width="7rem" /></td>
+                <td><p-skeleton height="1rem" width="6rem" /></td>
+              </tr>
+            }
+          </ng-template>
+        </p-table>
+      </div>
+    </section>
   </div>
 </div>

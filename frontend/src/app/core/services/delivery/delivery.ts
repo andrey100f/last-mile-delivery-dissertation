@@ -261,7 +261,7 @@ export class DeliveryService extends BaseService {
   ): DeliveryDetailDto['pickup'] {
     if (!source || typeof source !== 'object') {
       return {
-        line1: typeof fallbackLine1 === 'string' ? fallbackLine1 : '-',
+        line1: this.toDisplayText(fallbackLine1, '-'),
         contactName: '-',
         contactPhone: '-',
       };
@@ -274,16 +274,9 @@ export class DeliveryService extends BaseService {
     };
 
     return {
-      line1:
-        typeof value.line1 === 'string'
-          ? value.line1
-          : typeof fallbackLine1 === 'string'
-            ? fallbackLine1
-            : '-',
-      contactName:
-        typeof value.contactName === 'string' ? value.contactName : '-',
-      contactPhone:
-        typeof value.contactPhone === 'string' ? value.contactPhone : '-',
+      line1: this.toDisplayText(value.line1, this.toDisplayText(fallbackLine1, '-')),
+      contactName: this.toDisplayText(value.contactName, '-'),
+      contactPhone: this.toDisplayText(value.contactPhone, '-'),
     };
   }
 
@@ -297,17 +290,13 @@ export class DeliveryService extends BaseService {
   ): DeliveryDetailDto['package'] {
     if (!source || typeof source !== 'object') {
       return {
-        description:
-          typeof fallback?.description === 'string' ? fallback.description : null,
+        description: this.toNullableText(fallback?.description),
         weightKg: this.toNumber(fallback?.weightKg),
         lengthCm: null,
         widthCm: null,
         heightCm: null,
         fragile: null,
-        specialInstructions:
-          typeof fallback?.specialInstructions === 'string'
-            ? fallback.specialInstructions
-            : null,
+        specialInstructions: this.toNullableText(fallback?.specialInstructions),
       };
     }
 
@@ -323,11 +312,8 @@ export class DeliveryService extends BaseService {
 
     return {
       description:
-        typeof value.description === 'string'
-          ? value.description
-          : typeof fallback?.description === 'string'
-            ? fallback.description
-            : null,
+        this.toNullableText(value.description) ??
+        this.toNullableText(fallback?.description),
       weightKg: this.toNumber(value.weightKg, fallback?.weightKg),
       lengthCm: this.toNullableNumber(value.lengthCm),
       widthCm: this.toNullableNumber(value.widthCm),
@@ -341,11 +327,8 @@ export class DeliveryService extends BaseService {
               ? false
               : null,
       specialInstructions:
-        typeof value.specialInstructions === 'string'
-          ? value.specialInstructions
-          : typeof fallback?.specialInstructions === 'string'
-            ? fallback.specialInstructions
-            : null,
+        this.toNullableText(value.specialInstructions) ??
+        this.toNullableText(fallback?.specialInstructions),
     };
   }
 
@@ -401,5 +384,17 @@ export class DeliveryService extends BaseService {
 
   private toIsoDateString(value: unknown): string | null {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
+  }
+
+  private toNullableText(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private toDisplayText(value: unknown, fallback: string): string {
+    return this.toNullableText(value) ?? fallback;
   }
 }

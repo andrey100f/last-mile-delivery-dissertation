@@ -14,11 +14,33 @@ export const courierRoutes: Routes = [
   },
   {
     path: 'requests',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Requests' },
+    loadComponent: () =>
+      import('./pages/delivery-requests/delivery-requests').then(
+        (m) => m.DeliveryRequestsPage,
+      ),
+    data: {
+      pageTitle: 'Available Delivery Requests',
+      subtitle: 'Browse and accept delivery requests',
+    },
+  },
+  {
+    path: 'delivery/:id',
+    loadComponent: () =>
+      import('./pages/courier-delivery-detail/courier-delivery-detail').then(
+        (m) => m.CourierDeliveryDetailPage,
+      ),
+    data: {
+      pageTitle: 'Delivery details',
+      subtitle: 'Review route and payout before accepting',
+    },
   },
   {
     path: 'active',
+    loadComponent: loadStub,
+    data: { pageTitle: 'Active delivery' },
+  },
+  {
+    path: 'active/:id',
     loadComponent: loadStub,
     data: { pageTitle: 'Active delivery' },
   },
