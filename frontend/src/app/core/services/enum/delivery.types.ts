@@ -20,7 +20,8 @@ export interface DeliverySummaryDto {
 export interface DeliveryListQuery {
   page?: number;
   size?: number;
-  status?: string;
+  sort?: string;
+  status?: string | readonly string[];
 }
 
 export type DeliveryType = 'STANDARD' | 'EXPRESS';

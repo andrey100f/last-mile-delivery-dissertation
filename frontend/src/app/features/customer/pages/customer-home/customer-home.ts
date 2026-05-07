@@ -1,8 +1,18 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { DeliveryService } from '@core/services/delivery/delivery';
-import { DeliverySummaryDto } from '@core/services/enum/delivery.types';
+import {
+  DeliverySummaryDto,
+  PageDto,
+} from '@core/services/enum/delivery.types';
 import {
   DeliveryStatus,
   StatusTagComponent,
@@ -14,11 +24,21 @@ import { catchError, finalize, of } from 'rxjs';
 
 interface CustomerDeliveryRow {
   id: string;
+  shortId: string;
+  status: string | DeliveryStatus;
   destination: string;
   destinationHint: string;
-  courierName?: string;
-  status: string | DeliveryStatus;
-  eta: string;
+  courierName: string;
+  totalAmount: number;
+  currency: string;
+}
+
+interface DashboardStatCard {
+  label: string;
+  value: string;
+  icon: string;
+  iconColorClass: string;
+  iconBgClass: string;
 }
 
 @Component({
@@ -34,13 +54,52 @@ interface CustomerDeliveryRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomerHome {
+  private static readonly TERMINAL_STATUSES = new Set<string>([
+    DeliveryStatus.DELIVERED,
+    DeliveryStatus.CANCELLED,
+    DeliveryStatus.FAILED,
+  ]);
+
   private readonly deliveryService = inject(DeliveryService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(false);
   protected readonly deliveries = signal<CustomerDeliveryRow[]>([]);
+  protected readonly pageDeliveries = signal<DeliverySummaryDto[]>([]);
+  protected readonly totalDeliveries = signal(0);
+  protected readonly loadingSkeletonRows = [0, 1, 2, 3];
 
-  protected readonly loadingSkeletonRows = [0, 1, 2];
+  protected readonly statCards = computed<DashboardStatCard[]>(() => {
+    const activeDeliveries = this.deliveries().length;
+    const fetched = this.pageDeliveries();
+    const pendingPickup = fetched.filter(
+      (delivery) => this.normalizeStatus(delivery.status) === DeliveryStatus.CREATED,
+    ).length;
+
+    return [
+      {
+        label: 'Active deliveries',
+        value: String(activeDeliveries),
+        icon: 'pi pi-box',
+        iconColorClass: 'text-blue-600',
+        iconBgClass: 'bg-blue-100',
+      },
+      {
+        label: 'Pending Pickup',
+        value: String(pendingPickup),
+        icon: 'pi pi-clock',
+        iconColorClass: 'text-amber-600',
+        iconBgClass: 'bg-amber-100',
+      },
+      {
+        label: 'Total Deliveries',
+        value: String(this.totalDeliveries()),
+        icon: 'pi pi-chart-line',
+        iconColorClass: 'text-cyan-600',
+        iconBgClass: 'bg-cyan-100',
+      },
+    ];
+  });
 
   constructor() {
     this.loadCustomerDeliveries();
@@ -49,23 +108,20 @@ export class CustomerHome {
   private loadCustomerDeliveries(): void {
     this.loading.set(true);
     this.deliveryService
-      .listForCurrentCustomer({ page: 0, size: 10 })
+      .list({ page: 0, size: 10, sort: 'createdAt,desc' })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        catchError(() =>
-          of({
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            size: 0,
-            number: 0,
-          }),
-        ),
+        catchError(() => of(this.emptyPage())),
         finalize(() => this.loading.set(false)),
       )
       .subscribe((response) => {
+        this.pageDeliveries.set(response.content);
+        this.totalDeliveries.set(response.totalElements);
+        const activeDeliveries = response.content.filter((delivery) =>
+          this.isActiveDeliveryStatus(delivery.status),
+        );
         this.deliveries.set(
-          response.content.map((delivery) => this.mapDeliveryRow(delivery)),
+          activeDeliveries.map((delivery) => this.mapDeliveryRow(delivery)),
         );
       });
   }
@@ -81,33 +137,33 @@ export class CustomerHome {
     );
 
     return {
-      id: this.toDeliveryCode(delivery.id),
+      id: delivery.id,
+      shortId: this.toDeliveryCode(delivery.id),
+      status: delivery.status,
       destination,
       destinationHint: `from ${pickup}`,
-      courierName: undefined,
-      status: delivery.status,
-      eta: this.toEtaLabel(delivery),
+      courierName: 'Not assigned',
+      totalAmount: delivery.totalAmount,
+      currency: delivery.currency,
     };
   }
 
-  private toEtaLabel(delivery: DeliverySummaryDto): string {
-    switch (delivery.status) {
-      case DeliveryStatus.CREATED:
-        return 'Waiting for courier';
-      case DeliveryStatus.ASSIGNED:
-        return 'Courier en route';
-      case DeliveryStatus.PICKED_UP:
-      case DeliveryStatus.IN_TRANSIT:
-        return delivery.deliveryType === 'EXPRESS' ? '1 hour' : '2-4 hours';
-      case DeliveryStatus.DELIVERED:
-        return 'Delivered';
-      case DeliveryStatus.CANCELLED:
-        return 'Cancelled';
-      case DeliveryStatus.FAILED:
-        return 'Delivery issue';
-      default:
-        return 'To be confirmed';
-    }
+  private isActiveDeliveryStatus(status: string | DeliveryStatus): boolean {
+    return !CustomerHome.TERMINAL_STATUSES.has(this.normalizeStatus(status));
+  }
+
+  private normalizeStatus(status: string | DeliveryStatus): string {
+    return status.trim().toUpperCase().replaceAll('-', '_').replaceAll(' ', '_');
+  }
+
+  private emptyPage(): PageDto<DeliverySummaryDto> {
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: 0,
+      number: 0,
+    };
   }
 
   private toDisplayPlace(
@@ -119,6 +175,19 @@ export class CustomerHome {
   }
 
   private toDeliveryCode(id: string): string {
-    return `DLV-${id.replaceAll('-', '').slice(0, 6).toUpperCase()}`;
+    return `DLV-${id.replaceAll('-', '').slice(0, 8).toUpperCase()}`;
+  }
+
+  protected formatAmount(value: number, currency: string): string {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+    } catch {
+      return `${value.toFixed(2)} ${currency}`;
+    }
   }
 }

@@ -32,6 +32,16 @@ export const customerRoutes: Routes = [
     data: { pageTitle: 'Track delivery' },
   },
   {
+    path: 'tracking/:id',
+    loadComponent: loadStub,
+    data: { pageTitle: 'Track delivery' },
+  },
+  {
+    path: 'delivery/:id',
+    loadComponent: loadStub,
+    data: { pageTitle: 'Delivery details' },
+  },
+  {
     path: 'history',
     loadComponent: loadStub,
     data: { pageTitle: 'History' },

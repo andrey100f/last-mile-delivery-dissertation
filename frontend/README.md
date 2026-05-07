@@ -124,6 +124,13 @@ HTTP calls will target **`/api`** on the dev server and be forwarded to the back
 - **401 policy:** Any **401** on a non–skip-listed request triggers `AuthService.logout()` (clears client session only), then a **single** navigation to **`/login`** (`replaceUrl: true`) **without** `?returnUrl=` in the URL. The internal return path is written only to `sessionStorage` under `AUTH_RETURN_URL_SESSION_KEY` (`deliveryhub.returnUrl`); that key is **cleared** on each 401 redirect before storing a new value so stale targets cannot linger. After a **successful** login, `LoginPage` reads an optional legacy `returnUrl` query param and the session key, then **always removes** the session key so a rejected or unused deep link cannot affect a later sign-in; it navigates when the target is valid for the role, else falls back to role-based home. Route **guards** (`#28`) use the same session mirror. Token **refresh** and silent re-auth are **out of scope** here; an expired JWT is expected to surface as 401 from the API.
 - **Bearer scope:** The interceptor only adds `Authorization` for URLs under the configured `environment.apiUrl` (relative paths under that prefix, or absolute URLs that match the same API origin/path when `apiUrl` is absolute). It does not attach the token to unrelated absolute URLs.
 
+## Customer dashboard data strategy (#35)
+
+- The customer dashboard at `/customer` uses `GET /api/v1/deliveries` through `DeliveryService.list({ page, size, sort })`.
+- Current implementation follows strategy **A** (MVP-safe): the frontend requests the latest page (`sort=createdAt,desc`) and filters active statuses client-side.
+- Terminal statuses excluded from the active table are `DELIVERED`, `CANCELLED`, and `FAILED`.
+- The table links use real delivery ids for `/customer/delivery/:id` and `/customer/tracking/:id`; tracking/detail pages can remain stubs until dedicated tasks are delivered.
+
 ## Further reading
 
 - [Angular CLI](https://angular.dev/tools/cli)
