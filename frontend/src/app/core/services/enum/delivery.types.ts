@@ -24,6 +24,53 @@ export interface DeliveryListQuery {
   status?: string;
 }
 
+export interface DeliveryAddressDto {
+  line1: string;
+  contactName: string;
+  contactPhone: string;
+}
+
+export interface DeliveryPackageDto {
+  description?: string | null;
+  weightKg: number;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  fragile?: boolean | null;
+  specialInstructions?: string | null;
+}
+
+export interface DeliveryCourierDto {
+  id: string;
+  fullName: string;
+  phone?: string | null;
+}
+
+export interface DeliveryStatusHistoryItemDto {
+  status: string;
+  recordedAt: string;
+}
+
+export interface DeliveryDetailDto {
+  id: string;
+  trackingCode?: string | null;
+  status: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  pickup: DeliveryAddressDto;
+  destination: DeliveryAddressDto;
+  package: DeliveryPackageDto;
+  specialInstructions?: string | null;
+  deliveryType: string;
+  baseAmount: number;
+  feeAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency: string;
+  courier?: DeliveryCourierDto | null;
+  timeline: DeliveryStatusHistoryItemDto[];
+}
+
 export type DeliveryType = 'STANDARD' | 'EXPRESS';
 
 export interface AddressContactRequest {

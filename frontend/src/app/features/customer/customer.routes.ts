@@ -38,8 +38,14 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'delivery/:id',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Delivery details' },
+    loadComponent: () =>
+      import('./pages/delivery-detail/delivery-detail').then(
+        (m) => m.DeliveryDetailPage,
+      ),
+    data: {
+      pageTitle: 'Delivery details',
+      subtitle: 'Complete delivery information and status',
+    },
   },
   {
     path: 'history',
