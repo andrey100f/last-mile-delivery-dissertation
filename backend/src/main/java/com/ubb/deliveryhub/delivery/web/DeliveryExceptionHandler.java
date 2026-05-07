@@ -3,6 +3,7 @@ package com.ubb.deliveryhub.delivery.web;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryTakenException;
+import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryStatusTransitionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -31,5 +32,15 @@ public class DeliveryExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         pd.setProperty("code", "DELIVERY_TAKEN");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(pd);
+    }
+
+    @ExceptionHandler(InvalidDeliveryStatusTransitionException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidStatusTransition(InvalidDeliveryStatusTransitionException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        pd.setProperty("code", "INVALID_STATUS_TRANSITION");
+        pd.setProperty("fromStatus", ex.getFromStatus());
+        pd.setProperty("toStatus", ex.getToStatus());
+        pd.setProperty("allowedTargets", ex.getAllowedTargets());
+        return ResponseEntity.badRequest().body(pd);
     }
 }
