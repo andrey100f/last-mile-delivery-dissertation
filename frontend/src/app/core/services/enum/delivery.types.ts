@@ -55,6 +55,8 @@ export interface DeliveryDetailDto {
   id: string;
   trackingCode?: string | null;
   status: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   pickup: DeliveryAddressDto;
   destination: DeliveryAddressDto;
   package: DeliveryPackageDto;

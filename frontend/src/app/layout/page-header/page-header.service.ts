@@ -15,8 +15,25 @@ export class PageHeaderService {
   readonly actionOverride = signal<PageHeaderAction | undefined>(undefined);
 
   setOverride(title: string, subtitle?: string | null): void {
-    this.titleOverride.set(title.trim().length > 0 ? title : undefined);
-    this.subtitleOverride.set(subtitle === undefined ? undefined : subtitle);
+    const normalizedTitle = title.trim();
+    this.titleOverride.set(
+      normalizedTitle.length > 0 ? normalizedTitle : undefined,
+    );
+
+    if (subtitle === undefined) {
+      this.subtitleOverride.set(undefined);
+      return;
+    }
+
+    if (subtitle === null) {
+      this.subtitleOverride.set(null);
+      return;
+    }
+
+    const normalizedSubtitle = subtitle.trim();
+    this.subtitleOverride.set(
+      normalizedSubtitle.length > 0 ? normalizedSubtitle : null,
+    );
   }
 
   clearOverride(): void {

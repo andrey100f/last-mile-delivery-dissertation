@@ -163,17 +163,12 @@ export class DeliveryDetailPage {
     return detail.id;
   });
 
-  protected readonly firstTimelineAt = computed(() => {
-    const items = this.timeline();
-    const firstWithDate = items.find((item) => item.recordedAt);
-    return firstWithDate?.recordedAt ?? null;
-  });
-
-  protected readonly latestTimelineAt = computed(() => {
-    const items = this.timeline();
-    const withDate = items.filter((item) => item.recordedAt);
-    return withDate.length > 0 ? withDate[withDate.length - 1].recordedAt : null;
-  });
+  protected readonly createdAt = computed(
+    () => this.delivery()?.createdAt ?? null,
+  );
+  protected readonly updatedAt = computed(
+    () => this.delivery()?.updatedAt ?? null,
+  );
 
   constructor() {
     this.pageHeaderService.setOverride(

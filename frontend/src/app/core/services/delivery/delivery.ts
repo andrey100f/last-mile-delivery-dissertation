@@ -66,6 +66,8 @@ export class DeliveryService extends BaseService {
           packageWeightKg?: unknown;
           packageDescription?: unknown;
           publicTrackingCode?: unknown;
+          createdAt?: unknown;
+          updatedAt?: unknown;
           pickupLine1?: unknown;
           destinationLine1?: unknown;
           pricing?: {
@@ -100,6 +102,8 @@ export class DeliveryService extends BaseService {
                   : null,
             status:
               typeof response.status === 'string' ? response.status : 'CREATED',
+            createdAt: this.toIsoDateString(response.createdAt),
+            updatedAt: this.toIsoDateString(response.updatedAt),
             pickup: this.toAddressDto(pickupSource, response.pickupLine1),
             destination: this.toAddressDto(
               destinationSource,
@@ -393,5 +397,9 @@ export class DeliveryService extends BaseService {
       }
     }
     return 0;
+  }
+
+  private toIsoDateString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
   }
 }

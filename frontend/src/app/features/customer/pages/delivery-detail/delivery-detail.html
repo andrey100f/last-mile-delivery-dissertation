@@ -52,18 +52,18 @@
                 <div>
                   <p class="label">Created</p>
                   <p class="value">
-                    @if (firstTimelineAt()) {
-                      {{ firstTimelineAt() | date: 'medium' }}
+                    @if (createdAt()) {
+                      {{ createdAt() | date: 'medium' }}
                     } @else {
                       -
                     }
                   </p>
                 </div>
                 <div>
-                  <p class="label">Estimated Delivery</p>
+                  <p class="label">Last updated</p>
                   <p class="value">
-                    @if (latestTimelineAt()) {
-                      {{ latestTimelineAt() | date: 'medium' }}
+                    @if (updatedAt()) {
+                      {{ updatedAt() | date: 'medium' }}
                     } @else {
                       -
                     }
