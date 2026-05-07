@@ -20,6 +20,7 @@ export interface DeliverySummaryDto {
 export interface DeliveryListQuery {
   page?: number;
   size?: number;
+  sort?: string;
   status?: string;
 }
 

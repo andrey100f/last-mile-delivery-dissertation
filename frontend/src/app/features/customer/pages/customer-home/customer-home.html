@@ -1,101 +1,143 @@
 <div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
   <div class="p-5">
-    <div class="mb-3 flex items-center justify-between">
-      <h3 class="text-sm font-semibold text-p-text-primary">Active Deliveries</h3>
-      <a
-        class="text-sm font-medium text-p-primary transition-colors hover:text-p-primary-hover"
-        [routerLink]="['/customer/history']"
-      >
-        View All
-      </a>
-    </div>
-
-    <div
-      class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
-    >
-      <p-table [value]="deliveries()" [loading]="loading()" size="small" styleClass="delivery-list-table">
-        <ng-template #header>
-          <tr class="border-b border-p-surface-border bg-p-surface-ground">
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              ID
-            </th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              Route
-            </th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              Courier
-            </th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              Status
-            </th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              ETA
-            </th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-              Action
-            </th>
-          </tr>
-        </ng-template>
-
-        <ng-template #body let-delivery>
-          <tr class="cursor-pointer text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
-            <td class="w-32 px-4 py-3.5 align-top">
-              <span class="text-[13px] font-medium text-p-primary">{{ delivery.id }}</span>
-            </td>
-            <td class="min-w-72 px-4 py-3.5 align-top">
-              <div class="flex flex-col items-start gap-0.5">
-                <span class="text-[13px] leading-5 text-p-text-primary">{{ delivery.destination }}</span>
-                <span class="text-[11px] leading-4 text-p-text-muted">{{ delivery.destinationHint }}</span>
+    <div class="grid gap-5">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        @for (card of statCards(); track card.label) {
+          <article
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="mb-1 text-[12px] text-p-text-muted">{{ card.label }}</p>
+                <p class="text-[28px] leading-none font-semibold text-p-text-primary">
+                  {{ card.value }}
+                </p>
               </div>
-            </td>
-            <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
-              {{ delivery.courierName ?? 'Not assigned' }}
-            </td>
-            <td class="w-36 px-4 py-3.5 align-top">
-              <app-status-tag [status]="delivery.status" size="sm" />
-            </td>
-            <td class="w-36 px-4 py-3.5 align-top text-[13px] text-p-text-secondary">
-              {{ delivery.eta }}
-            </td>
-            <td class="w-28 px-4 py-3.5 align-top">
-              <a
-                class="inline-flex items-center gap-1 text-[13px] font-medium text-p-primary transition-colors hover:text-p-primary-hover"
-                [routerLink]="['/customer/tracking']"
+              <span
+                class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md)"
+                [class]="card.iconBgClass + ' ' + card.iconColorClass"
               >
-                <i class="pi pi-chart-line text-[12px]"></i>
-                Track
-              </a>
-            </td>
-          </tr>
-        </ng-template>
+                <i [class]="card.icon + ' text-base'" aria-hidden="true"></i>
+              </span>
+            </div>
+          </article>
+        }
+      </div>
 
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="6">
-              <app-table-empty-state
-                title="No active deliveries"
-                message="Create a delivery to see it listed here."
-                icon="pi pi-truck"
-                actionLabel="Create delivery"
-                [actionRouterLink]="['/customer/create']"
-              />
-            </td>
-          </tr>
-        </ng-template>
+      <section>
+        <h3 class="mb-3 text-sm font-semibold text-p-text-primary">Quick Actions</h3>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <a
+            [routerLink]="['/customer/create']"
+            class="group w-full rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 text-center shadow-(--p-shadow-xs) transition-colors hover:bg-p-surface-hover"
+          >
+            <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md) bg-p-primary/10 text-p-primary">
+              <i class="pi pi-plus text-lg" aria-hidden="true"></i>
+            </div>
+            <p class="text-sm font-semibold text-p-text-primary">Create New Delivery</p>
+            <p class="mt-1 text-xs text-p-text-muted">Request a new delivery service</p>
+          </a>
 
-        <ng-template #loadingbody>
-          @for (_row of loadingSkeletonRows; track _row) {
-            <tr>
-              <td><p-skeleton height="1rem" width="5rem" /></td>
-              <td><p-skeleton height="1rem" width="12rem" /></td>
-              <td><p-skeleton height="1rem" width="6rem" /></td>
-              <td><p-skeleton height="1rem" width="6rem" /></td>
-              <td><p-skeleton height="1rem" width="7rem" /></td>
-              <td><p-skeleton height="1rem" width="4rem" /></td>
-            </tr>
-          }
-        </ng-template>
-      </p-table>
+          <a
+            [routerLink]="['/customer/history']"
+            class="group w-full rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 text-center shadow-(--p-shadow-xs) transition-colors hover:bg-p-surface-hover"
+          >
+            <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md) bg-amber-100 text-amber-700">
+              <i class="pi pi-history text-lg" aria-hidden="true"></i>
+            </div>
+            <p class="text-sm font-semibold text-p-text-primary">View History</p>
+            <p class="mt-1 text-xs text-p-text-muted">Browse past deliveries</p>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <div class="mb-3">
+          <h3 class="text-sm font-semibold text-p-text-primary">Active Deliveries</h3>
+        </div>
+
+        <div
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
+        >
+          <p-table [value]="deliveries()" [loading]="loading()" size="small" styleClass="delivery-list-table">
+            <ng-template #header>
+              <tr class="border-b border-p-surface-border bg-p-surface-ground">
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  ID
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  Route
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  Courier
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  Amount
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  Status
+                </th>
+              </tr>
+            </ng-template>
+
+            <ng-template #body let-delivery>
+              <tr
+                class="cursor-pointer text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover"
+                role="link"
+                tabindex="0"
+                (click)="openDeliveryDetails(delivery.id)"
+                (keydown.enter)="openDeliveryDetails(delivery.id)"
+                (keydown.space)="onRowSpace($event, delivery.id)"
+              >
+                <td class="w-44 px-4 py-3.5 align-top">
+                  <span class="text-[13px] font-medium text-p-primary">{{ delivery.shortId }}</span>
+                </td>
+                <td class="min-w-72 px-4 py-3.5 align-top">
+                  <div class="flex flex-col items-start gap-0.5">
+                    <span class="text-[13px] leading-5 text-p-text-primary">{{ delivery.destination }}</span>
+                    <span class="text-[11px] leading-4 text-p-text-muted">{{ delivery.destinationHint }}</span>
+                  </div>
+                </td>
+                <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                  {{ delivery.courierName }}
+                </td>
+                <td class="w-36 px-4 py-3.5 align-top text-[13px] font-medium text-p-text-primary">
+                  {{ delivery.totalAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}
+                </td>
+                <td class="w-36 px-4 py-3.5 align-top">
+                  <app-status-tag [status]="delivery.status" size="sm" />
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="5">
+                  <app-table-empty-state
+                    title="No active deliveries"
+                    message="Create a delivery to see it listed here."
+                    icon="pi pi-truck"
+                    actionLabel="Create delivery"
+                    [actionRouterLink]="['/customer/create']"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template #loadingbody>
+              @for (_row of loadingSkeletonRows; track _row) {
+                <tr>
+                  <td><p-skeleton height="1rem" width="8rem" /></td>
+                  <td><p-skeleton height="1rem" width="12rem" /></td>
+                  <td><p-skeleton height="1rem" width="7rem" /></td>
+                  <td><p-skeleton height="1rem" width="6rem" /></td>
+                  <td><p-skeleton height="1rem" width="5rem" /></td>
+                </tr>
+              }
+            </ng-template>
+          </p-table>
+        </div>
+      </section>
     </div>
   </div>
 </div>

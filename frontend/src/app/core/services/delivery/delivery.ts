@@ -24,15 +24,16 @@ export class DeliveryService extends BaseService {
     );
   }
 
-  listForCurrentCustomer(
-    query: DeliveryListQuery = {},
-  ): Observable<PageDto<DeliverySummaryDto>> {
+  list(query: DeliveryListQuery = {}): Observable<PageDto<DeliverySummaryDto>> {
     let params = new HttpParams();
     if (query.page !== undefined) {
       params = params.set('page', query.page);
     }
     if (query.size !== undefined) {
       params = params.set('size', query.size);
+    }
+    if (query.sort !== undefined && query.sort.length > 0) {
+      params = params.set('sort', query.sort);
     }
     if (query.status !== undefined && query.status.length > 0) {
       params = params.set('status', query.status);
@@ -44,6 +45,12 @@ export class DeliveryService extends BaseService {
         params,
       },
     );
+  }
+
+  listForCurrentCustomer(
+    query: DeliveryListQuery = {},
+  ): Observable<PageDto<DeliverySummaryDto>> {
+    return this.list(query);
   }
 
   applyValidationErrors(

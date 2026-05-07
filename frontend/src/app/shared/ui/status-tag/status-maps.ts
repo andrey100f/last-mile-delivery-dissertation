@@ -71,7 +71,9 @@ const UNKNOWN_STATUS_PRESENTATION: StatusPresentation = {
   icon: 'pi pi-question-circle',
 };
 
-function normalizeStatus(status: string | DeliveryStatus): string {
+export function normalizeDeliveryStatus(
+  status: string | DeliveryStatus,
+): string {
   return status.trim().toUpperCase().replaceAll('-', '_').replaceAll(' ', '_');
 }
 
@@ -79,7 +81,7 @@ export function resolveDeliveryStatusPresentation(
   status: string | DeliveryStatus,
   severityOverride?: TagSeverity,
 ): StatusPresentation {
-  const normalizedStatus = normalizeStatus(status);
+  const normalizedStatus = normalizeDeliveryStatus(status);
   const mapped = DELIVERY_STATUS_MAP[normalizedStatus as DeliveryStatus];
 
   if (mapped) {
