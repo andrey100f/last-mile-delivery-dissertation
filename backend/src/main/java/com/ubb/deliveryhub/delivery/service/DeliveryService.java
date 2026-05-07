@@ -3,7 +3,9 @@ package com.ubb.deliveryhub.delivery.service;
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
+import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
+import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
@@ -48,6 +50,7 @@ public class DeliveryService {
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
+    private static final Set<DeliveryStatus> ASSIGNABLE_STATUSES = Set.of(DeliveryStatus.CREATED);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
@@ -105,6 +108,20 @@ public class DeliveryService {
         UUID customerId = principalUserId(authentication);
         Specification<Delivery> spec = DeliverySpecifications.forCustomerWithOptionalStatus(customerId, statusFilter);
         return deliveryRepository.findAll(spec, effective).map(DeliveryMapper::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AvailableDeliveryDto> listAvailableForCurrentCourier(
+        Pageable pageable,
+        DeliveryType deliveryType
+    ) {
+        if (!pageable.isPaged()) {
+            throw new InvalidDeliveryPaginationException();
+        }
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDefaultSort(pageable);
+        return deliveryRepository.findAvailableForCourier(ASSIGNABLE_STATUSES, deliveryType, effective)
+            .map(DeliveryMapper::toAvailableDto);
     }
 
     private static UUID principalUserId(Authentication authentication) {

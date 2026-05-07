@@ -4,6 +4,7 @@ import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
 import com.ubb.deliveryhub.delivery.domain.dto.AddressContactDto;
 import com.ubb.deliveryhub.delivery.domain.dto.AddressContactRequestDto;
+import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CourierSummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
@@ -69,6 +70,23 @@ public final class DeliveryMapper {
             .currency(d.getCurrency())
             .pickupLine1(pickupLine1)
             .destinationLine1(destinationLine1)
+            .build();
+    }
+
+    public static AvailableDeliveryDto toAvailableDto(Delivery d) {
+        String pickupLine1 = d.getPickup() != null ? d.getPickup().getLine1() : null;
+        String destinationLine1 = d.getDestination() != null ? d.getDestination().getLine1() : null;
+        return AvailableDeliveryDto.builder()
+            .id(d.getId().toString())
+            .status(d.getStatus().name())
+            .deliveryType(d.getDeliveryType().name())
+            .pickupLine1(pickupLine1)
+            .destinationLine1(destinationLine1)
+            .baseAmount(d.getBaseAmount())
+            .feeAmount(d.getFeeAmount())
+            .taxAmount(d.getTaxAmount())
+            .totalAmount(d.getTotalAmount())
+            .currency(d.getCurrency())
             .build();
     }
 
