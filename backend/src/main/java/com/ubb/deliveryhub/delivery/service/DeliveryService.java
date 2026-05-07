@@ -2,18 +2,21 @@ package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStateMachine;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
-import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
+import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.UpdateDeliveryStatusRequest;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryTakenException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
+import com.ubb.deliveryhub.delivery.events.DeliveryStatusChangedEvent;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.delivery.repository.DeliverySpecifications;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
@@ -28,8 +31,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.SecureRandom;
 import java.util.Set;
@@ -51,12 +57,13 @@ public class DeliveryService {
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
-    private static final Set<DeliveryStatus> ASSIGNABLE_STATUSES = Set.of(DeliveryStatus.CREATED);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final UserRepository userRepository;
     private final DeliveryAuthorization deliveryAuthorization;
+    private final DeliveryStateMachine deliveryStateMachine;
+    private final ApplicationEventPublisher eventPublisher;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
@@ -121,7 +128,8 @@ public class DeliveryService {
         }
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
-        return deliveryRepository.findAvailableForCourier(ASSIGNABLE_STATUSES, deliveryType, effective)
+        Set<DeliveryStatus> assignableStatuses = deliveryStateMachine.statusesTransitioningTo(DeliveryStatus.ASSIGNED);
+        return deliveryRepository.findAvailableForCourier(assignableStatuses, deliveryType, effective)
             .map(DeliveryMapper::toAvailableDto);
     }
 
@@ -134,7 +142,8 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findWithCustomerAndCourierByIdForUpdate(deliveryId)
             .orElseThrow(DeliveryNotFoundException::new);
 
-        if (delivery.getCourier() != null || !ASSIGNABLE_STATUSES.contains(delivery.getStatus())) {
+        if (delivery.getCourier() != null
+            || !deliveryStateMachine.canTransition(delivery.getStatus(), DeliveryStatus.ASSIGNED)) {
             throw new DeliveryTakenException();
         }
 
@@ -148,6 +157,36 @@ public class DeliveryService {
         deliveryStatusHistoryRepository.save(historyEntry);
 
         Delivery saved = deliveryRepository.save(delivery);
+        var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
+        return DeliveryMapper.toDetailDto(saved, history);
+    }
+
+    @Transactional
+    public DeliveryDetailDto updateStatusForCurrentCourier(
+        UUID deliveryId,
+        Authentication authentication,
+        UpdateDeliveryStatusRequest request
+    ) {
+        UUID courierId = principalUserId(authentication);
+        Delivery delivery = deliveryRepository.findWithCustomerAndCourierByIdForUpdate(deliveryId)
+            .orElseThrow(DeliveryNotFoundException::new);
+
+        deliveryAuthorization.assertAssignedCourier(delivery, courierId);
+
+        DeliveryStatus fromStatus = delivery.getStatus();
+        DeliveryStatus targetStatus = request.resolveTargetStatus();
+        deliveryStateMachine.assertTransitionAllowed(fromStatus, targetStatus);
+
+        delivery.setStatus(targetStatus);
+
+        DeliveryStatusHistory historyEntry = new DeliveryStatusHistory();
+        historyEntry.setDelivery(delivery);
+        historyEntry.setStatus(targetStatus);
+        historyEntry.setActor(delivery.getCourier());
+        deliveryStatusHistoryRepository.save(historyEntry);
+
+        Delivery saved = deliveryRepository.save(delivery);
+        publishAfterCommit(saved.getId(), fromStatus, targetStatus, courierId);
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
     }
@@ -184,5 +223,19 @@ public class DeliveryService {
             sb.append(TRACKING_ALPHABET.charAt(secureRandom.nextInt(TRACKING_ALPHABET.length())));
         }
         return sb.toString();
+    }
+
+    private void publishAfterCommit(
+        UUID deliveryId,
+        DeliveryStatus fromStatus,
+        DeliveryStatus toStatus,
+        UUID actorId
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventPublisher.publishEvent(new DeliveryStatusChangedEvent(deliveryId, fromStatus, toStatus, actorId));
+            }
+        });
     }
 }

@@ -8,6 +8,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.UpdateDeliveryStatusRequest;
 import com.ubb.deliveryhub.delivery.service.DeliveryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -89,5 +91,15 @@ public class DeliveryController {
     @PreAuthorize("hasRole('COURIER')")
     public DeliveryDetailDto accept(@PathVariable UUID id, Authentication authentication) {
         return deliveryService.acceptForCurrentCourier(id, authentication);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('COURIER')")
+    public DeliveryDetailDto updateStatus(
+        @PathVariable UUID id,
+        Authentication authentication,
+        @Valid @RequestBody UpdateDeliveryStatusRequest request
+    ) {
+        return deliveryService.updateStatusForCurrentCourier(id, authentication, request);
     }
 }

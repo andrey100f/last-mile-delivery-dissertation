@@ -50,6 +50,13 @@ public class DeliveryAuthorization {
         throw new AccessDeniedException("Access denied");
     }
 
+    public void assertAssignedCourier(Delivery delivery, UUID principalId) {
+        User assigned = delivery.getCourier();
+        if (assigned == null || !assigned.getId().equals(principalId)) {
+            throw new AccessDeniedException("Access denied");
+        }
+    }
+
     private boolean hasRole(Authentication authentication, UserRole role) {
         String expected = ROLE_PREFIX + role.name();
         for (GrantedAuthority a : authentication.getAuthorities()) {
