@@ -87,8 +87,6 @@ public final class DeliveryMapper {
             .taxAmount(d.getTaxAmount())
             .totalAmount(d.getTotalAmount())
             .currency(d.getCurrency())
-            .distanceKm(null)
-            .etaMinutes(null)
             .build();
     }
 

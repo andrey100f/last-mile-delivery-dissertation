@@ -31,10 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +50,7 @@ public class DeliveryService {
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
+    private static final Set<DeliveryStatus> ASSIGNABLE_STATUSES = Set.of(DeliveryStatus.CREATED);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
@@ -121,15 +120,8 @@ public class DeliveryService {
         }
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
-        Set<DeliveryStatus> assignableStatuses = Arrays.stream(DeliveryStatus.values())
-            .filter(status -> isAssignable(status, null))
-            .collect(Collectors.toUnmodifiableSet());
-        return deliveryRepository.findAvailableForCourier(assignableStatuses, deliveryType, effective)
+        return deliveryRepository.findAvailableForCourier(ASSIGNABLE_STATUSES, deliveryType, effective)
             .map(DeliveryMapper::toAvailableDto);
-    }
-
-    static boolean isAssignable(DeliveryStatus status, UUID assignedCourierId) {
-        return status == DeliveryStatus.CREATED && assignedCourierId == null;
     }
 
     private static UUID principalUserId(Authentication authentication) {
