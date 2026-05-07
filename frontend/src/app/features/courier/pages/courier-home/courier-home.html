@@ -1,5 +1,32 @@
 <div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
   <div class="p-5">
+    <section class="mb-5">
+      <h3 class="mb-3 text-sm font-semibold text-p-text-primary">Quick Actions</h3>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <a
+          [routerLink]="['/courier/active']"
+          class="group w-full rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 text-center shadow-(--p-shadow-xs) transition-colors hover:bg-p-surface-hover"
+        >
+          <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md) bg-blue-100 text-blue-600">
+            <i class="pi pi-truck text-lg" aria-hidden="true"></i>
+          </div>
+          <p class="text-sm font-semibold text-p-text-primary">Active Deliveries</p>
+          <p class="mt-1 text-xs text-p-text-muted">Review and continue your active jobs</p>
+        </a>
+
+        <a
+          [routerLink]="['/courier/earnings']"
+          class="group w-full rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 text-center shadow-(--p-shadow-xs) transition-colors hover:bg-p-surface-hover"
+        >
+          <div class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md) bg-emerald-100 text-emerald-700">
+            <i class="pi pi-dollar text-lg" aria-hidden="true"></i>
+          </div>
+          <p class="text-sm font-semibold text-p-text-primary">Earnings</p>
+          <p class="mt-1 text-xs text-p-text-muted">View payout summary and earnings details</p>
+        </a>
+      </div>
+    </section>
+
     <section>
       <div class="mb-3">
         <div class="flex items-center justify-between gap-3">

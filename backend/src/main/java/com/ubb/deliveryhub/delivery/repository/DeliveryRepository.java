@@ -42,4 +42,16 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("deliveryType") DeliveryType deliveryType,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        WHERE d.courier.id = :courierId
+          AND d.status IN :statuses
+        """)
+    Page<Delivery> findActiveForCourier(
+        @Param("courierId") UUID courierId,
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        Pageable pageable
+    );
 }
