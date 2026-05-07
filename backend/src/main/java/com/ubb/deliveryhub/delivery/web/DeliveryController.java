@@ -84,4 +84,10 @@ public class DeliveryController {
     public DeliveryDetailDto getById(@PathVariable UUID id, Authentication authentication) {
         return deliveryService.getByIdForCurrentUser(id, authentication);
     }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasRole('COURIER')")
+    public DeliveryDetailDto accept(@PathVariable UUID id, Authentication authentication) {
+        return deliveryService.acceptForCurrentCourier(id, authentication);
+    }
 }
