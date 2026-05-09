@@ -30,8 +30,9 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
           d.status AS status,
           d.updatedAt AS updatedAt,
           d.customer.id AS customerId,
-          d.courier.id AS courierId
+          c.id AS courierId
         FROM Delivery d
+        LEFT JOIN d.courier c
         WHERE d.id = :id
         """)
     Optional<DeliveryStatusSnapshotView> findStatusSnapshotById(@Param("id") UUID id);
