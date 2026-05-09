@@ -7,6 +7,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryStatusSnapshotDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.UpdateDeliveryStatusRequest;
 import com.ubb.deliveryhub.delivery.service.DeliveryService;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -99,6 +102,21 @@ public class DeliveryController {
     @PreAuthorize("hasAnyRole('CUSTOMER','COURIER','ADMIN')")
     public DeliveryDetailDto getById(@PathVariable UUID id, Authentication authentication) {
         return deliveryService.getByIdForCurrentUser(id, authentication);
+    }
+
+    @GetMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('CUSTOMER','COURIER','ADMIN')")
+    public ResponseEntity<DeliveryStatusSnapshotDto> getStatusSnapshot(
+        @PathVariable UUID id,
+        Authentication authentication,
+        WebRequest webRequest
+    ) {
+        DeliveryStatusSnapshotDto snapshot = deliveryService.getStatusSnapshotForCurrentUser(id, authentication);
+        String etag = "\"%s-%d\"".formatted(snapshot.getStatus(), snapshot.getUpdatedAt().toEpochMilli());
+        if (webRequest.checkNotModified(etag)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+        }
+        return ResponseEntity.ok().eTag(etag).body(snapshot);
     }
 
     @PostMapping("/{id}/accept")

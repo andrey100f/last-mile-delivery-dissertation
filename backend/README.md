@@ -168,3 +168,13 @@ Conflict semantics:
 
 - returns `409 Conflict` with RFC 7807 payload and stable machine code `DELIVERY_TAKEN` when another courier already claimed the delivery or it is no longer assignable
 - returns `404` when delivery id does not exist
+
+## Delivery status snapshot (GET `/api/deliveries/{id}/status`)
+
+Compact polling endpoint for tracking and WS fallback:
+
+- response fields: `status`, `etaMinutes`, `updatedAt`, `progressPercent`
+- ownership semantics are identical to `GET /api/deliveries/{id}`
+- includes `ETag` so clients can use `If-None-Match` and receive `304 Not Modified` when unchanged
+
+Polling methodology and curl baseline loop are documented in `docs/polling-tracking-baseline.md`.

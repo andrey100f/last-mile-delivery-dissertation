@@ -2,7 +2,6 @@ package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
-import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.embedded.UserRole;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -22,6 +21,16 @@ public class DeliveryAuthorization {
     private static final String ROLE_PREFIX = "ROLE_";
 
     public void assertCanView(Delivery delivery, Authentication authentication) {
+        UUID courierId = delivery.getCourier() != null ? delivery.getCourier().getId() : null;
+        assertCanView(delivery.getCustomer().getId(), courierId, delivery.getStatus(), authentication);
+    }
+
+    public void assertCanView(
+        UUID customerId,
+        UUID courierId,
+        DeliveryStatus status,
+        Authentication authentication
+    ) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new AccessDeniedException("Access denied");
         }
@@ -31,18 +40,17 @@ public class DeliveryAuthorization {
             return;
         }
         if (hasRole(authentication, UserRole.CUSTOMER)) {
-            if (delivery.getCustomer().getId().equals(principalId)) {
+            if (customerId.equals(principalId)) {
                 return;
             }
             throw new AccessDeniedException("Access denied");
         }
         if (hasRole(authentication, UserRole.COURIER)) {
-            User assigned = delivery.getCourier();
-            if (assigned != null && assigned.getId().equals(principalId)) {
+            if (courierId != null && courierId.equals(principalId)) {
                 return;
             }
             // Allow couriers to open details for currently available requests.
-            if (assigned == null && delivery.getStatus() == DeliveryStatus.CREATED) {
+            if (courierId == null && status == DeliveryStatus.CREATED) {
                 return;
             }
             throw new AccessDeniedException("Access denied");
@@ -51,8 +59,8 @@ public class DeliveryAuthorization {
     }
 
     public void assertAssignedCourier(Delivery delivery, UUID principalId) {
-        User assigned = delivery.getCourier();
-        if (assigned == null || !assigned.getId().equals(principalId)) {
+        UUID assignedCourierId = delivery.getCourier() != null ? delivery.getCourier().getId() : null;
+        if (assignedCourierId == null || !assignedCourierId.equals(principalId)) {
             throw new AccessDeniedException("Access denied");
         }
     }

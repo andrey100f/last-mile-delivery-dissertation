@@ -9,6 +9,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.CourierSummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryStatusSnapshotDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.PackageRequestDto;
 import com.ubb.deliveryhub.delivery.domain.dto.TimelineEntryDto;
@@ -17,6 +18,7 @@ import com.ubb.deliveryhub.identity.domain.User;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.List;
 
 public final class DeliveryMapper {
@@ -138,6 +140,20 @@ public final class DeliveryMapper {
             .updatedAt(d.getUpdatedAt())
             .courier(toCourierSummary(d.getCourier()))
             .timeline(timeline)
+            .build();
+    }
+
+    public static DeliveryStatusSnapshotDto toStatusSnapshotDto(
+        String status,
+        Integer etaMinutes,
+        Instant updatedAt,
+        Integer progressPercent
+    ) {
+        return DeliveryStatusSnapshotDto.builder()
+            .status(status)
+            .etaMinutes(etaMinutes)
+            .updatedAt(updatedAt)
+            .progressPercent(progressPercent)
             .build();
     }
 
