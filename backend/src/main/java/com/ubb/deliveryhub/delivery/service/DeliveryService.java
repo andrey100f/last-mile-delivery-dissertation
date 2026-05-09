@@ -42,6 +42,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -236,7 +237,7 @@ public class DeliveryService {
         deliveryStatusHistoryRepository.save(historyEntry);
 
         Delivery saved = deliveryRepository.save(delivery);
-        publishAfterCommit(saved.getId(), fromStatus, targetStatus, courierId);
+        publishAfterCommit(saved.getId(), fromStatus, targetStatus, courierId, saved.getUpdatedAt());
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
     }
@@ -279,12 +280,15 @@ public class DeliveryService {
         UUID deliveryId,
         DeliveryStatus fromStatus,
         DeliveryStatus toStatus,
-        UUID actorId
+        UUID actorId,
+        Instant updatedAt
     ) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                eventPublisher.publishEvent(new DeliveryStatusChangedEvent(deliveryId, fromStatus, toStatus, actorId));
+                eventPublisher.publishEvent(
+                    new DeliveryStatusChangedEvent(deliveryId, fromStatus, toStatus, actorId, updatedAt)
+                );
             }
         });
     }
