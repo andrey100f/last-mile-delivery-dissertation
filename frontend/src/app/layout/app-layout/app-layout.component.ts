@@ -14,7 +14,11 @@ import { UserRole } from '@core/services/enum/auth.types';
 import { UserService } from '@core/services/user/user';
 import { PageHeaderService } from '../page-header/page-header.service';
 import { filter } from 'rxjs';
-import { displayNameFromEmail, initialsFromEmail } from '../layout-user.utils';
+import {
+  displayNameFromEmail,
+  initialsFromDisplayName,
+  initialsFromEmail,
+} from '../layout-user.utils';
 import { TopBarComponent } from '../top-bar/top-bar.component';
 
 @Component({
@@ -57,12 +61,22 @@ export class AppLayoutComponent {
   protected readonly sidebarUser = computed(() => {
     const u = this.userService.currentUser();
     const email = u?.email?.trim();
+    const displayName = u?.displayName?.trim();
     if (!email) {
       return { initials: '?', line1: 'Account', line2: 'Signed in' };
     }
+
+    const effectiveDisplayName =
+      displayName && displayName.length > 0
+        ? displayName
+        : displayNameFromEmail(email);
+
     return {
-      initials: initialsFromEmail(email),
-      line1: displayNameFromEmail(email),
+      initials:
+        displayName && displayName.length > 0
+          ? initialsFromDisplayName(displayName)
+          : initialsFromEmail(email),
+      line1: effectiveDisplayName,
       line2: email,
     };
   });

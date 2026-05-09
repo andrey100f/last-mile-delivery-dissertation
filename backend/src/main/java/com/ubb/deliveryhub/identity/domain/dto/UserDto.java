@@ -10,6 +10,8 @@ public class UserDto {
 
     private String id;
     private String email;
+    private String displayName;
+    private String phoneNumber;
     private String role;
 
     public static UserDto fromUser(User user) {
@@ -19,6 +21,8 @@ public class UserDto {
         return UserDto.builder()
             .id(user.getId() != null ? user.getId().toString() : null)
             .email(user.getEmail())
+            .displayName(user.getDisplayName())
+            .phoneNumber(user.getPhoneNumber())
             .role(user.getRole() != null ? user.getRole().name() : null)
             .build();
     }

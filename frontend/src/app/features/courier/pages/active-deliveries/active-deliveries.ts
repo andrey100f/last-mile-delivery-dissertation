@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
   CourierAvailableDeliveryDto,
+  DeliveryType,
   PageDto,
 } from '@core/services/enum/delivery.types';
 import { StatusTagComponent, TableEmptyStateComponent } from '@shared/ui/public-api';
@@ -24,6 +25,7 @@ interface CourierActiveDeliveryCard {
   id: string;
   shortId: string;
   status: string;
+  deliveryType: DeliveryType;
   pickup: string;
   destination: string;
   totalAmount: number;
@@ -90,11 +92,13 @@ export class ActiveDeliveriesPage {
       )
       .subscribe((response) => {
         const content = Array.isArray(response.content) ? response.content : [];
+        const prioritized = this.prioritizeExpressFirst(content);
         this.activeDeliveries.set(
-          content.map((item) => ({
+          prioritized.map((item) => ({
             id: item.id,
             shortId: formatDeliveryCode(item.id),
             status: item.status || 'ASSIGNED',
+            deliveryType: item.deliveryType ?? 'STANDARD',
             pickup: this.toDisplayPlace(item.pickupLine1),
             destination: this.toDisplayPlace(item.destinationLine1),
             totalAmount: Number.isFinite(item.totalAmount) ? item.totalAmount : 0,
@@ -102,6 +106,28 @@ export class ActiveDeliveriesPage {
           })),
         );
       });
+  }
+
+  private prioritizeExpressFirst(
+    deliveries: CourierAvailableDeliveryDto[],
+  ): CourierAvailableDeliveryDto[] {
+    return deliveries
+      .map((delivery, index) => ({ delivery, index }))
+      .sort((left, right) => {
+        const priorityDelta =
+          this.deliveryTypePriority(left.delivery.deliveryType) -
+          this.deliveryTypePriority(right.delivery.deliveryType);
+        if (priorityDelta !== 0) {
+          return priorityDelta;
+        }
+        // Preserve API order for deliveries in the same priority bucket.
+        return left.index - right.index;
+      })
+      .map((entry) => entry.delivery);
+  }
+
+  private deliveryTypePriority(deliveryType: DeliveryType | undefined): number {
+    return deliveryType === 'EXPRESS' ? 0 : 1;
   }
 
   private toDisplayPlace(value: string | null | undefined): string {

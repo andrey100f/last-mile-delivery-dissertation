@@ -16,6 +16,8 @@ export interface CourierDeliveryUiError {
   status: number;
   type:
     | 'DELIVERY_TAKEN'
+    | 'COURIER_UNAVAILABLE'
+    | 'EXPRESS_NOT_CAPABLE'
     | 'INVALID_STATUS_TRANSITION'
     | 'ACCESS_DENIED'
     | 'NOT_FOUND'
@@ -128,11 +130,23 @@ export class CourierDeliveryService extends BaseService {
       error.status === 400 &&
       (code === 'INVALID_STATUS_TRANSITION' ||
         detail?.toUpperCase().includes('INVALID STATUS TRANSITION') === true);
+    const isCourierUnavailable =
+      error.status === 409 &&
+      (code === 'COURIER_UNAVAILABLE' ||
+        detail?.toUpperCase().includes('NOT AVAILABLE') === true);
+    const isExpressNotCapable =
+      error.status === 409 &&
+      (code === 'EXPRESS_NOT_CAPABLE' ||
+        detail?.toUpperCase().includes('EXPRESS') === true);
 
     return {
       status: error.status,
       type: isTakenConflict
         ? 'DELIVERY_TAKEN'
+        : isCourierUnavailable
+          ? 'COURIER_UNAVAILABLE'
+          : isExpressNotCapable
+            ? 'EXPRESS_NOT_CAPABLE'
         : isInvalidTransition
           ? 'INVALID_STATUS_TRANSITION'
           : error.status === 403
