@@ -167,7 +167,9 @@
                   </div>
                   <div class="type-option-meta flex items-center justify-between text-[12px] text-p-text-muted">
                     <span>{{ type.eta }}</span>
-                    <span class="font-semibold">${{ type.previewBase }}</span>
+                    <span class="font-semibold">{{
+                      type.previewBase | currency: previewPricing().currency : 'symbol' : '1.2-2'
+                    }}</span>
                   </div>
                 </button>
               }
@@ -182,10 +184,34 @@
               </div>
             </div>
             <div class="section-body">
-              <div class="summary-row"><span>Base Price</span><span class="value">${{ previewPricing().baseAmount.toFixed(2) }}</span></div>
-              <div class="summary-row"><span>Service Fee</span><span class="value">${{ previewPricing().feeAmount.toFixed(2) }}</span></div>
-              <div class="summary-row"><span>Tax (10%)</span><span class="value">${{ previewPricing().taxAmount.toFixed(2) }}</span></div>
-              <div class="summary-total"><span>Total</span><span>${{ previewPricing().totalAmount.toFixed(2) }}</span></div>
+              <div class="summary-row">
+                <span>Base Price</span>
+                <span class="value">{{
+                  previewPricing().baseAmount
+                    | currency: previewPricing().currency : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Service Fee</span>
+                <span class="value">{{
+                  previewPricing().feeAmount
+                    | currency: previewPricing().currency : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Tax (10%)</span>
+                <span class="value">{{
+                  previewPricing().taxAmount
+                    | currency: previewPricing().currency : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+              <div class="summary-total">
+                <span>Total</span>
+                <span>{{
+                  previewPricing().totalAmount
+                    | currency: previewPricing().currency : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
             </div>
           </p-card>
 

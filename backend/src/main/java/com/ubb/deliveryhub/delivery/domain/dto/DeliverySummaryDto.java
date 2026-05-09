@@ -14,6 +14,8 @@ import java.time.Instant;
 @Builder
 public class DeliverySummaryDto {
     String id;
+    String trackingCode;
+    String courierName;
     String status;
     String deliveryType;
     Instant createdAt;

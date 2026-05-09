@@ -63,8 +63,17 @@ public final class DeliveryMapper {
     public static DeliverySummaryDto toSummaryDto(Delivery d) {
         String pickupLine1 = d.getPickup() != null ? d.getPickup().getLine1() : null;
         String destinationLine1 = d.getDestination() != null ? d.getDestination().getLine1() : null;
+        String courierName = null;
+        if (d.getCourier() != null) {
+            courierName = d.getCourier().getDisplayName();
+            if (courierName == null || courierName.isBlank()) {
+                courierName = d.getCourier().getEmail();
+            }
+        }
         return DeliverySummaryDto.builder()
             .id(d.getId().toString())
+            .trackingCode(d.getTrackingCode())
+            .courierName(courierName)
             .status(d.getStatus().name())
             .deliveryType(d.getDeliveryType().name())
             .createdAt(d.getCreatedAt())
@@ -80,6 +89,7 @@ public final class DeliveryMapper {
         String destinationLine1 = d.getDestination() != null ? d.getDestination().getLine1() : null;
         return AvailableDeliveryDto.builder()
             .id(d.getId().toString())
+            .trackingCode(d.getTrackingCode())
             .status(d.getStatus().name())
             .deliveryType(d.getDeliveryType().name())
             .pickupLine1(pickupLine1)

@@ -10,7 +10,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { DeliveryType } from '@core/services/enum/delivery.types';
 import { TableEmptyStateComponent } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { catchError, finalize, of } from 'rxjs';
@@ -76,7 +75,7 @@ export class CourierHome {
         this.availableRequests.set(
           response.content.map((item) => ({
             id: item.id,
-            shortId: formatDeliveryCode(item.id),
+            shortId: item.trackingCode?.trim() || '-',
             destination: this.toDisplayPlace(item.destinationLine1),
             destinationHint: `from ${this.toDisplayPlace(item.pickupLine1)}`,
             deliveryType: this.normalizeDeliveryType(item.deliveryType),
@@ -88,12 +87,20 @@ export class CourierHome {
   }
 
   protected openDetails(deliveryId: string): void {
-    void this.router.navigate(['/courier/delivery', deliveryId]);
+    void this.router.navigate(['/courier/delivery', deliveryId], {
+      state: { requestDetailSource: 'dashboard' },
+    });
   }
 
   protected onRowSpace(event: Event, deliveryId: string): void {
     event.preventDefault();
     this.openDetails(deliveryId);
+  }
+
+  protected goToAvailableRequests(): void {
+    void this.router.navigate(['/courier/requests'], {
+      state: { requestsSource: 'dashboard' },
+    });
   }
 
   private normalizeDeliveryType(value: unknown): DeliveryType {

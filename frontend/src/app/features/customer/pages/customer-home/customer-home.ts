@@ -20,7 +20,6 @@ import {
   StatusTagComponent,
   TableEmptyStateComponent,
 } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { catchError, finalize, of } from 'rxjs';
@@ -29,6 +28,7 @@ interface CustomerDeliveryRow {
   id: string;
   shortId: string;
   status: string | DeliveryStatus;
+  deliveryType: 'STANDARD' | 'EXPRESS';
   destination: string;
   destinationHint: string;
   courierName: string;
@@ -153,11 +153,12 @@ export class CustomerHome {
 
     return {
       id: delivery.id,
-      shortId: formatDeliveryCode(delivery.id),
+      shortId: delivery.trackingCode?.trim() || '-',
       status: delivery.status,
+      deliveryType: delivery.deliveryType === 'EXPRESS' ? 'EXPRESS' : 'STANDARD',
       destination,
       destinationHint: `from ${pickup}`,
-      courierName: 'Not assigned',
+      courierName: delivery.courierName?.trim() || 'Not assigned',
       totalAmount: delivery.totalAmount,
       currency: delivery.currency,
     };

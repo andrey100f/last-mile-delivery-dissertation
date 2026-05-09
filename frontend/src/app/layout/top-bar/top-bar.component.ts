@@ -17,7 +17,8 @@ import { PageHeaderService } from '../page-header/page-header.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopBarComponent {
-  private static readonly DELIVERY_CODE_PATTERN = /(.*?)(DLV-[A-Z0-9]+)/;
+  private static readonly DELIVERY_CODE_PATTERN =
+    /(.*?)(DLV-[A-Z0-9-]+|(?=[A-Z0-9-]*\d)[A-Z0-9]{2,}(?:-[A-Z0-9]{2,})+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/;
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -25,20 +26,17 @@ export class TopBarComponent {
 
   readonly title = input('Dashboard');
   readonly subtitle = input<string | null>(null);
-  protected readonly action = this.pageHeaderService.actionOverride;
+  protected readonly actions = this.pageHeaderService.actionsOverride;
   protected readonly titleParts = computed(() => {
     const currentTitle = this.title();
-    const match = TopBarComponent.DELIVERY_CODE_PATTERN.exec(currentTitle);
-    if (!match) {
-      return {
-        beforeCode: currentTitle,
-        code: null as string | null,
-      };
+    return this.splitDeliveryCode(currentTitle);
+  });
+  protected readonly subtitleParts = computed(() => {
+    const currentSubtitle = this.subtitle();
+    if (!currentSubtitle) {
+      return null;
     }
-    return {
-      beforeCode: match[1],
-      code: match[2],
-    };
+    return this.splitDeliveryCode(currentSubtitle);
   });
 
   protected logout(): void {
@@ -46,7 +44,31 @@ export class TopBarComponent {
     void this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 
-  protected runHeaderAction(): void {
-    this.action()?.run();
+  protected runHeaderAction(index: number): void {
+    const currentActions = this.actions();
+    if (!currentActions || index < 0 || index >= currentActions.length) {
+      return;
+    }
+    currentActions[index].run();
+  }
+
+  private splitDeliveryCode(value: string): {
+    beforeCode: string;
+    code: string | null;
+    afterCode: string;
+  } {
+    const match = TopBarComponent.DELIVERY_CODE_PATTERN.exec(value);
+    if (!match) {
+      return {
+        beforeCode: value,
+        code: null,
+        afterCode: '',
+      };
+    }
+    return {
+      beforeCode: match[1],
+      code: match[2],
+      afterCode: value.slice(match.index + match[0].length),
+    };
   }
 }

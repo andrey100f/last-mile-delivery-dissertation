@@ -8,6 +8,7 @@ const loadStub = () =>
 export const customerRoutes: Routes = [
   {
     path: '',
+    pathMatch: 'full',
     data: {
       pageTitle: 'Dashboard',
       subtitle: "Welcome back! Here's your delivery overview",
@@ -28,13 +29,25 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'tracking',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Track delivery' },
+    loadComponent: () =>
+      import('./pages/track-delivery/track-delivery').then(
+        (m) => m.TrackDeliveryPage,
+      ),
+    data: {
+      pageTitle: 'Track delivery',
+      subtitle: 'Select an active delivery to open live tracking',
+    },
   },
   {
     path: 'tracking/:id',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Track delivery' },
+    loadComponent: () =>
+      import('./pages/live-tracking/live-tracking').then(
+        (m) => m.LiveTrackingPage,
+      ),
+    data: {
+      pageTitle: 'Track delivery',
+      subtitle: 'Live delivery status and ETA updates',
+    },
   },
   {
     path: 'delivery/:id',

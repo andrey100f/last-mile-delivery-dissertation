@@ -24,13 +24,22 @@ import {
   DeliveryStatus,
   normalizeDeliveryStatus,
   resolveDeliveryStatusPresentation,
-  StatusTagComponent,
 } from '@shared/ui/public-api';
 import { PageHeaderService } from '../../../../layout/page-header/page-header.service';
-import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { Skeleton } from 'primeng/skeleton';
-import { catchError, finalize, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  interval,
+  of,
+  startWith,
+  Subscription,
+  switchMap,
+  tap,
+} from 'rxjs';
+import { TrackingConnectionState, TrackingSocketEvent } from '../../models/tracking.models';
+import { TrackingSocketService } from '../../services/tracking-socket.service';
 
 interface DeliveryDetailErrorState {
   title: string;
@@ -39,7 +48,57 @@ interface DeliveryDetailErrorState {
 
 interface TimelineViewItem extends DeliveryStatusHistoryItemDto {
   completed: boolean;
+  title: string;
+  description: string;
+  icon: string;
 }
+
+const TIMELINE_STATUS_META: Readonly<
+  Record<
+    DeliveryStatus,
+    {
+      title: string;
+      description: string;
+      icon: string;
+    }
+  >
+> = {
+  [DeliveryStatus.CREATED]: {
+    title: 'Request Created',
+    description: 'Delivery request submitted successfully.',
+    icon: 'pi pi-plus-circle',
+  },
+  [DeliveryStatus.ASSIGNED]: {
+    title: 'Courier Assigned',
+    description: 'A courier accepted your delivery.',
+    icon: 'pi pi-user-plus',
+  },
+  [DeliveryStatus.PICKED_UP]: {
+    title: 'Package Picked Up',
+    description: 'Package collected from pickup location.',
+    icon: 'pi pi-box',
+  },
+  [DeliveryStatus.IN_TRANSIT]: {
+    title: 'In Transit',
+    description: 'Courier is en route to destination.',
+    icon: 'pi pi-send',
+  },
+  [DeliveryStatus.DELIVERED]: {
+    title: 'Delivered',
+    description: 'Package delivered successfully.',
+    icon: 'pi pi-check-circle',
+  },
+  [DeliveryStatus.CANCELLED]: {
+    title: 'Cancelled',
+    description: 'Delivery has been cancelled.',
+    icon: 'pi pi-times-circle',
+  },
+  [DeliveryStatus.FAILED]: {
+    title: 'Failed',
+    description: 'Delivery could not be completed.',
+    icon: 'pi pi-exclamation-triangle',
+  },
+};
 
 @Component({
   selector: 'app-delivery-detail-page',
@@ -47,10 +106,8 @@ interface TimelineViewItem extends DeliveryStatusHistoryItemDto {
     CurrencyPipe,
     DatePipe,
     RouterLink,
-    StatusTagComponent,
     Card,
     Skeleton,
-    Button,
   ],
   templateUrl: './delivery-detail.html',
   styleUrl: './delivery-detail.scss',
@@ -71,16 +128,25 @@ export class DeliveryDetailPage {
     DeliveryStatus.CANCELLED,
     DeliveryStatus.FAILED,
   ]);
+  private static readonly POLLING_INTERVAL_MS = 5000;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly deliveryService = inject(DeliveryService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageHeaderService = inject(PageHeaderService);
+  private readonly trackingSocketService = inject(TrackingSocketService);
+
+  private pollingSubscription: Subscription | null = null;
+  private socketSubscription: Subscription | null = null;
+  private detailRefreshHandle: ReturnType<typeof setTimeout> | null = null;
+  private lastSocketEventKey: string | null = null;
 
   protected readonly loading = signal(true);
   protected readonly delivery = signal<DeliveryDetailDto | null>(null);
   protected readonly error = signal<DeliveryDetailErrorState | null>(null);
+  protected readonly activeDeliveryId = signal<string | null>(null);
+  protected readonly connectionState = signal<TrackingConnectionState>('offline');
   protected readonly skeletonRows = [0, 1, 2];
 
   protected readonly timeline = computed<TimelineViewItem[]>(() => {
@@ -107,6 +173,9 @@ export class DeliveryDetailPage {
           status,
           recordedAt: historyItem?.recordedAt ?? '',
           completed: index <= currentFlowIndex,
+          title: TIMELINE_STATUS_META[status].title,
+          description: TIMELINE_STATUS_META[status].description,
+          icon: TIMELINE_STATUS_META[status].icon,
         };
       });
 
@@ -119,6 +188,9 @@ export class DeliveryDetailPage {
           status: item.status,
           recordedAt: item.recordedAt,
           completed: true,
+          title: this.timelineMeta(item.status).title,
+          description: this.timelineMeta(item.status).description,
+          icon: this.timelineMeta(item.status).icon,
         });
       }
 
@@ -137,6 +209,9 @@ export class DeliveryDetailPage {
     return source.map((item) => ({
       ...item,
       completed: true,
+      title: this.timelineMeta(item.status).title,
+      description: this.timelineMeta(item.status).description,
+      icon: this.timelineMeta(item.status).icon,
     }));
   });
 
@@ -162,35 +237,72 @@ export class DeliveryDetailPage {
     }
     return detail.id;
   });
-
-  protected readonly createdAt = computed(
-    () => this.delivery()?.createdAt ?? null,
-  );
-  protected readonly updatedAt = computed(
-    () => this.delivery()?.updatedAt ?? null,
-  );
+  protected readonly currentStatusPresentation = computed(() => {
+    const detail = this.delivery();
+    return resolveDeliveryStatusPresentation(detail?.status ?? 'UNKNOWN');
+  });
+  protected readonly statusChipClass = computed(() => {
+    switch (this.currentStatusPresentation().severity) {
+      case 'success':
+        return 'bg-emerald-50 text-emerald-700';
+      case 'info':
+        return 'bg-cyan-50 text-cyan-700';
+      case 'warn':
+        return 'bg-amber-50 text-amber-700';
+      case 'danger':
+        return 'bg-red-50 text-red-700';
+      case 'contrast':
+        return 'bg-slate-100 text-slate-800';
+      default:
+        return 'bg-slate-100 text-slate-600';
+    }
+  });
 
   constructor() {
     this.pageHeaderService.setOverride(
       'Delivery details',
       'Complete delivery information and status',
     );
-    this.destroyRef.onDestroy(() => this.pageHeaderService.clearOverride());
+    this.pageHeaderService.setActions([
+      {
+        label: 'Go back',
+        icon: 'pi pi-arrow-left',
+        run: () => this.goBack(),
+      },
+    ]);
+    this.destroyRef.onDestroy(() => {
+      this.pageHeaderService.clearOverride();
+      this.pageHeaderService.clearAction();
+      this.stopPolling();
+      this.unsubscribeSocket();
+      this.clearScheduledRefresh();
+      this.trackingSocketService.clearActiveDelivery();
+    });
 
     effect(() => {
-      const detail = this.delivery();
       const canTrack = this.canTrackDelivery();
-
-      if (detail && canTrack) {
-        this.pageHeaderService.setAction({
+      if (!canTrack) {
+        this.pageHeaderService.setActions([
+          {
+            label: 'Go back',
+            icon: 'pi pi-arrow-left',
+            run: () => this.goBack(),
+          },
+        ]);
+        return;
+      }
+      this.pageHeaderService.setActions([
+        {
+          label: 'Go back',
+          icon: 'pi pi-arrow-left',
+          run: () => this.goBack(),
+        },
+        {
           label: 'Track Delivery',
           icon: 'pi pi-map-marker',
           run: () => this.openTrackDelivery(),
-        });
-        return;
-      }
-
-      this.pageHeaderService.clearAction();
+        },
+      ]);
     });
 
     this.route.paramMap
@@ -199,6 +311,13 @@ export class DeliveryDetailPage {
         switchMap((params) => this.loadDelivery(params)),
       )
       .subscribe();
+
+    this.trackingSocketService.connectionState$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((state) => {
+        this.connectionState.set(state);
+        this.syncFallbackMode();
+      });
   }
 
   protected openTrackDelivery(): void {
@@ -206,15 +325,13 @@ export class DeliveryDetailPage {
     if (!detail) {
       return;
     }
-    void this.router.navigate(['/customer/tracking', detail.id]);
+    void this.router.navigate(['/customer/tracking', detail.id], {
+      state: { trackingSource: 'details' },
+    });
   }
 
   protected goBack(): void {
     void this.router.navigate(['/customer']);
-  }
-
-  protected statusLabel(status: string): string {
-    return resolveDeliveryStatusPresentation(status).label;
   }
 
   protected courierInitials(fullName: string | null | undefined): string {
@@ -231,6 +348,10 @@ export class DeliveryDetailPage {
       return parts[0].slice(0, 2).toUpperCase();
     }
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+
+  protected isDeliveredTimelineStatus(status: string): boolean {
+    return normalizeDeliveryStatus(status) === DeliveryStatus.DELIVERED;
   }
 
   protected hasDimensions(delivery: DeliveryDetailDto): boolean {
@@ -254,6 +375,12 @@ export class DeliveryDetailPage {
     this.loading.set(true);
     this.error.set(null);
     this.delivery.set(null);
+    this.activeDeliveryId.set(null);
+    this.lastSocketEventKey = null;
+    this.stopPolling();
+    this.unsubscribeSocket();
+    this.clearScheduledRefresh();
+    this.trackingSocketService.clearActiveDelivery();
 
     if (!DeliveryDetailPage.UUID_PATTERN.test(id)) {
       this.error.set({
@@ -286,11 +413,15 @@ export class DeliveryDetailPage {
       }),
       tap((detail) => {
         if (detail) {
+          this.activeDeliveryId.set(id);
           this.delivery.set(detail);
+          const headerDeliveryCode = detail.trackingCode?.trim() || detail.id;
           this.pageHeaderService.setOverride(
-            `Delivery ${this.deliveryCode()}`,
+            `Delivery ${headerDeliveryCode}`,
             'Complete delivery information and status',
           );
+          this.startSocketTracking(id);
+          this.syncFallbackMode();
         }
       }),
       finalize(() => this.loading.set(false)),
@@ -298,8 +429,176 @@ export class DeliveryDetailPage {
     );
   }
 
+  private startSocketTracking(deliveryId: string): void {
+    this.unsubscribeSocket();
+    this.socketSubscription = this.trackingSocketService
+      .watchDelivery(deliveryId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.handleSocketEvent(event));
+  }
+
+  private handleSocketEvent(event: TrackingSocketEvent): void {
+    if (this.activeDeliveryId() !== event.deliveryId) {
+      return;
+    }
+
+    const nextEventKey = `${normalizeDeliveryStatus(event.status)}|${event.updatedAt}`;
+    if (this.lastSocketEventKey === nextEventKey) {
+      return;
+    }
+    this.lastSocketEventKey = nextEventKey;
+
+    const previousStatus = normalizeDeliveryStatus(this.delivery()?.status ?? '');
+    this.applySocketEvent(event);
+    const nextStatus = normalizeDeliveryStatus(event.status);
+
+    if (previousStatus !== nextStatus) {
+      this.scheduleDetailRefresh(event.deliveryId);
+    }
+  }
+
+  private syncFallbackMode(): void {
+    const deliveryId = this.activeDeliveryId();
+    if (!deliveryId || this.error()) {
+      this.stopPolling();
+      return;
+    }
+
+    const state = this.connectionState();
+    if (state === 'live' || state === 'connecting') {
+      this.stopPolling();
+      return;
+    }
+
+    this.startPolling(deliveryId);
+  }
+
+  private startPolling(deliveryId: string): void {
+    if (this.pollingSubscription) {
+      return;
+    }
+
+    this.pollingSubscription = interval(DeliveryDetailPage.POLLING_INTERVAL_MS)
+      .pipe(
+        startWith(0),
+        switchMap(() =>
+          this.deliveryService.getById(deliveryId).pipe(catchError(() => of(null))),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((detail) => {
+        if (!detail || this.activeDeliveryId() !== deliveryId) {
+          return;
+        }
+        this.delivery.set(detail);
+        const headerDeliveryCode = detail.trackingCode?.trim() || detail.id;
+        this.pageHeaderService.setOverride(
+          `Delivery ${headerDeliveryCode}`,
+          'Complete delivery information and status',
+        );
+      });
+  }
+
+  private stopPolling(): void {
+    if (!this.pollingSubscription) {
+      return;
+    }
+    this.pollingSubscription.unsubscribe();
+    this.pollingSubscription = null;
+  }
+
+  private unsubscribeSocket(): void {
+    if (!this.socketSubscription) {
+      return;
+    }
+    this.socketSubscription.unsubscribe();
+    this.socketSubscription = null;
+  }
+
+  private refreshDelivery(deliveryId: string): void {
+    this.deliveryService
+      .getById(deliveryId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(() => of(null)),
+      )
+      .subscribe((detail) => {
+        if (!detail || this.activeDeliveryId() !== deliveryId) {
+          return;
+        }
+        this.delivery.set(detail);
+        const headerDeliveryCode = detail.trackingCode?.trim() || detail.id;
+        this.pageHeaderService.setOverride(
+          `Delivery ${headerDeliveryCode}`,
+          'Complete delivery information and status',
+        );
+      });
+  }
+
+  private applySocketEvent(event: TrackingSocketEvent): void {
+    this.delivery.update((current) => {
+      if (!current || current.id !== event.deliveryId) {
+        return current;
+      }
+
+      const normalizedIncomingStatus = normalizeDeliveryStatus(event.status);
+      const nextTimeline = [...current.timeline];
+      const existingIndex = nextTimeline.findIndex(
+        (item) =>
+          normalizeDeliveryStatus(item.status) === normalizedIncomingStatus &&
+          item.recordedAt === event.updatedAt,
+      );
+      if (existingIndex === -1) {
+        nextTimeline.push({
+          status: event.status,
+          recordedAt: event.updatedAt,
+        });
+      }
+
+      return {
+        ...current,
+        status: event.status,
+        updatedAt: event.updatedAt,
+        timeline: nextTimeline,
+      };
+    });
+  }
+
+  private scheduleDetailRefresh(deliveryId: string): void {
+    this.clearScheduledRefresh();
+    this.detailRefreshHandle = setTimeout(() => {
+      this.detailRefreshHandle = null;
+      this.refreshDelivery(deliveryId);
+    }, 500);
+  }
+
+  private clearScheduledRefresh(): void {
+    if (!this.detailRefreshHandle) {
+      return;
+    }
+    clearTimeout(this.detailRefreshHandle);
+    this.detailRefreshHandle = null;
+  }
+
   private isPositiveNumber(value: number | null | undefined): value is number {
     return typeof value === 'number' && Number.isFinite(value) && value > 0;
+  }
+
+  private timelineMeta(status: string): {
+    title: string;
+    description: string;
+    icon: string;
+  } {
+    const normalized = normalizeDeliveryStatus(status) as DeliveryStatus;
+    const matched = TIMELINE_STATUS_META[normalized];
+    if (matched) {
+      return matched;
+    }
+    return {
+      title: resolveDeliveryStatusPresentation(status).label,
+      description: 'Delivery status updated.',
+      icon: 'pi pi-clock',
+    };
   }
 
 }

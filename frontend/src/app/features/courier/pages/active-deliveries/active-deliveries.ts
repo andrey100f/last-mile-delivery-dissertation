@@ -14,7 +14,6 @@ import {
   PageDto,
 } from '@core/services/enum/delivery.types';
 import { StatusTagComponent, TableEmptyStateComponent } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
@@ -54,7 +53,9 @@ export class ActiveDeliveriesPage {
   }
 
   protected openActiveDelivery(deliveryId: string): void {
-    void this.router.navigate(['/courier/active', deliveryId]);
+    void this.router.navigate(['/courier/active', deliveryId], {
+      state: { activeDeliverySource: 'active-deliveries' },
+    });
   }
 
   protected retry(): void {
@@ -96,7 +97,7 @@ export class ActiveDeliveriesPage {
         this.activeDeliveries.set(
           prioritized.map((item) => ({
             id: item.id,
-            shortId: formatDeliveryCode(item.id),
+            shortId: item.trackingCode?.trim() || '-',
             status: item.status || 'ASSIGNED',
             deliveryType: item.deliveryType ?? 'STANDARD',
             pickup: this.toDisplayPlace(item.pickupLine1),

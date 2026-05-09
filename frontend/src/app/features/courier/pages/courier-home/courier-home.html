@@ -31,12 +31,13 @@
       <div class="mb-3">
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-sm font-semibold text-p-text-primary">Available Requests</h3>
-          <a
-            [routerLink]="['/courier/requests']"
+          <button
+            type="button"
             class="inline-flex items-center justify-center rounded-(--p-radius-md) px-4 py-2 text-sm font-semibold text-blue-500 transition-colors hover:bg-slate-100 hover:text-blue-600"
+            (click)="goToAvailableRequests()"
           >
             View All
-          </a>
+          </button>
         </div>
       </div>
 
@@ -47,7 +48,7 @@
           <ng-template #header>
             <tr class="border-b border-p-surface-border bg-p-surface-ground">
               <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-                ID
+                Delivery Code
               </th>
               <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
                 Route

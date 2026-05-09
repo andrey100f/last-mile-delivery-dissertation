@@ -18,7 +18,6 @@ import {
   normalizeDeliveryStatus,
   StatusTagComponent,
 } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
@@ -51,6 +50,12 @@ interface DeliveryProgressStep {
   current: boolean;
   recordedAt: string | null;
 }
+
+type ActiveDeliveryEntrySource =
+  | 'active-deliveries'
+  | 'available-requests'
+  | 'dashboard'
+  | null;
 
 const COURIER_ACTIONS: Readonly<
   Record<CourierAction['id'], Readonly<CourierAction>>
@@ -178,6 +183,7 @@ export class ActiveDeliveryPage {
   protected readonly pendingActionId = signal<CourierAction['id'] | null>(null);
   protected readonly detail = signal<DeliveryDetailDto | null>(null);
   protected readonly error = signal<ActiveDeliveryErrorState | null>(null);
+  protected readonly entrySource = signal<ActiveDeliveryEntrySource>(null);
   protected readonly skeletonRows = [0, 1, 2];
   protected readonly allowedActions = computed(() =>
     getAllowedActions(this.detail()?.status ?? ''),
@@ -187,7 +193,8 @@ export class ActiveDeliveryPage {
     if (!delivery) {
       return '-';
     }
-    return formatDeliveryCode(delivery.id);
+    const trackingCode = delivery.trackingCode?.trim();
+    return trackingCode && trackingCode.length > 0 ? trackingCode : '-';
   });
   protected readonly currentStatus = computed(() =>
     normalizeDeliveryStatus(this.detail()?.status ?? ''),
@@ -264,7 +271,10 @@ export class ActiveDeliveryPage {
       'Active delivery',
       'Update status as you progress the route',
     );
-    this.destroyRef.onDestroy(() => this.pageHeaderService.clearOverride());
+    this.destroyRef.onDestroy(() => {
+      this.pageHeaderService.clearOverride();
+      this.pageHeaderService.clearAction();
+    });
 
     this.route.paramMap
       .pipe(
@@ -333,8 +343,9 @@ export class ActiveDeliveryPage {
       .subscribe({
         next: (updatedDetail) => {
           this.detail.set(updatedDetail);
+          const trackingCode = updatedDetail.trackingCode?.trim() || '-';
           this.pageHeaderService.setOverride(
-            `Active delivery ${formatDeliveryCode(updatedDetail.id)}`,
+            `Active delivery ${trackingCode}`,
             'Update status as you progress the route',
           );
           this.messageService.add({
@@ -389,6 +400,9 @@ export class ActiveDeliveryPage {
 
   private loadDetail(params: ParamMap) {
     const id = params.get('id')?.trim() ?? '';
+    const source = this.resolveEntrySource();
+    this.entrySource.set(source);
+    this.applyHeaderAction(source);
     this.loading.set(true);
     this.error.set(null);
     this.detail.set(null);
@@ -428,12 +442,58 @@ export class ActiveDeliveryPage {
           return;
         }
         this.detail.set(detail);
+        const trackingCode = detail.trackingCode?.trim() || '-';
         this.pageHeaderService.setOverride(
-          `Active delivery ${formatDeliveryCode(detail.id)}`,
+          `Active delivery ${trackingCode}`,
           'Update status as you progress the route',
         );
       }),
       finalize(() => this.loading.set(false)),
     );
+  }
+
+  private resolveEntrySource(): ActiveDeliveryEntrySource {
+    const currentNavigation = this.router.getCurrentNavigation();
+    const rawStateSource =
+      currentNavigation?.extras.state?.['activeDeliverySource'] ??
+      history.state?.activeDeliverySource;
+    if (rawStateSource === 'active-deliveries') {
+      return 'active-deliveries';
+    }
+    if (rawStateSource === 'available-requests') {
+      return 'available-requests';
+    }
+    if (rawStateSource === 'dashboard') {
+      return 'dashboard';
+    }
+    return null;
+  }
+
+  private applyHeaderAction(source: ActiveDeliveryEntrySource): void {
+    if (source === 'active-deliveries') {
+      this.pageHeaderService.setAction({
+        label: 'Back to active deliveries',
+        icon: 'pi pi-arrow-left',
+        run: () => this.goToActiveDeliveries(),
+      });
+      return;
+    }
+    if (source === 'available-requests') {
+      this.pageHeaderService.setAction({
+        label: 'Back to available requests',
+        icon: 'pi pi-arrow-left',
+        run: () => this.goToRequests(),
+      });
+      return;
+    }
+    if (source === 'dashboard') {
+      this.pageHeaderService.setAction({
+        label: 'Back to dashboard',
+        icon: 'pi pi-arrow-left',
+        run: () => void this.router.navigate(['/courier']),
+      });
+      return;
+    }
+    this.pageHeaderService.clearAction();
   }
 }

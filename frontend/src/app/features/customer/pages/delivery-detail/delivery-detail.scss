@@ -14,7 +14,7 @@
 
 @media (min-width: 1024px) {
   .detail-layout {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
     align-items: start;
   }
 }
@@ -40,13 +40,13 @@
 .section-header {
   display: flex;
   align-items: center;
-  min-height: 3.2rem;
-  padding: 0 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--p-surface-border) 65%, #aeb7c2);
+  min-height: 0;
+  padding: 1rem 1.25rem 0;
+  border-bottom: 0;
 }
 
 .section-body {
-  padding: 0.9rem 1rem 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
 }
 
 .card-title {
@@ -214,7 +214,7 @@
 }
 
 :host ::ng-deep .status-summary-card.p-card {
-  border: 1px solid color-mix(in srgb, var(--p-surface-border) 70%, #d5dbe3);
+  border: 1px solid var(--p-surface-border);
   box-shadow: none;
 }
 
@@ -224,7 +224,7 @@
 }
 
 .status-summary-body {
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 .status-card-icon {
@@ -352,7 +352,7 @@
 }
 
 .summary-total span:last-child {
-  color: var(--p-primary-color);
+  color: var(--p-green-600);
   font-size: 1.125rem;
 }
 

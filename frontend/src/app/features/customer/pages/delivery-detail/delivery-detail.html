@@ -32,66 +32,98 @@
       </p-card>
     } @else if (delivery(); as detail) {
       <div class="detail-layout">
-        <div class="detail-main">
-          <p-card styleClass="mb-4 status-summary-card">
-            <div class="status-summary-body">
-              <div class="status-header-row mb-4">
-                <div class="status-header-content">
-                  <div class="card-title">
-                    <span class="card-title-text status-title-muted">Current Status</span>
-                  </div>
-                  <div class="status-chip-wrap mt-2">
-                    <app-status-tag [status]="detail.status" size="sm" />
-                  </div>
-                </div>
-                <div class="status-card-icon" aria-hidden="true">
-                  <i class="pi pi-box"></i>
+        <div class="detail-main space-y-4">
+          <p-card styleClass="status-summary-card">
+            <div class="status-summary-body grid gap-3 md:grid-cols-3">
+              <div class="flex items-start gap-2">
+                <span
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-600"
+                >
+                  <i class="pi pi-truck text-sm"></i>
+                </span>
+                <div>
+                  <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">
+                    Delivery ID
+                  </p>
+                  <p class="text-base font-semibold text-p-text-primary">{{ deliveryCode() }}</p>
                 </div>
               </div>
-              <div class="status-times mt-2">
-                <div>
-                  <p class="label">Created</p>
-                  <p class="value">
-                    @if (createdAt()) {
-                      {{ createdAt() | date: 'medium' }}
-                    } @else {
-                      -
+
+              <div>
+                <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Status</p>
+                <div class="mt-1">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold"
+                    [class]="statusChipClass()"
+                  >
+                    @if (currentStatusPresentation().icon; as iconClass) {
+                      <i [class]="iconClass + ' text-[10px]'"></i>
                     }
-                  </p>
+                    {{ currentStatusPresentation().label }}
+                  </span>
                 </div>
-                <div>
-                  <p class="label">Last updated</p>
-                  <p class="value">
-                    @if (updatedAt()) {
-                      {{ updatedAt() | date: 'medium' }}
-                    } @else {
-                      -
-                    }
-                  </p>
+              </div>
+
+              <div>
+                <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Type</p>
+                <div class="mt-1">
+                  @if (detail.deliveryType === 'EXPRESS') {
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                    >
+                      <i class="pi pi-bolt text-[10px]"></i>
+                      Express
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                    >
+                      <i class="pi pi-box text-[10px]"></i>
+                      Standard
+                    </span>
+                  }
                 </div>
               </div>
             </div>
           </p-card>
 
-          <p-card styleClass="section-card mb-4">
-            <div class="section-header">
-              <div class="card-title">
-                <span class="title-icon title-icon-success"><i class="pi pi-clock"></i></span>
-                <span class="card-title-text">Delivery Timeline</span>
+          <p-card styleClass="section-card">
+            <div class="section-body space-y-3">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-clock text-[11px] text-blue-600" aria-hidden="true"></i>
+                <h3 class="text-sm font-semibold text-p-text-primary">Delivery Timeline</h3>
               </div>
-            </div>
-            <div class="section-body">
-              <div class="flex flex-col gap-4">
-                @for (item of timeline(); track item.status + item.recordedAt) {
-                  <div class="timeline-row" [class.timeline-row-completed]="item.completed">
-                    <div class="timeline-marker">
-                      <i [class]="item.completed ? 'pi pi-check' : 'pi pi-clock'"></i>
-                    </div>
-                    <div class="timeline-content">
-                      <p class="text-sm font-medium text-p-text-primary">{{ statusLabel(item.status) }}</p>
+              <div class="space-y-3 border-t border-p-surface-border pt-4">
+                @for (item of timeline(); track item.status + item.recordedAt; let itemIndex = $index) {
+                  <div
+                    class="rounded-md border p-3"
+                    [class.border-blue-200]="item.completed && !isDeliveredTimelineStatus(item.status)"
+                    [class.bg-white]="!isDeliveredTimelineStatus(item.status)"
+                    [class.border-emerald-200]="item.completed && isDeliveredTimelineStatus(item.status)"
+                    [class.bg-emerald-50/40]="item.completed && isDeliveredTimelineStatus(item.status)"
+                    [class.border-p-surface-border]="!item.completed"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-start gap-2">
+                        <span
+                          class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px]"
+                          [class.bg-emerald-100]="item.completed && isDeliveredTimelineStatus(item.status)"
+                          [class.text-emerald-700]="item.completed && isDeliveredTimelineStatus(item.status)"
+                          [class.bg-blue-100]="item.completed && !isDeliveredTimelineStatus(item.status)"
+                          [class.text-blue-700]="item.completed && !isDeliveredTimelineStatus(item.status)"
+                          [class.bg-slate-100]="!item.completed"
+                          [class.text-slate-500]="!item.completed"
+                        >
+                          <i [class]="item.icon"></i>
+                        </span>
+                        <div>
+                          <p class="text-sm font-semibold text-p-text-primary">{{ item.title }}</p>
+                          <p class="text-xs text-p-text-muted">{{ item.description }}</p>
+                        </div>
+                      </div>
                       <p class="text-xs text-p-text-muted">
                         @if (item.recordedAt) {
-                          {{ item.recordedAt | date: 'medium' }}
+                          {{ item.recordedAt | date: 'HH:mm' }}
                         } @else {
                           -
                         }
@@ -105,13 +137,12 @@
 
           <div class="grid gap-4 md:grid-cols-2">
             <p-card styleClass="section-card">
-              <div class="section-header">
-                <div class="card-title">
-                  <span class="title-icon title-icon-success"><i class="pi pi-map-marker"></i></span>
-                  <span class="card-title-text">Pickup Location</span>
+              <div class="section-body space-y-2">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-map-marker text-[11px] text-emerald-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Pickup Location</h3>
                 </div>
-              </div>
-              <div class="section-body">
+                <div class="border-t border-p-surface-border pt-4">
                 <div class="location-details">
                   <div>
                     <p class="location-label">Address</p>
@@ -126,17 +157,17 @@
                     <p class="location-value">{{ detail.pickup.contactPhone }}</p>
                   </div>
                 </div>
+                </div>
               </div>
             </p-card>
 
             <p-card styleClass="section-card">
-              <div class="section-header">
-                <div class="card-title">
-                  <span class="title-icon title-icon-danger"><i class="pi pi-map-marker"></i></span>
-                  <span class="card-title-text">Destination</span>
+              <div class="section-body space-y-2">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-map-marker text-[11px] text-rose-600" aria-hidden="true"></i>
+                  <h3 class="text-sm font-semibold text-p-text-primary">Destination</h3>
                 </div>
-              </div>
-              <div class="section-body">
+                <div class="border-t border-p-surface-border pt-4">
                 <div class="location-details">
                   <div>
                     <p class="location-label">Address</p>
@@ -151,48 +182,52 @@
                     <p class="location-value">{{ detail.destination.contactPhone }}</p>
                   </div>
                 </div>
+                </div>
               </div>
             </p-card>
           </div>
         </div>
 
-        <div class="detail-side">
-          <p-card styleClass="section-card mb-4">
-            <div class="section-header">
-              <div class="card-title">
-                <span class="title-icon title-icon-info"><i class="pi pi-user"></i></span>
-                <span class="card-title-text">Courier</span>
+        <div class="detail-side space-y-4">
+          <p-card styleClass="section-card">
+            <div class="section-body space-y-3">
+              <div class="flex items-center gap-2">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-(--p-radius-md) bg-cyan-50 text-cyan-600"
+                >
+                  <i class="pi pi-user text-[11px]" aria-hidden="true"></i>
+                </span>
+                <h3 class="text-sm font-semibold text-p-text-primary">Courier Details</h3>
               </div>
-            </div>
-            <div class="section-body">
-              @if (detail.courier; as courier) {
-                <div class="courier-mini">
-                  <div class="courier-avatar">{{ courierInitials(courier.fullName) }}</div>
-                  <div class="courier-meta">
-                    <p class="courier-name">{{ courier.fullName }}</p>
-                    <p class="courier-phone">{{ courier.phone || 'Phone unavailable' }}</p>
+              <div class="border-t border-p-surface-border pt-4">
+                @if (detail.courier; as courier) {
+                  <div class="courier-mini">
+                    <div class="courier-avatar">{{ courierInitials(courier.fullName) }}</div>
+                    <div class="courier-meta">
+                      <p class="courier-name">{{ courier.fullName }}</p>
+                      <p class="courier-phone">{{ courier.phone || 'Phone unavailable' }}</p>
+                    </div>
                   </div>
-                </div>
-              } @else {
-                <div class="section-lines">
-                  <p class="courier-placeholder-title">Courier not assigned</p>
-                  <p class="courier-placeholder-note">
-                    We will show courier contact details once assignment is confirmed.
-                  </p>
-                </div>
-              }
+                } @else {
+                  <div class="section-lines">
+                    <p class="courier-placeholder-title">Courier not assigned</p>
+                    <p class="courier-placeholder-note">
+                      We will show courier contact details once assignment is confirmed.
+                    </p>
+                  </div>
+                }
+              </div>
             </div>
           </p-card>
 
-          <p-card styleClass="section-card mb-4">
-            <div class="section-header">
-              <div class="card-title">
-                <span class="title-icon title-icon-info"><i class="pi pi-box"></i></span>
-                <span class="card-title-text">Package Details</span>
+          <p-card styleClass="section-card">
+            <div class="section-body space-y-3">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-box text-[11px] text-cyan-600" aria-hidden="true"></i>
+                <h3 class="text-sm font-semibold text-p-text-primary">Package Details</h3>
               </div>
-            </div>
-            <div class="section-body">
-              <div class="package-details">
+              <div class="border-t border-p-surface-border pt-4">
+                <div class="package-details">
                 <div class="package-field">
                   <p class="package-field-label">Description</p>
                   <p class="package-field-value">{{ detail.package.description || '-' }}</p>
@@ -207,19 +242,19 @@
                     {{ detail.specialInstructions || detail.package.specialInstructions || '-' }}
                   </p>
                 </div>
+                </div>
               </div>
             </div>
           </p-card>
 
           <p-card styleClass="section-card">
-            <div class="section-header">
-              <div class="card-title">
-                <span class="title-icon title-icon-success"><i class="pi pi-dollar"></i></span>
-                <span class="card-title-text">Pricing</span>
+            <div class="section-body space-y-3">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-dollar text-[11px] text-emerald-600" aria-hidden="true"></i>
+                <h3 class="text-sm font-semibold text-p-text-primary">Pricing</h3>
               </div>
-            </div>
-            <div class="section-body">
-              <div class="pricing-summary">
+              <div class="border-t border-p-surface-border pt-4">
+                <div class="pricing-summary">
                 <div class="summary-row">
                   <span>Base Price</span>
                   <span class="value">{{
@@ -242,19 +277,11 @@
                   <span>Total</span>
                   <span>{{ detail.totalAmount | currency: detail.currency : 'symbol' : '1.2-2' }}</span>
                 </div>
+                </div>
               </div>
             </div>
           </p-card>
 
-          <div class="mt-4">
-            <p-button
-              type="button"
-              label="Go back"
-              styleClass="w-full cancel-btn"
-              [outlined]="true"
-              (onClick)="goBack()"
-            />
-          </div>
         </div>
       </div>
     }

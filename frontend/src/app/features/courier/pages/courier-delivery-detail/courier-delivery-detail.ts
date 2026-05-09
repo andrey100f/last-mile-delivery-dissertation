@@ -11,7 +11,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { DeliveryDetailDto } from '@core/services/enum/delivery.types';
 import { DeliveryStatus, normalizeDeliveryStatus } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Card } from 'primeng/card';
@@ -24,6 +23,8 @@ interface CourierDetailErrorState {
   title: string;
   message: string;
 }
+
+type CourierDetailEntrySource = 'dashboard' | 'available-requests' | null;
 
 @Component({
   selector: 'app-courier-delivery-detail',
@@ -52,6 +53,7 @@ export class CourierDeliveryDetailPage {
   protected readonly accepting = signal(false);
   protected readonly detail = signal<DeliveryDetailDto | null>(null);
   protected readonly error = signal<CourierDetailErrorState | null>(null);
+  protected readonly entrySource = signal<CourierDetailEntrySource>(null);
   protected readonly skeletonRows = [0, 1, 2];
   protected readonly canAccept = computed(() => {
     const delivery = this.detail();
@@ -62,11 +64,17 @@ export class CourierDeliveryDetailPage {
   });
 
   constructor() {
+    const source = this.resolveEntrySource();
+    this.entrySource.set(source);
     this.pageHeaderService.setOverride(
       'Delivery Request',
       'Review delivery details before accepting',
     );
-    this.destroyRef.onDestroy(() => this.pageHeaderService.clearOverride());
+    this.applyHeaderAction(source);
+    this.destroyRef.onDestroy(() => {
+      this.pageHeaderService.clearOverride();
+      this.pageHeaderService.clearAction();
+    });
 
     this.route.paramMap
       .pipe(
@@ -77,6 +85,11 @@ export class CourierDeliveryDetailPage {
   }
 
   protected goBack(): void {
+    const source = this.entrySource();
+    if (source === 'dashboard') {
+      void this.router.navigate(['/courier']);
+      return;
+    }
     void this.router.navigate(['/courier/requests']);
   }
 
@@ -195,8 +208,9 @@ export class CourierDeliveryDetailPage {
         if (!detail) {
           return;
         }
+        const trackingCode = detail.trackingCode?.trim() || '-';
         this.pageHeaderService.setOverride(
-          `Delivery Request ${formatDeliveryCode(detail.id)}`,
+          `Delivery Request ${trackingCode}`,
           'Review delivery details before accepting',
         );
       }),
@@ -205,9 +219,45 @@ export class CourierDeliveryDetailPage {
   }
 
   private async navigateToActiveDelivery(deliveryId: string): Promise<void> {
-    const navigated = await this.router.navigate(['/courier/active', deliveryId]);
+    const source = this.entrySource();
+    const navigated = await this.router.navigate(['/courier/active', deliveryId], {
+      state: {
+        activeDeliverySource:
+          source === 'dashboard' ? 'dashboard' : 'available-requests',
+      },
+    });
     if (!navigated) {
       await this.router.navigate(['/courier/delivery', deliveryId]);
     }
+  }
+
+  private resolveEntrySource(): CourierDetailEntrySource {
+    const currentNavigation = this.router.getCurrentNavigation();
+    const rawStateSource =
+      currentNavigation?.extras.state?.['requestDetailSource'] ??
+      history.state?.requestDetailSource;
+    if (rawStateSource === 'dashboard') {
+      return 'dashboard';
+    }
+    if (rawStateSource === 'available-requests') {
+      return 'available-requests';
+    }
+    return null;
+  }
+
+  private applyHeaderAction(source: CourierDetailEntrySource): void {
+    if (source === 'dashboard') {
+      this.pageHeaderService.setAction({
+        label: 'Back to dashboard',
+        icon: 'pi pi-arrow-left',
+        run: () => this.goBack(),
+      });
+      return;
+    }
+    this.pageHeaderService.setAction({
+      label: 'Back to available requests',
+      icon: 'pi pi-arrow-left',
+      run: () => this.goBack(),
+    });
   }
 }
