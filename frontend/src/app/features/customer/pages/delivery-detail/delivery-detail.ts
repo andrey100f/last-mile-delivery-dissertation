@@ -139,6 +139,8 @@ export class DeliveryDetailPage {
 
   private pollingSubscription: Subscription | null = null;
   private socketSubscription: Subscription | null = null;
+  private detailRefreshHandle: ReturnType<typeof setTimeout> | null = null;
+  private lastSocketEventKey: string | null = null;
 
   protected readonly loading = signal(true);
   protected readonly delivery = signal<DeliveryDetailDto | null>(null);
@@ -273,6 +275,7 @@ export class DeliveryDetailPage {
       this.pageHeaderService.clearAction();
       this.stopPolling();
       this.unsubscribeSocket();
+      this.clearScheduledRefresh();
       this.trackingSocketService.clearActiveDelivery();
     });
 
@@ -373,8 +376,10 @@ export class DeliveryDetailPage {
     this.error.set(null);
     this.delivery.set(null);
     this.activeDeliveryId.set(null);
+    this.lastSocketEventKey = null;
     this.stopPolling();
     this.unsubscribeSocket();
+    this.clearScheduledRefresh();
     this.trackingSocketService.clearActiveDelivery();
 
     if (!DeliveryDetailPage.UUID_PATTERN.test(id)) {
@@ -436,7 +441,20 @@ export class DeliveryDetailPage {
     if (this.activeDeliveryId() !== event.deliveryId) {
       return;
     }
-    this.refreshDelivery(event.deliveryId);
+
+    const nextEventKey = `${normalizeDeliveryStatus(event.status)}|${event.updatedAt}`;
+    if (this.lastSocketEventKey === nextEventKey) {
+      return;
+    }
+    this.lastSocketEventKey = nextEventKey;
+
+    const previousStatus = normalizeDeliveryStatus(this.delivery()?.status ?? '');
+    this.applySocketEvent(event);
+    const nextStatus = normalizeDeliveryStatus(event.status);
+
+    if (previousStatus !== nextStatus) {
+      this.scheduleDetailRefresh(event.deliveryId);
+    }
   }
 
   private syncFallbackMode(): void {
@@ -515,6 +533,51 @@ export class DeliveryDetailPage {
           'Complete delivery information and status',
         );
       });
+  }
+
+  private applySocketEvent(event: TrackingSocketEvent): void {
+    this.delivery.update((current) => {
+      if (!current || current.id !== event.deliveryId) {
+        return current;
+      }
+
+      const normalizedIncomingStatus = normalizeDeliveryStatus(event.status);
+      const nextTimeline = [...current.timeline];
+      const existingIndex = nextTimeline.findIndex(
+        (item) =>
+          normalizeDeliveryStatus(item.status) === normalizedIncomingStatus &&
+          item.recordedAt === event.updatedAt,
+      );
+      if (existingIndex === -1) {
+        nextTimeline.push({
+          status: event.status,
+          recordedAt: event.updatedAt,
+        });
+      }
+
+      return {
+        ...current,
+        status: event.status,
+        updatedAt: event.updatedAt,
+        timeline: nextTimeline,
+      };
+    });
+  }
+
+  private scheduleDetailRefresh(deliveryId: string): void {
+    this.clearScheduledRefresh();
+    this.detailRefreshHandle = setTimeout(() => {
+      this.detailRefreshHandle = null;
+      this.refreshDelivery(deliveryId);
+    }, 500);
+  }
+
+  private clearScheduledRefresh(): void {
+    if (!this.detailRefreshHandle) {
+      return;
+    }
+    clearTimeout(this.detailRefreshHandle);
+    this.detailRefreshHandle = null;
   }
 
   private isPositiveNumber(value: number | null | undefined): value is number {

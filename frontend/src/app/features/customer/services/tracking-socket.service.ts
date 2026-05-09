@@ -2,7 +2,7 @@ import { Injectable, NgZone, inject, isDevMode } from '@angular/core';
 import { AuthService } from '@core/services/auth/auth';
 import { Client, IMessage, ReconnectionTimeMode, StompSubscription } from '@stomp/stompjs';
 import { environment } from '@environment/environment';
-import { BehaviorSubject, Observable, Subject, filter } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, filter } from 'rxjs';
 import {
   TrackingConnectionState,
   TrackingSocketEvent,
@@ -33,7 +33,7 @@ export class TrackingSocketService {
   watchDelivery(deliveryId: string): Observable<TrackingSocketEvent> {
     const normalizedDeliveryId = deliveryId.trim();
     if (!TrackingSocketService.DELIVERY_ID_PATTERN.test(normalizedDeliveryId)) {
-      return this.eventsSubject.pipe(filter(() => false));
+      return EMPTY;
     }
 
     this.watchedDeliveryIds.add(normalizedDeliveryId);
@@ -273,7 +273,19 @@ export class TrackingSocketService {
   }
 
   private resolveWebSocketUrl(): string {
-    const normalizedBase = normalizeApiBase(environment.apiUrl);
+    const rawApiUrl = environment.apiUrl.trim();
+    if (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) {
+      try {
+        const parsed = new URL(rawApiUrl);
+        const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+        const normalizedBase = normalizeApiBase(parsed.pathname);
+        return `${wsProtocol}//${parsed.host}${normalizedBase}/ws-tracking`;
+      } catch {
+        // Fall back to same-origin behavior below if configured URL is malformed.
+      }
+    }
+
+    const normalizedBase = normalizeApiBase(rawApiUrl);
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${wsProtocol}//${window.location.host}${normalizedBase}/ws-tracking`;
   }
