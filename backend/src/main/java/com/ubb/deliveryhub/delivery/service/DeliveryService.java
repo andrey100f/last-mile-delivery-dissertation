@@ -11,6 +11,7 @@ import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
+import com.ubb.deliveryhub.delivery.domain.dto.DeliveryStatusSnapshotDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.UpdateDeliveryStatusRequest;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
@@ -106,6 +107,24 @@ public class DeliveryService {
         deliveryAuthorization.assertCanView(delivery, authentication);
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(id);
         return DeliveryMapper.toDetailDto(delivery, history);
+    }
+
+    @Transactional(readOnly = true)
+    public DeliveryStatusSnapshotDto getStatusSnapshotForCurrentUser(UUID id, Authentication authentication) {
+        var snapshot = deliveryRepository.findStatusSnapshotById(id)
+            .orElseThrow(DeliveryNotFoundException::new);
+        deliveryAuthorization.assertCanView(
+            snapshot.getCustomerId(),
+            snapshot.getCourierId(),
+            snapshot.getStatus(),
+            authentication
+        );
+        return DeliveryMapper.toStatusSnapshotDto(
+            snapshot.getStatus().name(),
+            null,
+            snapshot.getUpdatedAt(),
+            DeliveryTrackingProgress.fromStatus(snapshot.getStatus())
+        );
     }
 
     @Transactional(readOnly = true)

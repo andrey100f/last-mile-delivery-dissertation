@@ -60,7 +60,7 @@ Events are published to `/topic/deliveries/{deliveryId}/tracking` after successf
 - Client reconnect strategy:
   - exponential backoff (`1s`, `2s`, `4s`, ... up to `30s`),
   - re-subscribe after reconnect,
-  - fallback to polling (`GET /api/deliveries/{id}` and read `status`) while socket is down.
+  - fallback to polling (`GET /api/deliveries/{id}/status`) while socket is down.
 - Reverse proxy/Nginx:
   - enable HTTP upgrade headers for `/api/ws-tracking`,
   - use sticky sessions if running multiple API nodes with in-memory broker.

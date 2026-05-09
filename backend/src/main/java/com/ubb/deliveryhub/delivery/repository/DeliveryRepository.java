@@ -25,6 +25,18 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
     Optional<Delivery> findWithCustomerAndCourierById(@Param("id") UUID id);
 
+    @Query("""
+        SELECT
+          d.status AS status,
+          d.updatedAt AS updatedAt,
+          d.customer.id AS customerId,
+          c.id AS courierId
+        FROM Delivery d
+        LEFT JOIN d.courier c
+        WHERE d.id = :id
+        """)
+    Optional<DeliveryStatusSnapshotView> findStatusSnapshotById(@Param("id") UUID id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"customer", "courier"})
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
