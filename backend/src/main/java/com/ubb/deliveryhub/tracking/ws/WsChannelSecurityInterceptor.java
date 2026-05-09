@@ -27,6 +27,7 @@ public class WsChannelSecurityInterceptor implements ChannelInterceptor {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final List<String> BROKER_DESTINATION_PREFIXES = List.of("/topic", "/queue");
     private static final Pattern TRACKING_TOPIC_PATTERN =
         Pattern.compile("^/topic/deliveries/([0-9a-fA-F-]{36})/tracking$");
 
@@ -55,6 +56,8 @@ public class WsChannelSecurityInterceptor implements ChannelInterceptor {
             authenticateConnect(accessor);
         } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
             authorizeSubscribe(accessor);
+        } else if (StompCommand.SEND.equals(accessor.getCommand())) {
+            authorizeSend(accessor);
         }
 
         return message;
@@ -109,6 +112,18 @@ public class WsChannelSecurityInterceptor implements ChannelInterceptor {
             deliveryAuthorization.assertCanView(delivery, authentication);
         } catch (AccessDeniedException ex) {
             throw new AccessDeniedException("WS_SUBSCRIBE_DENIED");
+        }
+    }
+
+    private void authorizeSend(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null) {
+            return;
+        }
+        for (String prefix : BROKER_DESTINATION_PREFIXES) {
+            if (destination.startsWith(prefix + "/") || destination.equals(prefix)) {
+                throw new AccessDeniedException("WS_SEND_DENIED");
+            }
         }
     }
 

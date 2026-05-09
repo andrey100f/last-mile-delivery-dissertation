@@ -29,6 +29,7 @@ Rejected `CONNECT` and `SUBSCRIBE` attempts fail with deterministic errors:
 
 - `WS_CONNECT_UNAUTHORIZED`
 - `WS_SUBSCRIBE_DENIED`
+- `WS_SEND_DENIED` (client `SEND` frames to broker destinations such as `/topic/**` or `/queue/**`)
 
 ## Threat model notes
 
@@ -59,7 +60,7 @@ Events are published to `/topic/deliveries/{deliveryId}/tracking` after successf
 - Client reconnect strategy:
   - exponential backoff (`1s`, `2s`, `4s`, ... up to `30s`),
   - re-subscribe after reconnect,
-  - fallback to polling (`GET /api/deliveries/{id}/status`) while socket is down.
+  - fallback to polling (`GET /api/deliveries/{id}` and read `status`) while socket is down.
 - Reverse proxy/Nginx:
   - enable HTTP upgrade headers for `/api/ws-tracking`,
   - use sticky sessions if running multiple API nodes with in-memory broker.
@@ -73,6 +74,10 @@ Events are published to `/topic/deliveries/{deliveryId}/tracking` after successf
 - `INFO`: connect/disconnect with `sessionId` and principal id only.
 - Never log JWT tokens or personal delivery data.
 - `DEBUG`: payload publish traces are allowed in non-production.
+
+## Configuration knobs
+
+- Shared HTTP/WS CORS origin patterns: `app.allowed-origin-patterns` (comma-separated property or env override).
 
 ## Manual verification script
 
