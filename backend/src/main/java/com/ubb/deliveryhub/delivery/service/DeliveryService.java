@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
+import com.ubb.deliveryhub.courier.domain.exception.CourierProfileNotFoundException;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStateMachine;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
@@ -180,7 +181,7 @@ public class DeliveryService {
         User courier = userRepository.findById(courierId)
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(courierId)));
         var profile = courierProfileRepository.findByUserIdForUpdate(courierId)
-            .orElseThrow(CourierUnavailableForAcceptanceException::new);
+            .orElseThrow(CourierProfileNotFoundException::new);
         if (!profile.isAvailableNow()) {
             throw new CourierUnavailableForAcceptanceException();
         }

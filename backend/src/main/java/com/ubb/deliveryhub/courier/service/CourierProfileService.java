@@ -5,7 +5,6 @@ import com.ubb.deliveryhub.courier.api.dto.CourierProfileResponse;
 import com.ubb.deliveryhub.courier.domain.CourierProfile;
 import com.ubb.deliveryhub.courier.domain.exception.CourierProfileNotFoundException;
 import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
-import com.ubb.deliveryhub.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,6 @@ import java.util.UUID;
 public class CourierProfileService {
 
     private final CourierProfileRepository courierProfileRepository;
-    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public CourierProfileResponse getForCurrentCourier(Authentication authentication) {
@@ -38,11 +36,6 @@ public class CourierProfileService {
             .orElseThrow(CourierProfileNotFoundException::new);
 
         CourierProfileMapper.applyUpdate(profile, request);
-        userRepository.updateIdentityProfileFields(
-            courierUserId,
-            request.getPersonal().getDisplayName(),
-            request.getPersonal().getPhone()
-        );
 
         CourierProfile saved = courierProfileRepository.save(profile);
         return CourierProfileMapper.toResponse(saved);

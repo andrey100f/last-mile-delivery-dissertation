@@ -67,6 +67,7 @@ export class DeliveryRequestsPage {
   protected readonly courierAvailableNow = signal(true);
   protected readonly courierExpressCapable = signal(true);
   protected readonly profileLoaded = signal(false);
+  protected readonly profileLoadError = signal<string | null>(null);
   protected readonly loadingSkeletonCards = [0, 1, 2, 3];
   protected readonly filterChips: readonly DeliveryTypeFilterChip[] = [
     { label: 'All Requests', value: null },
@@ -186,6 +187,10 @@ export class DeliveryRequestsPage {
     void this.router.navigate(['/courier/profile']);
   }
 
+  protected retryProfileLoad(): void {
+    this.loadCourierAvailability();
+  }
+
   protected expressFeatureDisabled(): boolean {
     return this.courierAvailableNow() && !this.courierExpressCapable();
   }
@@ -248,24 +253,34 @@ export class DeliveryRequestsPage {
   }
 
   private loadCourierAvailability(): void {
+    this.loading.set(true);
+    this.profileLoadError.set(null);
     this.courierProfileService
       .getMyProfile()
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        catchError(() => of(null)),
-      )
-      .subscribe((profile) => {
-        this.profileLoaded.set(true);
-        const availableNow = profile?.availability.availableNow === true;
-        const expressCapable = profile?.availability.expressCapable === true;
-        this.courierAvailableNow.set(availableNow);
-        this.courierExpressCapable.set(expressCapable);
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (profile) => {
+          this.profileLoaded.set(true);
+          const availableNow = profile?.availability.availableNow === true;
+          const expressCapable = profile?.availability.expressCapable === true;
+          this.courierAvailableNow.set(availableNow);
+          this.courierExpressCapable.set(expressCapable);
 
-        if (!expressCapable && this.selectedDeliveryType() === 'EXPRESS') {
-          this.selectedDeliveryType.set(null);
-        }
+          if (!expressCapable && this.selectedDeliveryType() === 'EXPRESS') {
+            this.selectedDeliveryType.set(null);
+          }
 
-        this.loadRequests();
+          this.loadRequests();
+        },
+        error: () => {
+          this.profileLoaded.set(false);
+          this.profileLoadError.set(
+            'Could not load courier profile settings. Please try again.',
+          );
+          this.requests.set([]);
+          this.hasLoadedAtLeastOnce.set(true);
+          this.loading.set(false);
+        },
       });
   }
 
