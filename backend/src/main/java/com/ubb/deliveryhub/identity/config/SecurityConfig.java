@@ -51,7 +51,7 @@ public class SecurityConfig {
             .logout(AbstractHttpConfigurer::disable)
             .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/actuator/health").permitAll()
+                .requestMatchers("/auth/**", "/actuator/health", "/ws-tracking/**").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
