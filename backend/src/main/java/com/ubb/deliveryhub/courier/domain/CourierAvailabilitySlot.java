@@ -40,7 +40,7 @@ public class CourierAvailabilitySlot {
     private CourierProfile courierProfile;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = CourierAvailabilitySlotId.DAY_OF_WEEK, nullable = false)
+    @Column(name = CourierAvailabilitySlotId.DAY_OF_WEEK, nullable = false, length = 16)
     private DayOfWeek dayOfWeek;
 
     @Column(name = CourierAvailabilitySlotId.START_TIME, nullable = false)

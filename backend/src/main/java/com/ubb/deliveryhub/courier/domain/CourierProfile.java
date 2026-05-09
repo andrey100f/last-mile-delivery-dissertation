@@ -48,14 +48,14 @@ public class CourierProfile {
     @Column(name = CourierProfileId.DISPLAY_NAME, nullable = false)
     private String displayName;
 
-    @Column(name = CourierProfileId.PHONE)
+    @Column(name = CourierProfileId.PHONE, length = 64)
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = CourierProfileId.VEHICLE_TYPE)
+    @Column(name = CourierProfileId.VEHICLE_TYPE, length = 32)
     private VehicleType vehicleType;
 
-    @Column(name = CourierProfileId.VEHICLE_PLATE)
+    @Column(name = CourierProfileId.VEHICLE_PLATE, length = 32)
     private String vehiclePlate;
 
     @Column(name = CourierProfileId.VEHICLE_CAPACITY_KG, precision = 10, scale = 2)
@@ -80,7 +80,7 @@ public class CourierProfile {
     private Instant updatedAt;
 
     @Version
-    @Column(name = "version", nullable = false)
+    @Column(name = CourierProfileId.VERSION, nullable = false)
     private Long version;
 
     @OneToMany(

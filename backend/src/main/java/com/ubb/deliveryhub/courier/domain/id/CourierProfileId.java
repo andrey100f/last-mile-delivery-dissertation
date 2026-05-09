@@ -16,6 +16,7 @@ public final class CourierProfileId {
     public static final String EXPRESS_CAPABLE = "express_capable";
     public static final String CREATED_AT = "created_at";
     public static final String UPDATED_AT = "updated_at";
+    public static final String VERSION = "version";
 
     private CourierProfileId() {
         throw new IllegalStateException("Constants only class");

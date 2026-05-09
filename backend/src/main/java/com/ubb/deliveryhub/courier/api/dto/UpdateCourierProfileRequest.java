@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -54,7 +55,7 @@ public class UpdateCourierProfileRequest {
         if (availability == null || availability.getWeeklySchedule() == null) {
             return true;
         }
-        Map<java.time.DayOfWeek, List<AvailabilitySlotDto>> byDay = availability.getWeeklySchedule().stream()
+        Map<DayOfWeek, List<AvailabilitySlotDto>> byDay = availability.getWeeklySchedule().stream()
             .filter(slot -> slot != null && slot.getDayOfWeek() != null && slot.getStart() != null && slot.getEnd() != null)
             .collect(Collectors.groupingBy(AvailabilitySlotDto::getDayOfWeek));
 
