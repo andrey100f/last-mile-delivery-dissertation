@@ -47,6 +47,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         routerCommands: ['customer', 'tracking'],
         icon: 'pi pi-map-marker',
         roles: [UserRole.CUSTOMER],
+        linkActiveExact: true,
       },
       {
         label: 'History',

@@ -74,7 +74,10 @@
             <p-card>
               <div class="space-y-3">
                 <div>
-                  <h3 class="text-sm font-semibold text-p-text-primary">Delivery Progress</h3>
+                  <div class="flex items-center gap-2">
+                    <i class="pi pi-clock text-[11px] text-blue-600" aria-hidden="true"></i>
+                    <h3 class="text-sm font-semibold text-p-text-primary">Delivery Progress</h3>
+                  </div>
                   <p class="text-xs text-p-text-muted">Update status as you complete each step</p>
                 </div>
                 <div class="border-t border-p-surface-border pt-3">
@@ -93,29 +96,49 @@
                   @for (step of timelineSteps(); track step.status) {
                     <div
                       class="rounded-md border p-3"
-                      [class.border-blue-200]="step.current"
-                      [class.bg-blue-50/60]="step.current"
+                      [class.border-blue-200]="step.current && step.status !== 'DELIVERED'"
+                      [class.bg-blue-50/60]="step.current && step.status !== 'DELIVERED'"
+                      [class.border-emerald-200]="step.status === 'DELIVERED' && step.completed"
+                      [class.bg-emerald-50/70]="step.status === 'DELIVERED' && step.completed"
                       [class.border-p-surface-border]="!step.current"
                     >
                       <div class="flex items-start justify-between gap-3">
                         <div class="flex items-start gap-2">
                           <span
                             class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px]"
-                            [class.bg-emerald-100]="step.completed && !step.current"
-                            [class.text-emerald-700]="step.completed && !step.current"
-                            [class.bg-blue-100]="step.current"
-                            [class.text-blue-700]="step.current"
+                            [class.bg-emerald-100]="step.completed && !step.current && step.status !== 'DELIVERED'"
+                            [class.text-emerald-700]="step.completed && !step.current && step.status !== 'DELIVERED'"
+                            [class.bg-emerald-200]="step.status === 'DELIVERED' && step.completed"
+                            [class.text-emerald-800]="step.status === 'DELIVERED' && step.completed"
+                            [class.bg-blue-100]="step.current && step.status !== 'DELIVERED'"
+                            [class.text-blue-700]="step.current && step.status !== 'DELIVERED'"
                             [class.bg-slate-100]="!step.completed && !step.current"
                             [class.text-slate-500]="!step.completed && !step.current"
                           >
                             <i [class]="step.icon"></i>
                           </span>
                           <div>
-                            <p class="text-sm font-semibold text-p-text-primary">{{ step.title }}</p>
-                            <p class="text-xs text-p-text-muted">{{ step.description }}</p>
+                            <p
+                              class="text-sm font-semibold"
+                              [class.text-p-text-primary]="!(step.status === 'DELIVERED' && step.completed)"
+                              [class.text-emerald-700]="step.status === 'DELIVERED' && step.completed"
+                            >
+                              {{ step.title }}
+                            </p>
+                            <p
+                              class="text-xs"
+                              [class.text-p-text-muted]="!(step.status === 'DELIVERED' && step.completed)"
+                              [class.text-emerald-700]="step.status === 'DELIVERED' && step.completed"
+                            >
+                              {{ step.description }}
+                            </p>
                           </div>
                         </div>
-                        <p class="text-xs text-p-text-muted">
+                        <p
+                          class="text-xs"
+                          [class.text-p-text-muted]="!(step.status === 'DELIVERED' && step.completed)"
+                          [class.text-emerald-700]="step.status === 'DELIVERED' && step.completed"
+                        >
                           {{ step.recordedAt ? (step.recordedAt | date: 'HH:mm') : '-' }}
                         </p>
                       </div>
@@ -253,22 +276,6 @@
               }
             </div>
 
-            <div class="grid grid-cols-2 gap-2 pt-1">
-              <p-button
-                label="Go To Active Deliveries"
-                styleClass="w-full !border-blue-500 !text-blue-500 !bg-transparent hover:!bg-blue-50"
-                [outlined]="true"
-                [disabled]="actionPending()"
-                (onClick)="goToActiveDeliveries()"
-              />
-              <p-button
-                label="Go To Available Requests"
-                styleClass="w-full !border-slate-300 !text-slate-600 !bg-transparent hover:!bg-slate-100"
-                [outlined]="true"
-                [disabled]="actionPending()"
-                (onClick)="goToRequests()"
-              />
-            </div>
           </div>
         </div>
       </div>

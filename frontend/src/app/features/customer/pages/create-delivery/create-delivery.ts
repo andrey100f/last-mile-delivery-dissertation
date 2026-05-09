@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DeliveryService } from '@core/services/delivery/delivery';
@@ -28,6 +29,7 @@ import { finalize } from 'rxjs';
   selector: 'app-create-delivery-page',
   imports: [
     ReactiveFormsModule,
+    CurrencyPipe,
     Card,
     Button,
     InputText,
@@ -72,7 +74,7 @@ export class CreateDeliveryPage {
       feeAmount,
       taxAmount,
       totalAmount: Number((baseAmount + feeAmount + taxAmount).toFixed(2)),
-      currency: 'USD',
+      currency: 'RON',
     };
   });
 

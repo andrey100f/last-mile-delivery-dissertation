@@ -109,6 +109,14 @@
                   <span>Base Payment</span>
                   <span>{{ delivery.baseAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
                 </div>
+                <div class="flex items-center justify-between text-sm text-p-text-secondary">
+                  <span>Service Fee</span>
+                  <span>{{ delivery.feeAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm text-p-text-secondary">
+                  <span>Tax</span>
+                  <span>{{ delivery.taxAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}</span>
+                </div>
                 <div
                   class="flex items-center justify-between border-t border-p-surface-border pt-2 text-base font-semibold text-emerald-600"
                 >
@@ -152,13 +160,6 @@
               [outlined]="true"
               styleClass="w-full !rounded-md !border-red-500 !text-red-600 !bg-transparent hover:!bg-red-50"
               (onClick)="declineRequest()"
-            />
-            <p-button
-              label="Go Back To Available Requests"
-              severity="primary"
-              [outlined]="true"
-              styleClass="w-full !rounded-md !border-blue-500 !text-blue-500 !bg-transparent hover:!bg-blue-50"
-              (onClick)="goBack()"
             />
           </div>
         </div>

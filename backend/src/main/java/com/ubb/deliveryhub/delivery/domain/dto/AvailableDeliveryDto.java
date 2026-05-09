@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Builder
 public class AvailableDeliveryDto {
     String id;
+    String trackingCode;
     String status;
     String deliveryType;
     String pickupLine1;

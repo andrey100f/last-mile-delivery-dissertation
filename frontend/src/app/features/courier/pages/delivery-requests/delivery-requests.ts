@@ -14,11 +14,11 @@ import {
   PageDto,
 } from '@core/services/enum/delivery.types';
 import { TableEmptyStateComponent } from '@shared/ui/public-api';
-import { formatDeliveryCode } from '@shared/utils/delivery-code';
 import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
 import { catchError, finalize, of } from 'rxjs';
+import { PageHeaderService } from '../../../../layout/page-header/page-header.service';
 import { CourierProfileService } from '../../services/courier-profile.service';
 import { CourierDeliveryService } from '../../services/courier-delivery.service';
 
@@ -41,6 +41,8 @@ interface CourierRequestCardView {
   currency: string;
 }
 
+type DeliveryRequestsEntrySource = 'dashboard' | null;
+
 @Component({
   selector: 'app-delivery-requests-page',
   imports: [
@@ -58,6 +60,7 @@ export class DeliveryRequestsPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly courierProfileService = inject(CourierProfileService);
+  private readonly pageHeaderService = inject(PageHeaderService);
 
   protected readonly loading = signal(false);
   protected readonly hasLoadedAtLeastOnce = signal(false);
@@ -68,6 +71,7 @@ export class DeliveryRequestsPage {
   protected readonly courierExpressCapable = signal(true);
   protected readonly profileLoaded = signal(false);
   protected readonly profileLoadError = signal<string | null>(null);
+  protected readonly entrySource = signal<DeliveryRequestsEntrySource>(null);
   protected readonly loadingSkeletonCards = [0, 1, 2, 3];
   protected readonly filterChips: readonly DeliveryTypeFilterChip[] = [
     { label: 'All Requests', value: null },
@@ -76,6 +80,10 @@ export class DeliveryRequestsPage {
   ];
 
   constructor() {
+    const source = this.resolveEntrySource();
+    this.entrySource.set(source);
+    this.applyHeaderAction(source);
+    this.destroyRef.onDestroy(() => this.pageHeaderService.clearAction());
     this.loadCourierAvailability();
   }
 
@@ -91,7 +99,9 @@ export class DeliveryRequestsPage {
   }
 
   protected openDetails(request: CourierRequestCardView): void {
-    void this.router.navigate(['/courier/delivery', request.id]);
+    void this.router.navigate(['/courier/delivery', request.id], {
+      state: { requestDetailSource: 'available-requests' },
+    });
   }
 
   protected acceptDelivery(deliveryId: string): void {
@@ -236,7 +246,7 @@ export class DeliveryRequestsPage {
         this.requests.set(
           filteredContent.map((item) => ({
             id: item.id,
-            shortId: formatDeliveryCode(item.id),
+            shortId: item.trackingCode?.trim() || '-',
             status: item.status || 'CREATED',
             deliveryType: item.deliveryType ?? 'STANDARD',
             pickupLine1: this.toDisplayPlace(item.pickupLine1),
@@ -290,9 +300,36 @@ export class DeliveryRequestsPage {
   }
 
   private async navigateToActiveDelivery(deliveryId: string): Promise<void> {
-    const navigated = await this.router.navigate(['/courier/active', deliveryId]);
+    const source = this.entrySource();
+    const navigated = await this.router.navigate(['/courier/active', deliveryId], {
+      state: {
+        activeDeliverySource: source === 'dashboard' ? 'dashboard' : 'available-requests',
+      },
+    });
     if (!navigated) {
       await this.router.navigate(['/courier/delivery', deliveryId]);
     }
+  }
+
+  private resolveEntrySource(): DeliveryRequestsEntrySource {
+    const currentNavigation = this.router.getCurrentNavigation();
+    const rawStateSource =
+      currentNavigation?.extras.state?.['requestsSource'] ?? history.state?.requestsSource;
+    if (rawStateSource === 'dashboard') {
+      return 'dashboard';
+    }
+    return null;
+  }
+
+  private applyHeaderAction(source: DeliveryRequestsEntrySource): void {
+    if (source !== 'dashboard') {
+      this.pageHeaderService.clearAction();
+      return;
+    }
+    this.pageHeaderService.setAction({
+      label: 'Back to dashboard',
+      icon: 'pi pi-arrow-left',
+      run: () => void this.router.navigate(['/courier']),
+    });
   }
 }

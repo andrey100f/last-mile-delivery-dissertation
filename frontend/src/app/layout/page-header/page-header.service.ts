@@ -12,7 +12,7 @@ export interface PageHeaderAction {
 export class PageHeaderService {
   readonly titleOverride = signal<string | undefined>(undefined);
   readonly subtitleOverride = signal<string | null | undefined>(undefined);
-  readonly actionOverride = signal<PageHeaderAction | undefined>(undefined);
+  readonly actionsOverride = signal<PageHeaderAction[] | undefined>(undefined);
 
   setOverride(title: string, subtitle?: string | null): void {
     const normalizedTitle = title.trim();
@@ -39,14 +39,18 @@ export class PageHeaderService {
   clearOverride(): void {
     this.titleOverride.set(undefined);
     this.subtitleOverride.set(undefined);
-    this.actionOverride.set(undefined);
+    this.actionsOverride.set(undefined);
   }
 
   setAction(action: PageHeaderAction): void {
-    this.actionOverride.set(action);
+    this.actionsOverride.set([action]);
+  }
+
+  setActions(actions: PageHeaderAction[]): void {
+    this.actionsOverride.set(actions);
   }
 
   clearAction(): void {
-    this.actionOverride.set(undefined);
+    this.actionsOverride.set(undefined);
   }
 }

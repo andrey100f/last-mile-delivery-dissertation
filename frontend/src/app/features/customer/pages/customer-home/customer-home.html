@@ -53,7 +53,15 @@
 
       <section>
         <div class="mb-3">
-          <h3 class="text-sm font-semibold text-p-text-primary">Active Deliveries</h3>
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-p-text-primary">Active Deliveries</h3>
+            <a
+              [routerLink]="['/customer/tracking']"
+              class="inline-flex items-center justify-center rounded-(--p-radius-md) px-4 py-2 text-sm font-semibold text-blue-500 transition-colors hover:bg-slate-100 hover:text-blue-600"
+            >
+              View All
+            </a>
+          </div>
         </div>
 
         <div
@@ -63,13 +71,16 @@
             <ng-template #header>
               <tr class="border-b border-p-surface-border bg-p-surface-ground">
                 <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
-                  ID
+                  Delivery Code
                 </th>
                 <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
                   Route
                 </th>
                 <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
                   Courier
+                </th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                  Type
                 </th>
                 <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
                   Amount
@@ -101,6 +112,23 @@
                 <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
                   {{ delivery.courierName }}
                 </td>
+                <td class="w-40 px-4 py-3.5 align-top">
+                  @if (delivery.deliveryType === 'EXPRESS') {
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                    >
+                      <i class="pi pi-bolt text-[10px]" aria-hidden="true"></i>
+                      Express
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                    >
+                      <i class="pi pi-box text-[10px]" aria-hidden="true"></i>
+                      Standard
+                    </span>
+                  }
+                </td>
                 <td class="w-36 px-4 py-3.5 align-top text-[13px] font-medium text-p-text-primary">
                   {{ delivery.totalAmount | currency: delivery.currency : 'symbol' : '1.2-2' }}
                 </td>
@@ -112,7 +140,7 @@
 
             <ng-template #emptymessage>
               <tr>
-                <td colspan="5">
+                <td colspan="6">
                   <app-table-empty-state
                     title="No active deliveries"
                     message="Create a delivery to see it listed here."
@@ -130,6 +158,7 @@
                   <td><p-skeleton height="1rem" width="8rem" /></td>
                   <td><p-skeleton height="1rem" width="12rem" /></td>
                   <td><p-skeleton height="1rem" width="7rem" /></td>
+                  <td><p-skeleton height="1rem" width="6rem" /></td>
                   <td><p-skeleton height="1rem" width="6rem" /></td>
                   <td><p-skeleton height="1rem" width="5rem" /></td>
                 </tr>

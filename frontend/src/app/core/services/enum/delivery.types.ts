@@ -8,6 +8,8 @@ export interface PageDto<T> {
 
 export interface DeliverySummaryDto {
   id: string;
+  trackingCode?: string | null;
+  courierName?: string | null;
   status: string;
   deliveryType: string;
   createdAt: string;
@@ -33,6 +35,7 @@ export interface CourierAvailableDeliveriesQuery {
 
 export interface CourierAvailableDeliveryDto {
   id: string;
+  trackingCode?: string | null;
   status: string;
   deliveryType: DeliveryType;
   pickupLine1: string;
