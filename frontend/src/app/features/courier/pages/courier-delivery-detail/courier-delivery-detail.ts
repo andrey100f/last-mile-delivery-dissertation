@@ -120,6 +120,26 @@ export class CourierDeliveryDetailPage {
             this.loadCurrentDetail();
             return;
           }
+          if (uiError.type === 'COURIER_UNAVAILABLE') {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'You are unavailable',
+              detail: 'Enable "Available now" in profile before accepting deliveries.',
+              life: 5000,
+            });
+            void this.router.navigate(['/courier/profile']);
+            return;
+          }
+          if (uiError.type === 'EXPRESS_NOT_CAPABLE') {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Express disabled',
+              detail: 'Enable express deliveries in profile to accept this request.',
+              life: 5000,
+            });
+            void this.router.navigate(['/courier/profile']);
+            return;
+          }
 
           this.messageService.add({
             severity: 'error',

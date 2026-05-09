@@ -3,6 +3,8 @@ package com.ubb.deliveryhub.delivery.web;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryTakenException;
+import com.ubb.deliveryhub.delivery.domain.exception.CourierExpressNotCapableException;
+import com.ubb.deliveryhub.delivery.domain.exception.CourierUnavailableForAcceptanceException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryStatusTransitionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -31,6 +33,20 @@ public class DeliveryExceptionHandler {
     public ResponseEntity<ProblemDetail> handleDeliveryTaken(DeliveryTakenException ex) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         pd.setProperty("code", "DELIVERY_TAKEN");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(pd);
+    }
+
+    @ExceptionHandler(CourierUnavailableForAcceptanceException.class)
+    public ResponseEntity<ProblemDetail> handleCourierUnavailable(CourierUnavailableForAcceptanceException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setProperty("code", "COURIER_UNAVAILABLE");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(pd);
+    }
+
+    @ExceptionHandler(CourierExpressNotCapableException.class)
+    public ResponseEntity<ProblemDetail> handleCourierExpressNotCapable(CourierExpressNotCapableException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setProperty("code", "EXPRESS_NOT_CAPABLE");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(pd);
     }
 

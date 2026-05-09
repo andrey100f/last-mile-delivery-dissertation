@@ -2,7 +2,7 @@
   <div class="space-y-4 p-5">
     <div class="flex flex-wrap items-center gap-2">
       <span class="text-xs text-p-text-muted">Filter:</span>
-      @for (chip of filterChips; track chip.label) {
+      @for (chip of visibleFilterChips(); track chip.label) {
         <p-button
           size="small"
           [label]="chip.label"
@@ -10,6 +10,9 @@
           [severity]="isFilterActive(chip.value) ? 'primary' : 'secondary'"
           (onClick)="setDeliveryTypeFilter(chip.value)"
         />
+      }
+      @if (expressFeatureDisabled()) {
+        <span class="text-xs text-amber-600">Express disabled in profile</span>
       }
     </div>
 
@@ -37,7 +40,29 @@
             </article>
           }
         </div>
-      } @else if (requests().length === 0) {
+      } @else if (profileLoadError()) {
+        <div class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 shadow-(--p-shadow-xs)">
+          <app-table-empty-state
+            title="Could not load profile"
+            [message]="profileLoadError()!"
+            icon="pi pi-exclamation-triangle"
+          />
+          <div class="mt-3 flex justify-center">
+            <p-button label="Retry" icon="pi pi-refresh" (onClick)="retryProfileLoad()" />
+          </div>
+        </div>
+      } @else if (profileLoaded() && !courierAvailableNow()) {
+        <div class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-5 shadow-(--p-shadow-xs)">
+          <app-table-empty-state
+            title="You are currently unavailable"
+            message="Turn on 'Available now' in profile to see and accept delivery requests."
+            icon="pi pi-clock"
+          />
+          <div class="mt-3 flex justify-center">
+            <p-button label="Go to profile" icon="pi pi-user" (onClick)="goToProfile()" />
+          </div>
+        </div>
+      } @else if (profileLoaded() && requests().length === 0) {
         <div class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)">
           <app-table-empty-state
             title="No available deliveries"

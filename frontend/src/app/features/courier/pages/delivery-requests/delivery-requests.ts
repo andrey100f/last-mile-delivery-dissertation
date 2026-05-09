@@ -19,6 +19,7 @@ import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
 import { catchError, finalize, of } from 'rxjs';
+import { CourierProfileService } from '../../services/courier-profile.service';
 import { CourierDeliveryService } from '../../services/courier-delivery.service';
 
 interface DeliveryTypeFilterChip {
@@ -56,24 +57,32 @@ export class DeliveryRequestsPage {
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly courierProfileService = inject(CourierProfileService);
 
   protected readonly loading = signal(false);
   protected readonly hasLoadedAtLeastOnce = signal(false);
   protected readonly acceptingDeliveryId = signal<string | null>(null);
   protected readonly requests = signal<CourierRequestCardView[]>([]);
   protected readonly selectedDeliveryType = signal<DeliveryType | null>(null);
+  protected readonly courierAvailableNow = signal(true);
+  protected readonly courierExpressCapable = signal(true);
+  protected readonly profileLoaded = signal(false);
+  protected readonly profileLoadError = signal<string | null>(null);
   protected readonly loadingSkeletonCards = [0, 1, 2, 3];
-  protected readonly filterChips: DeliveryTypeFilterChip[] = [
+  protected readonly filterChips: readonly DeliveryTypeFilterChip[] = [
     { label: 'All Requests', value: null },
     { label: 'Standard', value: 'STANDARD' },
     { label: 'Express', value: 'EXPRESS' },
   ];
 
   constructor() {
-    this.loadRequests();
+    this.loadCourierAvailability();
   }
 
   protected setDeliveryTypeFilter(deliveryType: DeliveryType | null): void {
+    if (deliveryType === 'EXPRESS' && !this.courierExpressCapable()) {
+      return;
+    }
     if (this.selectedDeliveryType() === deliveryType) {
       return;
     }
@@ -123,6 +132,27 @@ export class DeliveryRequestsPage {
             this.loadRequests();
             return;
           }
+          if (uiError.type === 'COURIER_UNAVAILABLE') {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'You are unavailable',
+              detail: 'Enable "Available now" in profile before accepting deliveries.',
+              life: 5000,
+            });
+            this.courierAvailableNow.set(false);
+            this.requests.set([]);
+            return;
+          }
+          if (uiError.type === 'EXPRESS_NOT_CAPABLE') {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Express disabled',
+              detail: 'Enable express deliveries in profile to accept this request.',
+              life: 5000,
+            });
+            this.loadCourierAvailability();
+            return;
+          }
 
           this.messageService.add({
             severity: 'error',
@@ -146,7 +176,36 @@ export class DeliveryRequestsPage {
     return deliveryType === 'EXPRESS';
   }
 
+  protected visibleFilterChips(): DeliveryTypeFilterChip[] {
+    if (this.courierExpressCapable()) {
+      return [...this.filterChips];
+    }
+    return this.filterChips.filter((chip) => chip.value !== 'EXPRESS');
+  }
+
+  protected goToProfile(): void {
+    void this.router.navigate(['/courier/profile']);
+  }
+
+  protected retryProfileLoad(): void {
+    this.loadCourierAvailability();
+  }
+
+  protected expressFeatureDisabled(): boolean {
+    return this.courierAvailableNow() && !this.courierExpressCapable();
+  }
+
   private loadRequests(): void {
+    if (!this.profileLoaded()) {
+      return;
+    }
+    if (!this.courierAvailableNow()) {
+      this.requests.set([]);
+      this.hasLoadedAtLeastOnce.set(true);
+      this.loading.set(false);
+      return;
+    }
+
     this.loading.set(true);
     this.courierDeliveryService
       .getAvailable({
@@ -170,8 +229,12 @@ export class DeliveryRequestsPage {
       )
       .subscribe((response) => {
         const content = Array.isArray(response.content) ? response.content : [];
+        const filteredContent =
+          !this.courierExpressCapable() && this.selectedDeliveryType() !== 'EXPRESS'
+            ? content.filter((item) => (item.deliveryType ?? 'STANDARD') !== 'EXPRESS')
+            : content;
         this.requests.set(
-          content.map((item) => ({
+          filteredContent.map((item) => ({
             id: item.id,
             shortId: formatDeliveryCode(item.id),
             status: item.status || 'CREATED',
@@ -186,6 +249,38 @@ export class DeliveryRequestsPage {
           })),
         );
         this.hasLoadedAtLeastOnce.set(true);
+      });
+  }
+
+  private loadCourierAvailability(): void {
+    this.loading.set(true);
+    this.profileLoadError.set(null);
+    this.courierProfileService
+      .getMyProfile()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (profile) => {
+          this.profileLoaded.set(true);
+          const availableNow = profile?.availability.availableNow === true;
+          const expressCapable = profile?.availability.expressCapable === true;
+          this.courierAvailableNow.set(availableNow);
+          this.courierExpressCapable.set(expressCapable);
+
+          if (!expressCapable && this.selectedDeliveryType() === 'EXPRESS') {
+            this.selectedDeliveryType.set(null);
+          }
+
+          this.loadRequests();
+        },
+        error: () => {
+          this.profileLoaded.set(false);
+          this.profileLoadError.set(
+            'Could not load courier profile settings. Please try again.',
+          );
+          this.requests.set([]);
+          this.hasLoadedAtLeastOnce.set(true);
+          this.loading.set(false);
+        },
       });
   }
 

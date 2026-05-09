@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.delivery.service;
 
 import com.ubb.deliveryhub.delivery.DeliveryListDefaults;
+import com.ubb.deliveryhub.courier.domain.exception.CourierProfileNotFoundException;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStateMachine;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
@@ -13,6 +14,8 @@ import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliverySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.UpdateDeliveryStatusRequest;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryNotFoundException;
+import com.ubb.deliveryhub.delivery.domain.exception.CourierExpressNotCapableException;
+import com.ubb.deliveryhub.delivery.domain.exception.CourierUnavailableForAcceptanceException;
 import com.ubb.deliveryhub.delivery.domain.exception.DeliveryTakenException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliveryPaginationException;
 import com.ubb.deliveryhub.delivery.domain.exception.InvalidDeliverySortException;
@@ -20,6 +23,7 @@ import com.ubb.deliveryhub.delivery.events.DeliveryStatusChangedEvent;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.delivery.repository.DeliverySpecifications;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
+import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
@@ -61,6 +65,7 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final UserRepository userRepository;
+    private final CourierProfileRepository courierProfileRepository;
     private final DeliveryAuthorization deliveryAuthorization;
     private final DeliveryStateMachine deliveryStateMachine;
     private final ApplicationEventPublisher eventPublisher;
@@ -120,6 +125,7 @@ public class DeliveryService {
 
     @Transactional(readOnly = true)
     public Page<AvailableDeliveryDto> listAvailableForCurrentCourier(
+        Authentication authentication,
         Pageable pageable,
         DeliveryType deliveryType
     ) {
@@ -128,8 +134,24 @@ public class DeliveryService {
         }
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
+        UUID courierId = principalUserId(authentication);
+        var profileOpt = courierProfileRepository.findByUserId(courierId);
+        if (profileOpt.isEmpty() || !profileOpt.get().isAvailableNow()) {
+            return Page.empty(effective);
+        }
+
+        DeliveryType effectiveDeliveryType = deliveryType;
+        if (!profileOpt.get().isExpressCapable()) {
+            if (deliveryType == DeliveryType.EXPRESS) {
+                return Page.empty(effective);
+            }
+            if (deliveryType == null) {
+                effectiveDeliveryType = DeliveryType.STANDARD;
+            }
+        }
+
         Set<DeliveryStatus> assignableStatuses = deliveryStateMachine.statusesTransitioningTo(DeliveryStatus.ASSIGNED);
-        return deliveryRepository.findAvailableForCourier(assignableStatuses, deliveryType, effective)
+        return deliveryRepository.findAvailableForCourier(assignableStatuses, effectiveDeliveryType, effective)
             .map(DeliveryMapper::toAvailableDto);
     }
 
@@ -158,9 +180,17 @@ public class DeliveryService {
         UUID courierId = principalUserId(authentication);
         User courier = userRepository.findById(courierId)
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(courierId)));
+        var profile = courierProfileRepository.findByUserIdForUpdate(courierId)
+            .orElseThrow(CourierProfileNotFoundException::new);
+        if (!profile.isAvailableNow()) {
+            throw new CourierUnavailableForAcceptanceException();
+        }
 
         Delivery delivery = deliveryRepository.findWithCustomerAndCourierByIdForUpdate(deliveryId)
             .orElseThrow(DeliveryNotFoundException::new);
+        if (delivery.getDeliveryType() == DeliveryType.EXPRESS && !profile.isExpressCapable()) {
+            throw new CourierExpressNotCapableException();
+        }
 
         if (delivery.getCourier() != null
             || !deliveryStateMachine.canTransition(delivery.getStatus(), DeliveryStatus.ASSIGNED)) {

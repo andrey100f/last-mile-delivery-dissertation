@@ -5,6 +5,8 @@ public class UserId {
     public static final String TABLE_NAME = "users";
     public static final String EMAIL = "email";
     public static final String PASSWORD_HASH = "password_hash";
+    public static final String DISPLAY_NAME = "display_name";
+    public static final String PHONE_NUMBER = "phone_number";
     public static final String ROLE = "role";
     public static final String CREATED_AT = "created_at";
     public static final String UPDATED_AT = "updated_at";

@@ -132,7 +132,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         roles: [UserRole.CUSTOMER],
       },
       {
-        label: 'Profile',
+        label: 'Profile & Availability',
         routerCommands: ['courier', 'profile'],
         icon: 'pi pi-id-card',
         roles: [UserRole.COURIER],

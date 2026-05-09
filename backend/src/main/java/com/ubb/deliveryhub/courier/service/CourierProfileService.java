@@ -4,15 +4,12 @@ import com.ubb.deliveryhub.courier.api.dto.UpdateCourierProfileRequest;
 import com.ubb.deliveryhub.courier.api.dto.CourierProfileResponse;
 import com.ubb.deliveryhub.courier.domain.CourierProfile;
 import com.ubb.deliveryhub.courier.domain.exception.CourierProfileNotFoundException;
-import com.ubb.deliveryhub.courier.domain.exception.CourierProfileValidationException;
 import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -38,7 +35,6 @@ public class CourierProfileService {
         CourierProfile profile = courierProfileRepository.findByUserIdForUpdate(courierUserId)
             .orElseThrow(CourierProfileNotFoundException::new);
 
-        validateRequest(request);
         CourierProfileMapper.applyUpdate(profile, request);
 
         CourierProfile saved = courierProfileRepository.save(profile);
@@ -47,16 +43,5 @@ public class CourierProfileService {
 
     private static UUID principalUserId(Authentication authentication) {
         return UUID.fromString(authentication.getName());
-    }
-
-    private static void validateRequest(UpdateCourierProfileRequest request) {
-        if (request.getAvailability().isAvailableNow()
-            && request.getAvailability().getWeeklySchedule().isEmpty()) {
-            throw new CourierProfileValidationException(
-                "Validation failed",
-                Map.of("availability.weeklySchedule",
-                    List.of("At least one slot is required when availability.availableNow is true"))
-            );
-        }
     }
 }

@@ -8,7 +8,10 @@ const loadStub = () =>
 export const courierRoutes: Routes = [
   {
     path: '',
-    data: { pageTitle: 'Dashboard' },
+    data: {
+      pageTitle: 'Dashboard',
+      subtitle: "Welcome back! Here's your work overview",
+    },
     loadComponent: () =>
       import('./pages/courier-home/courier-home').then((m) => m.CourierHome),
   },
@@ -40,7 +43,10 @@ export const courierRoutes: Routes = [
       import('./pages/active-deliveries/active-deliveries').then(
         (m) => m.ActiveDeliveriesPage,
       ),
-    data: { pageTitle: 'Active deliveries' },
+    data: {
+      pageTitle: 'Active deliveries',
+      subtitle: 'Track your ongoing jobs and priorities',
+    },
   },
   {
     path: 'active/:id',
@@ -57,7 +63,13 @@ export const courierRoutes: Routes = [
   },
   {
     path: 'profile',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Profile' },
+    loadComponent: () =>
+      import('./pages/courier-profile/courier-profile').then(
+        (m) => m.CourierProfilePage,
+      ),
+    data: {
+      pageTitle: 'Profile & Availability',
+      subtitle: 'Manage your account and work preferences',
+    },
   },
 ];

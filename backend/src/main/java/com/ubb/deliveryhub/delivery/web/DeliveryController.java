@@ -56,6 +56,7 @@ public class DeliveryController {
     @GetMapping("/available")
     @PreAuthorize("hasRole('COURIER')")
     public Page<AvailableDeliveryDto> listAvailableForCurrentCourier(
+        Authentication authentication,
         @PageableDefault(
             size = DeliveryListDefaults.PAGE_SIZE,
             sort = DeliveryListDefaults.SORT_PROPERTY,
@@ -63,7 +64,7 @@ public class DeliveryController {
         ) Pageable pageable,
         @RequestParam(required = false) DeliveryType deliveryType
     ) {
-        return deliveryService.listAvailableForCurrentCourier(pageable, deliveryType);
+        return deliveryService.listAvailableForCurrentCourier(authentication, pageable, deliveryType);
     }
 
     @GetMapping("/active")

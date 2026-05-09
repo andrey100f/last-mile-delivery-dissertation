@@ -145,10 +145,14 @@ public final class DeliveryMapper {
         if (courier == null) {
             return null;
         }
+        String displayName = courier.getDisplayName();
+        if (displayName == null || displayName.isBlank()) {
+            displayName = courier.getEmail();
+        }
         return CourierSummaryDto.builder()
             .id(courier.getId().toString())
-            .displayName(courier.getEmail())
-            .phone(null)
+            .displayName(displayName)
+            .phone(courier.getPhoneNumber())
             .build();
     }
 

@@ -18,3 +18,22 @@ export function displayNameFromEmail(email: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
+
+export function initialsFromDisplayName(displayName: string): string {
+  const normalized = displayName.trim();
+  if (normalized.length === 0) {
+    return '?';
+  }
+
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  const cleaned = normalized.replace(/[^a-zA-Z0-9]/g, '');
+  if (cleaned.length >= 2) {
+    return (cleaned[0] + cleaned[1]).toUpperCase();
+  }
+
+  return normalized.slice(0, 1).toUpperCase();
+}

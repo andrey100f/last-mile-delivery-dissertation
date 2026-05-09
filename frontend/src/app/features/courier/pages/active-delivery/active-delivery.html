@@ -28,7 +28,7 @@
     } @else if (detail(); as delivery) {
       <div class="space-y-4">
         <p-card>
-          <div class="grid gap-3 md:grid-cols-3">
+          <div class="grid gap-3 md:grid-cols-4">
             <div class="flex items-center gap-2">
               <span
                 class="inline-flex h-8 w-8 items-center justify-center rounded-(--p-radius-md) bg-cyan-50 text-cyan-600"
@@ -43,6 +43,24 @@
             <div>
               <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Status</p>
               <app-status-tag [status]="delivery.status" variant="tag" size="md" [showIcon]="true" />
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Type</p>
+              @if (delivery.deliveryType === 'EXPRESS') {
+                <span
+                  class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                >
+                  <i class="pi pi-bolt text-[10px]" aria-hidden="true"></i>
+                  Express
+                </span>
+              } @else {
+                <span
+                  class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                >
+                  <i class="pi pi-box text-[10px]" aria-hidden="true"></i>
+                  Standard
+                </span>
+              }
             </div>
             <div>
               <p class="text-[11px] font-semibold tracking-wide text-p-text-muted uppercase">Weight</p>

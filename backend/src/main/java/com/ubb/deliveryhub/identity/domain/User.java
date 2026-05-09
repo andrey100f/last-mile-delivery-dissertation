@@ -28,6 +28,12 @@ public class User {
     @Column(name = UserId.PASSWORD_HASH, nullable = false)
     private String passwordHash;
 
+    @Column(name = UserId.DISPLAY_NAME)
+    private String displayName;
+
+    @Column(name = UserId.PHONE_NUMBER)
+    private String phoneNumber;
+
     @Column(name = UserId.ROLE, nullable = false)
     @Enumerated(EnumType.STRING)
     private UserRole role;
