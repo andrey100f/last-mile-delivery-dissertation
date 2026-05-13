@@ -53,7 +53,7 @@ The delivery domain emits `NotificationRequested` events with this serializable 
 
 Current emission points:
 
-- courier accepts a delivery (`POST /deliveries/{id}/accept`) -> customer + courier confirmation notifications
+- courier accepts a delivery (`POST /deliveries/{id}/accept`) -> customer notification
 - courier updates status (`PATCH /deliveries/{id}/status`) -> customer notifications for milestones (`PICKED_UP`, `IN_TRANSIT`, `DELIVERED`)
 
 Processing runs in an `AFTER_COMMIT` listener, so notification failures cannot roll back assignment/status transaction success.

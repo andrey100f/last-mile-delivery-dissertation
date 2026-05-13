@@ -60,11 +60,11 @@ public class NotificationRequestedListener {
             persistSynchronously(event);
         } catch (Exception ex) {
             log.warn(
-                "Notification handling failed eventId={} type={} mode={} reason={}",
+                "Notification handling failed eventId={} type={} mode={}",
                 event.eventId(),
                 event.eventType(),
                 mode,
-                ex.getMessage()
+                ex
             );
             if (notificationProperties.getAsync().isEnabled() && notificationProperties.getAsync().isFallbackToSync()) {
                 persistSynchronously(event);
@@ -91,10 +91,10 @@ public class NotificationRequestedListener {
                 }
             } catch (Exception ex) {
                 log.warn(
-                    "Notification draft/persist failed eventId={} recipient={} reason={}",
+                    "Notification draft/persist failed eventId={} recipient={}",
                     event.eventId(),
                     recipientUserId,
-                    ex.getMessage()
+                    ex
                 );
             }
         }

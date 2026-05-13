@@ -335,7 +335,7 @@ public class DeliveryService {
                 NotificationEventType.ASSIGNMENT_ACCEPTED,
                 delivery.getId(),
                 actorId,
-                List.of(delivery.getCustomer().getId(), actorId),
+                List.of(delivery.getCustomer().getId()),
                 delivery.getStatus(),
                 occurredAt,
                 Map.of("source", "delivery.accept")

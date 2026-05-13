@@ -191,7 +191,7 @@ Full contract and examples are documented in `docs/notifications-api.md`.
 
 ## Notification emitters (`#47`)
 
-Delivery assignment and milestone status transitions now emit `NotificationRequested` domain events from transactional delivery flows (`accept` + `PATCH status`), and notifications are handled in an `AFTER_COMMIT` listener to avoid rolling back delivery updates on notification failures.
+Delivery assignment and milestone status transitions now emit `NotificationRequested` domain events from transactional delivery flows (`accept` + `PATCH status`), and notifications are handled in an `AFTER_COMMIT` listener to avoid rolling back delivery updates on notification failures. In the current API scope, emitted recipients are customer-only.
 
 Runtime mode is controlled by properties:
 

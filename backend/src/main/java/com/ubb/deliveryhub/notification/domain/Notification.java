@@ -33,7 +33,7 @@ import java.util.UUID;
     indexes = {
         @Index(name = NotificationId.IDX_USER_CREATED_AT_DESC, columnList = NotificationId.USER_ID + "," + NotificationId.CREATED_AT),
         @Index(name = NotificationId.IDX_USER_READ_AT, columnList = NotificationId.USER_ID + "," + NotificationId.READ_AT),
-        @Index(name = NotificationId.IDX_DEDUPE_KEY, columnList = NotificationId.DEDUPE_KEY, unique = true)
+        @Index(name = NotificationId.IDX_DEDUPE_KEY, columnList = NotificationId.DEDUPE_KEY)
     }
 )
 @Getter

@@ -3,8 +3,8 @@ package com.ubb.deliveryhub.notification.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubb.deliveryhub.delivery.domain.Delivery;
 import com.ubb.deliveryhub.identity.domain.User;
-import com.ubb.deliveryhub.identity.repository.UserRepository;
 import com.ubb.deliveryhub.notification.domain.Notification;
+import com.ubb.deliveryhub.notification.domain.id.NotificationId;
 import com.ubb.deliveryhub.notification.events.NotificationRequested;
 import com.ubb.deliveryhub.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityManager;
@@ -20,18 +20,15 @@ import java.util.UUID;
 public class NotificationPersistenceService {
 
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
     private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
 
     public NotificationPersistenceService(
         NotificationRepository notificationRepository,
-        UserRepository userRepository,
         EntityManager entityManager,
         ObjectMapper objectMapper
     ) {
         this.notificationRepository = notificationRepository;
-        this.userRepository = userRepository;
         this.entityManager = entityManager;
         this.objectMapper = objectMapper;
     }
@@ -58,14 +55,14 @@ public class NotificationPersistenceService {
             notificationRepository.save(notification);
             return true;
         } catch (DataIntegrityViolationException ex) {
-            return false;
+            if (isDedupeViolation(ex)) {
+                return false;
+            }
+            throw ex;
         }
     }
 
     private User requireUserReference(UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("Notification target user not found: " + userId);
-        }
         return entityManager.getReference(User.class, userId);
     }
 
@@ -73,6 +70,21 @@ public class NotificationPersistenceService {
         if (deliveryId == null) {
             return null;
         }
-        return entityManager.find(Delivery.class, deliveryId);
+        return entityManager.getReference(Delivery.class, deliveryId);
+    }
+
+    private static boolean isDedupeViolation(Throwable throwable) {
+        Throwable cursor = throwable;
+        while (cursor != null) {
+            String message = cursor.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase();
+                if (normalized.contains(NotificationId.IDX_DEDUPE_KEY) || normalized.contains(NotificationId.DEDUPE_KEY)) {
+                    return true;
+                }
+            }
+            cursor = cursor.getCause();
+        }
+        return false;
     }
 }
