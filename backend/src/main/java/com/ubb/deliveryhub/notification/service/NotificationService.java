@@ -38,8 +38,8 @@ public class NotificationService {
         Boolean unreadOnly,
         NotificationType type
     ) {
-        assertAllowedSort(pageable.getSort());
         Pageable effective = applyDefaultSort(pageable);
+        assertAllowedSort(effective.getSort());
         UUID userId = principalUserId(authentication);
         Specification<Notification> specification = NotificationSpecifications.forUserWithFilters(userId, unreadOnly, type);
         return notificationRepository.findAll(specification, effective).map(NotificationMapper::toDto);
