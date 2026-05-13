@@ -188,3 +188,13 @@ Customer notifications persistence and read-state endpoints are available with s
 - `PATCH /api/notifications/read-all` returning `{ "updatedCount": <number> }`
 
 Full contract and examples are documented in `docs/notifications-api.md`.
+
+## Notification emitters (`#47`)
+
+Delivery assignment and milestone status transitions now emit `NotificationRequested` domain events from transactional delivery flows (`accept` + `PATCH status`), and notifications are handled in an `AFTER_COMMIT` listener to avoid rolling back delivery updates on notification failures.
+
+Runtime mode is controlled by properties:
+
+- `notifications.async.enabled=false` (default): listener persists notification rows synchronously.
+- `notifications.async.enabled=true`: listener publishes event payload to RabbitMQ (`notifications.async.exchange` + `notifications.async.routing-key`).
+- `notifications.async.fallback-to-sync=true`: if async publish fails, listener falls back to sync persistence.

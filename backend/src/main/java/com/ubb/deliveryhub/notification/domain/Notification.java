@@ -32,7 +32,8 @@ import java.util.UUID;
     name = NotificationId.TABLE_NAME,
     indexes = {
         @Index(name = NotificationId.IDX_USER_CREATED_AT_DESC, columnList = NotificationId.USER_ID + "," + NotificationId.CREATED_AT),
-        @Index(name = NotificationId.IDX_USER_READ_AT, columnList = NotificationId.USER_ID + "," + NotificationId.READ_AT)
+        @Index(name = NotificationId.IDX_USER_READ_AT, columnList = NotificationId.USER_ID + "," + NotificationId.READ_AT),
+        @Index(name = NotificationId.IDX_DEDUPE_KEY, columnList = NotificationId.DEDUPE_KEY, unique = true)
     }
 )
 @Getter
@@ -72,6 +73,9 @@ public class Notification {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = NotificationId.PAYLOAD_JSON)
     private JsonNode payloadJson;
+
+    @Column(name = NotificationId.DEDUPE_KEY, length = 255)
+    private String dedupeKey;
 
     @Column(name = NotificationId.CREATED_AT, nullable = false)
     private Instant createdAt;

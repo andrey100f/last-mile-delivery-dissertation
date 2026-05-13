@@ -28,6 +28,9 @@ import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
+import com.ubb.deliveryhub.notification.application.NotificationEventPublisher;
+import com.ubb.deliveryhub.notification.events.NotificationEventType;
+import com.ubb.deliveryhub.notification.events.NotificationRequested;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -44,6 +47,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -63,6 +68,11 @@ public class DeliveryService {
     private static final String TRACKING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int TRACKING_BODY_LEN = 10;
     private static final int TRACKING_CODE_SAVE_ATTEMPTS = 15;
+    private static final Set<DeliveryStatus> NOTIFIABLE_STATUS_MILESTONES = Set.of(
+        DeliveryStatus.PICKED_UP,
+        DeliveryStatus.IN_TRANSIT,
+        DeliveryStatus.DELIVERED
+    );
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
@@ -71,6 +81,7 @@ public class DeliveryService {
     private final DeliveryAuthorization deliveryAuthorization;
     private final DeliveryStateMachine deliveryStateMachine;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationEventPublisher notificationEventPublisher;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
@@ -227,6 +238,7 @@ public class DeliveryService {
         deliveryStatusHistoryRepository.save(historyEntry);
 
         Delivery saved = deliveryRepository.save(delivery);
+        emitAssignmentNotification(saved, courierId, saved.getUpdatedAt());
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
     }
@@ -257,6 +269,7 @@ public class DeliveryService {
 
         Delivery saved = deliveryRepository.save(delivery);
         publishAfterCommit(saved.getId(), fromStatus, targetStatus, courierId, saved.getUpdatedAt());
+        emitStatusNotification(saved, courierId, targetStatus, saved.getUpdatedAt());
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
     }
@@ -310,5 +323,44 @@ public class DeliveryService {
                 );
             }
         });
+    }
+
+    private void emitAssignmentNotification(Delivery delivery, UUID actorId, Instant occurredAt) {
+        if (delivery.getCustomer() == null || delivery.getCustomer().getId() == null) {
+            return;
+        }
+        notificationEventPublisher.publish(
+            new NotificationRequested(
+                UUID.randomUUID(),
+                NotificationEventType.ASSIGNMENT_ACCEPTED,
+                delivery.getId(),
+                actorId,
+                List.of(delivery.getCustomer().getId(), actorId),
+                delivery.getStatus(),
+                occurredAt,
+                Map.of("source", "delivery.accept")
+            )
+        );
+    }
+
+    private void emitStatusNotification(Delivery delivery, UUID actorId, DeliveryStatus targetStatus, Instant occurredAt) {
+        if (!NOTIFIABLE_STATUS_MILESTONES.contains(targetStatus)) {
+            return;
+        }
+        if (delivery.getCustomer() == null || delivery.getCustomer().getId() == null) {
+            return;
+        }
+        notificationEventPublisher.publish(
+            new NotificationRequested(
+                UUID.randomUUID(),
+                NotificationEventType.STATUS_UPDATED,
+                delivery.getId(),
+                actorId,
+                List.of(delivery.getCustomer().getId()),
+                targetStatus,
+                occurredAt,
+                Map.of("source", "delivery.status")
+            )
+        );
     }
 }

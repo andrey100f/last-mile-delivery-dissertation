@@ -38,6 +38,43 @@ Categories:
 - `SYSTEM`
 - `ADMIN`
 
+## Event emission contract (`#47`)
+
+The delivery domain emits `NotificationRequested` events with this serializable payload:
+
+- `eventId`
+- `eventType` (`ASSIGNMENT_ACCEPTED`, `STATUS_UPDATED`, `EXCEPTION_REPORTED`)
+- `deliveryId`
+- `actorUserId`
+- `targetUserIds`
+- `status` (nullable by event type)
+- `occurredAt`
+- `metadata` (optional map)
+
+Current emission points:
+
+- courier accepts a delivery (`POST /deliveries/{id}/accept`) -> customer + courier confirmation notifications
+- courier updates status (`PATCH /deliveries/{id}/status`) -> customer notifications for milestones (`PICKED_UP`, `IN_TRANSIT`, `DELIVERED`)
+
+Processing runs in an `AFTER_COMMIT` listener, so notification failures cannot roll back assignment/status transaction success.
+
+Idempotency keying is persisted as `dedupe_key` (`recipient + delivery + eventType + status`) to avoid duplicate rows on retries/replays.
+
+## Sync vs async mode
+
+Properties:
+
+- `notifications.async.enabled` (default `false`)
+- `notifications.async.fallback-to-sync` (default `true`)
+- `notifications.async.exchange` (default `deliveryhub.notifications`)
+- `notifications.async.routing-key` (default `requested`)
+
+Behavior:
+
+- when async is `false`, listener writes directly to `notifications` table
+- when async is `true`, listener publishes to RabbitMQ for downstream consumer ownership (`#69`)
+- fallback setting controls whether a failed publish is persisted synchronously
+
 ## `GET /notifications`
 
 Returns paginated notifications for the authenticated customer only.
