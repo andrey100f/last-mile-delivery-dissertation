@@ -12,6 +12,16 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/18/data
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: deliveryhub-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: deliveryhub
+      RABBITMQ_DEFAULT_PASS: deliveryhub
 
 volumes:
   postgres_data:

@@ -67,8 +67,14 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'notifications',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Notifications' },
+    loadComponent: () =>
+      import('./pages/notifications/customer-notifications').then(
+        (m) => m.CustomerNotificationsPage,
+      ),
+    data: {
+      pageTitle: 'Notifications',
+      subtitle: 'Stay updated on your deliveries',
+    },
   },
   {
     path: 'profile',

@@ -354,6 +354,14 @@ export class DeliveryDetailPage {
     return normalizeDeliveryStatus(status) === DeliveryStatus.DELIVERED;
   }
 
+  protected isCurrentTimelineStatus(status: string): boolean {
+    const detail = this.delivery();
+    if (!detail) {
+      return false;
+    }
+    return normalizeDeliveryStatus(status) === normalizeDeliveryStatus(detail.status);
+  }
+
   protected hasDimensions(delivery: DeliveryDetailDto): boolean {
     return (
       this.isPositiveNumber(delivery.package.lengthCm) &&

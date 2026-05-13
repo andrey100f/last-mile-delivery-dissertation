@@ -88,6 +88,14 @@ public class NotificationRequestedListener {
                         recipientUserId,
                         dedupeKey
                     );
+                } else {
+                    log.info(
+                        "Notification persisted eventId={} recipient={} type={} dedupeKey={}",
+                        event.eventId(),
+                        recipientUserId,
+                        event.eventType(),
+                        dedupeKey
+                    );
                 }
             } catch (Exception ex) {
                 log.warn(

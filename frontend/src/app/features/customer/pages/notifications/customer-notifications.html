@@ -1,0 +1,184 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="mx-auto w-full max-w-[1040px] p-5">
+    <section
+      class="mb-4 rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-3 shadow-(--p-shadow-xs)"
+    >
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex items-center gap-3">
+          <p class="text-sm font-medium text-p-text-muted">Filter:</p>
+          <div class="flex flex-wrap gap-2">
+            @for (chip of viewFilters; track chip.label) {
+              <button
+                type="button"
+                class="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+                [class.border-blue-500]="isFilterSelected(chip.value)"
+                [class.bg-blue-500]="isFilterSelected(chip.value)"
+                [class.text-white]="isFilterSelected(chip.value)"
+                [class.border-p-surface-border]="!isFilterSelected(chip.value)"
+                [class.bg-p-surface-ground]="!isFilterSelected(chip.value)"
+                [class.text-p-text-secondary]="!isFilterSelected(chip.value)"
+                (click)="selectFilter(chip.value)"
+              >
+                {{ chip.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <p-button
+            label="Mark All Read"
+            icon="pi pi-check"
+            [text]="true"
+            styleClass="hover:!bg-slate-100"
+            [disabled]="markAllInFlight()"
+            [loading]="markAllInFlight()"
+            (onClick)="markAllAsRead()"
+          />
+        </div>
+      </div>
+
+      @if (actionError(); as operationError) {
+        <p class="mt-2 text-xs font-medium text-red-600">{{ operationError }}</p>
+      }
+    </section>
+
+    @if (loading()) {
+      <section class="space-y-2">
+        @for (_item of loadingSkeletonRows; track _item) {
+          <article
+            class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-card p-3 shadow-(--p-shadow-xs)"
+          >
+            <div class="space-y-2">
+              <p-skeleton width="15rem" height="1rem" />
+              <p-skeleton width="100%" height="0.8rem" />
+              <p-skeleton width="6rem" height="0.8rem" />
+            </div>
+          </article>
+        }
+      </section>
+    } @else if (loadError(); as loadErrorMessage) {
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+      >
+        <div class="flex flex-col gap-3">
+          <p class="text-sm font-semibold text-p-text-primary">{{ loadErrorMessage }}</p>
+          <div>
+            <p-button label="Retry" (onClick)="retry()" />
+          </div>
+        </div>
+      </section>
+    } @else if (visibleItems().length === 0) {
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-8 text-center shadow-(--p-shadow-xs)"
+      >
+        <div class="mx-auto flex max-w-md flex-col items-center gap-2">
+          <span
+            class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-p-surface-ground text-p-text-muted"
+          >
+            <i class="pi pi-bell text-lg" aria-hidden="true"></i>
+          </span>
+          <h2 class="text-base font-semibold text-p-text-primary">No notifications</h2>
+          <p class="text-sm text-p-text-muted">
+            @if (selectedFilter() !== 'ALL') {
+              Try changing filters to see more results.
+            } @else {
+              New delivery updates will appear here.
+            }
+          </p>
+        </div>
+      </section>
+    } @else {
+      <section class="space-y-2">
+        @for (item of visibleItems(); track item.id) {
+          <article
+            [class]="
+              item.read
+                ? 'rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-card px-3 py-2.5 transition-colors hover:bg-p-surface-hover/60'
+                : 'rounded-(--p-radius-md) border border-blue-200 bg-blue-50/35 px-3 py-2.5 transition-colors hover:bg-blue-100/50'
+            "
+            [class.cursor-pointer]="!!item.deliveryId"
+            (click)="openNotification(item)"
+          >
+            <div class="grid grid-cols-[auto_1fr_auto] items-start gap-3">
+              <span
+                class="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-md"
+                [class]="notificationIconContainerClass(item)"
+              >
+                <i
+                  [class]="notificationIcon(item) + ' text-[13px] ' + notificationIconColorClass(item)"
+                  aria-hidden="true"
+                ></i>
+              </span>
+
+              <div class="min-w-0">
+                <p class="text-sm font-semibold leading-tight text-p-text-primary">
+                  @for (part of highlightedTextParts(item.title); track part.text + $index) {
+                    <span [class]="part.className">{{ part.text }}</span>
+                  }
+                </p>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-p-text-muted">
+                  @for (part of highlightedTextParts(item.message); track part.text + $index) {
+                    <span [class]="part.className">{{ part.text }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="mt-0.5 flex items-center justify-end gap-1">
+                @if (item.deliveryId) {
+                  <p-button
+                    label="Open delivery"
+                    icon="pi pi-arrow-right"
+                    size="small"
+                    [text]="true"
+                    styleClass="!border !border-transparent !rounded-md hover:!border-blue-300 hover:!bg-transparent"
+                    [disabled]="markAllInFlight()"
+                    (onClick)="$event.stopPropagation(); openDelivery(item.deliveryId)"
+                  />
+                }
+                @if (!item.read) {
+                  <p-button
+                    label="Mark as read"
+                    icon="pi pi-check"
+                    size="small"
+                    [text]="true"
+                    styleClass="!border !border-transparent !rounded-md hover:!border-blue-300 hover:!bg-transparent"
+                    [loading]="isActionPending(item.id)"
+                    [disabled]="isActionPending(item.id) || markAllInFlight()"
+                    [attr.aria-label]="'Mark notification as read: ' + item.title"
+                    (onClick)="$event.stopPropagation(); markAsRead(item)"
+                  />
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </section>
+
+      <section
+        class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-3 shadow-(--p-shadow-xs)"
+      >
+        <p class="text-xs text-p-text-muted">
+          Showing page {{ pageNumberLabel() }} of {{ totalPagesLabel() }} ({{ pageState().totalElements }}
+          total)
+        </p>
+        <div class="flex items-center gap-2">
+          <p-button
+            label="Previous"
+            size="small"
+            [outlined]="true"
+            [disabled]="pageState().page <= 0 || loading()"
+            (onClick)="goToPreviousPage()"
+          />
+          <p-button
+            label="Next"
+            size="small"
+            [outlined]="true"
+            [disabled]="!hasNextPage() || loading()"
+            (onClick)="goToNextPage()"
+          />
+        </div>
+      </section>
+    }
+  </div>
+</div>

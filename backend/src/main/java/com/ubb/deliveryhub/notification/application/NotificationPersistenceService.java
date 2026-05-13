@@ -10,6 +10,7 @@ import com.ubb.deliveryhub.notification.repository.NotificationRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
@@ -33,7 +34,7 @@ public class NotificationPersistenceService {
         this.objectMapper = objectMapper;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean persist(NotificationRequested event, UUID recipientUserId, NotificationDraft draft, String dedupeKey) {
         Notification notification = new Notification();
         notification.setUser(requireUserReference(recipientUserId));
@@ -44,11 +45,12 @@ public class NotificationPersistenceService {
         notification.setMessage(draft.message());
         notification.setDedupeKey(dedupeKey);
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("eventId", event.eventId());
-        payload.put("eventType", event.eventType());
-        payload.put("status", event.status());
-        payload.put("occurredAt", event.occurredAt());
-        payload.put("actorUserId", event.actorUserId());
+        payload.put("eventId", event.eventId() != null ? event.eventId().toString() : null);
+        payload.put("eventType", event.eventType() != null ? event.eventType().name() : null);
+        payload.put("status", event.status() != null ? event.status().name() : null);
+        // Store as ISO-8601 text to avoid runtime mapper module mismatch for java.time types.
+        payload.put("occurredAt", event.occurredAt() != null ? event.occurredAt().toString() : null);
+        payload.put("actorUserId", event.actorUserId() != null ? event.actorUserId().toString() : null);
         payload.put("metadata", event.metadata());
         notification.setPayloadJson(objectMapper.valueToTree(payload));
         try {

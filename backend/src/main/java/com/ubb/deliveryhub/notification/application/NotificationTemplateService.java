@@ -3,7 +3,6 @@ package com.ubb.deliveryhub.notification.application;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.notification.domain.NotificationCategory;
 import com.ubb.deliveryhub.notification.domain.NotificationType;
-import com.ubb.deliveryhub.notification.events.NotificationEventType;
 import com.ubb.deliveryhub.notification.events.NotificationRequested;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +30,15 @@ public class NotificationTemplateService {
 
     private static NotificationDraft statusUpdated(NotificationRequested event) {
         DeliveryStatus status = event.status();
+        if (status == DeliveryStatus.DELIVERED) {
+            String code = shortDeliveryCode(event.deliveryId());
+            return new NotificationDraft(
+                NotificationType.STATUS_UPDATED,
+                NotificationCategory.DELIVERY,
+                "Delivery %s completed".formatted(code),
+                "Your delivery has been successfully completed."
+            );
+        }
         String statusLabel = status == null ? "updated" : status.name().replace('_', ' ');
         String title = "Delivery status updated";
         String message = "Delivery %s is now %s.".formatted(shortDeliveryCode(event.deliveryId()), statusLabel);
