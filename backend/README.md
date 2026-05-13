@@ -178,3 +178,13 @@ Compact polling endpoint for tracking and WS fallback:
 - includes `ETag` so clients can use `If-None-Match` and receive `304 Not Modified` when unchanged
 
 Polling methodology and curl baseline loop are documented in `docs/polling-tracking-baseline.md`.
+
+## Notifications API (`#46`)
+
+Customer notifications persistence and read-state endpoints are available with strict user scoping (no client-provided `userId`):
+
+- `GET /api/notifications` with `page`, `size`, `sort`, `unreadOnly`, `type`
+- `PATCH /api/notifications/{id}/read` for idempotent mark-read
+- `PATCH /api/notifications/read-all` returning `{ "updatedCount": <number> }`
+
+Full contract and examples are documented in `docs/notifications-api.md`.

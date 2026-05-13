@@ -1,0 +1,93 @@
+# Notifications API (`#46`)
+
+Base path: `/api`
+
+Endpoints are exposed under `/notifications` only.
+
+## Notification DTO contract
+
+Each list item contains:
+
+- `id`
+- `type`
+- `category`
+- `title`
+- `message`
+- `deliveryId` (nullable)
+- `createdAt`
+- `read` (`true` when `readAt` is present)
+- `readAt` (nullable)
+
+`payload_json` is persistence-only and not part of the API response contract.
+
+## Types dictionary
+
+Stable values used by emitters (`#47`) and UI icon mapping (`#48`):
+
+- `DELIVERY_ASSIGNED`
+- `STATUS_UPDATED`
+- `EXCEPTION_REPORTED`
+- `DELIVERY_CREATED`
+- `DELIVERY_CANCELLED`
+- `SYSTEM_ANNOUNCEMENT`
+
+Categories:
+
+- `DELIVERY`
+- `EXCEPTION`
+- `SYSTEM`
+- `ADMIN`
+
+## `GET /notifications`
+
+Returns paginated notifications for the authenticated customer only.
+
+Query parameters:
+
+- `page`, `size`, `sort` (Spring pageable)
+- `unreadOnly` (optional boolean)
+- `type` (optional enum value from above)
+
+Default sort is `createdAt,desc`.
+
+Example:
+
+```bash
+curl -s -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/notifications?unreadOnly=true&type=STATUS_UPDATED&page=0&size=20"
+```
+
+## `PATCH /notifications/{id}/read`
+
+Marks one notification as read for the authenticated customer.
+
+- idempotent: already-read rows still return success
+- ownership-safe: rows outside the current user scope return `404`
+
+Example:
+
+```bash
+curl -i -X PATCH -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/notifications/2e4d9268-f4d6-4f09-9fd6-65e4f48aafaa/read"
+```
+
+Expected success status: `204 No Content`.
+
+## `PATCH /notifications/read-all`
+
+Marks all unread notifications as read for the authenticated customer and returns an update count.
+
+Example:
+
+```bash
+curl -s -X PATCH -H "Authorization: Bearer <token>" \
+  "http://localhost:8080/api/notifications/read-all"
+```
+
+Example response:
+
+```json
+{
+  "updatedCount": 3
+}
+```
