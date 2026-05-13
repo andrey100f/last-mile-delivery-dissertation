@@ -1,6 +1,13 @@
 import { NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   NavigationEnd,
   Router,
@@ -12,8 +19,10 @@ import { navSectionsForRole } from '@core/navigation/app-nav.utils';
 import { AuthService } from '@core/services/auth/auth';
 import { UserRole } from '@core/services/enum/auth.types';
 import { UserService } from '@core/services/user/user';
+import { NotificationService } from '@features/customer/services/notification.service';
 import { PageHeaderService } from '../page-header/page-header.service';
 import { filter } from 'rxjs';
+import { NavItem } from '@core/navigation/app-nav.model';
 import {
   displayNameFromEmail,
   initialsFromDisplayName,
@@ -33,8 +42,12 @@ export class AppLayoutComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly pageHeaderService = inject(PageHeaderService);
+  private readonly notificationService = inject(NotificationService);
 
   protected readonly navSections = computed(() => navSectionsForRole(this.auth.sessionRole()));
+  protected readonly hasUnreadNotifications = computed(
+    () => this.notificationService.unreadCount() > 0,
+  );
   private readonly routeTitle = signal('Dashboard');
   private readonly routeSubtitle = signal<string | null>(null);
   protected readonly pageTitle = computed(
@@ -89,6 +102,14 @@ export class AppLayoutComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.refreshRouteHeader());
+  }
+
+  protected showUnreadDotFor(item: NavItem): boolean {
+    if (!this.hasUnreadNotifications()) {
+      return false;
+    }
+    const [scope, section] = item.routerCommands;
+    return scope === 'customer' && section === 'notifications';
   }
 
   private refreshRouteHeader(): void {

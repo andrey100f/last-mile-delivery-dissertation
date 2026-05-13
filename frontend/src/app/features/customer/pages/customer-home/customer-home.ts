@@ -22,7 +22,7 @@ import {
 } from '@shared/ui/public-api';
 import { Skeleton } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
-import { catchError, finalize, of } from 'rxjs';
+import { catchError, finalize, interval, of, switchMap } from 'rxjs';
 
 interface CustomerDeliveryRow {
   id: string;
@@ -63,6 +63,7 @@ export class CustomerHome {
     DeliveryStatus.CANCELLED,
     DeliveryStatus.FAILED,
   ]);
+  private static readonly ACTIVE_DELIVERIES_REFRESH_INTERVAL_MS = 10000;
 
   private readonly deliveryService = inject(DeliveryService);
   private readonly destroyRef = inject(DestroyRef);
@@ -109,6 +110,7 @@ export class CustomerHome {
 
   constructor() {
     this.loadCustomerDeliveries();
+    this.startActiveDeliveriesPolling();
   }
 
   protected openDeliveryDetails(deliveryId: string): void {
@@ -129,16 +131,31 @@ export class CustomerHome {
         catchError(() => of(this.emptyPage())),
         finalize(() => this.loading.set(false)),
       )
-      .subscribe((response) => {
-        this.pageDeliveries.set(response.content);
-        this.totalDeliveries.set(response.totalElements);
-        const activeDeliveries = response.content.filter((delivery) =>
-          this.isActiveDeliveryStatus(delivery.status),
-        );
-        this.deliveries.set(
-          activeDeliveries.map((delivery) => this.mapDeliveryRow(delivery)),
-        );
-      });
+      .subscribe((response) => this.applyDeliveriesResponse(response));
+  }
+
+  private startActiveDeliveriesPolling(): void {
+    interval(CustomerHome.ACTIVE_DELIVERIES_REFRESH_INTERVAL_MS)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        switchMap(() =>
+          this.deliveryService
+            .list({ page: 0, size: 10, sort: 'createdAt,desc' })
+            .pipe(catchError(() => of(this.emptyPage()))),
+        ),
+      )
+      .subscribe((response) => this.applyDeliveriesResponse(response));
+  }
+
+  private applyDeliveriesResponse(response: PageDto<DeliverySummaryDto>): void {
+    this.pageDeliveries.set(response.content);
+    this.totalDeliveries.set(response.totalElements);
+    const activeDeliveries = response.content.filter((delivery) =>
+      this.isActiveDeliveryStatus(delivery.status),
+    );
+    this.deliveries.set(
+      activeDeliveries.map((delivery) => this.mapDeliveryRow(delivery)),
+    );
   }
 
   private mapDeliveryRow(delivery: DeliverySummaryDto): CustomerDeliveryRow {

@@ -46,6 +46,12 @@
                     <i [class]="item.icon + ' shrink-0 text-lg'" aria-hidden="true"></i>
                   }
                   <span class="truncate">{{ item.label }}</span>
+                  @if (showUnreadDotFor(item)) {
+                    <span
+                      class="ml-auto inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                      aria-label="Unread notifications"
+                    ></span>
+                  }
                 </a>
               </li>
             }
