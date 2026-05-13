@@ -12,7 +12,10 @@ import { MessageService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
 import { catchError, finalize, interval, of, switchMap } from 'rxjs';
-import { CustomerNotificationDto } from '../../models/notification.models';
+import {
+  CustomerNotificationDto,
+  NotificationListQuery,
+} from '../../models/notification.models';
 import { NotificationService } from '../../services/notification.service';
 import { resolveNotificationTypePresentation } from '../../utils/notification-type.mapper';
 
@@ -364,11 +367,9 @@ export class CustomerNotificationsPage {
 
     const pageState = this.pageState();
     this.notificationService
-      .getNotifications({
-        page: pageState.page,
-        size: pageState.size,
-        sort: 'createdAt,desc',
-      })
+      .getNotifications(
+        this.buildQueryForCurrentFilter(pageState.page, pageState.size),
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -417,11 +418,12 @@ export class CustomerNotificationsPage {
             return of(null);
           }
           return this.notificationService
-            .getNotifications({
-              page: this.pageState().page,
-              size: this.pageState().size,
-              sort: 'createdAt,desc',
-            })
+            .getNotifications(
+              this.buildQueryForCurrentFilter(
+                this.pageState().page,
+                this.pageState().size,
+              ),
+            )
             .pipe(catchError(() => of(null)));
         }),
       )
@@ -451,6 +453,34 @@ export class CustomerNotificationsPage {
               : this.pageState().totalPages,
         });
       });
+  }
+
+  private buildQueryForCurrentFilter(
+    page: number,
+    size: number,
+  ): NotificationListQuery {
+    const baseQuery: NotificationListQuery = {
+      page,
+      size,
+      sort: 'createdAt,desc',
+    };
+    const filter = this.selectedFilter();
+
+    if (filter === 'UNREAD') {
+      return {
+        ...baseQuery,
+        unreadOnly: true,
+      };
+    }
+
+    if (filter === 'COMPLETED') {
+      return {
+        ...baseQuery,
+        type: 'STATUS_UPDATED',
+      };
+    }
+
+    return baseQuery;
   }
 
   private setActionPending(notificationId: string, pending: boolean): void {

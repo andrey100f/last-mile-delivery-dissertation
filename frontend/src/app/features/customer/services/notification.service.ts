@@ -113,6 +113,10 @@ export class NotificationService extends BaseService {
 
   private normalizeNotification(item: NotificationApiResponse): CustomerNotificationDto {
     const fallbackCreatedAt = new Date().toISOString();
+    const createdAt = this.toRequiredText(
+      item.createdAt ?? item.created_at,
+      fallbackCreatedAt,
+    );
     const readAt = this.toNullableText(item.readAt ?? item.read_at);
     const read =
       typeof item.read === 'boolean'
@@ -128,9 +132,9 @@ export class NotificationService extends BaseService {
       title: this.toRequiredText(item.title, 'Notification'),
       message: this.toRequiredText(item.message, ''),
       deliveryId: this.toNullableText(item.deliveryId ?? item.delivery_id),
-      createdAt: this.toRequiredText(item.createdAt ?? item.created_at, fallbackCreatedAt),
+      createdAt,
       read,
-      readAt: read ? readAt ?? fallbackCreatedAt : null,
+      readAt: read ? readAt ?? createdAt : null,
     };
   }
 
