@@ -198,3 +198,28 @@ Runtime mode is controlled by properties:
 - `notifications.async.enabled=false` (default): listener persists notification rows synchronously.
 - `notifications.async.enabled=true`: listener publishes event payload to RabbitMQ (`notifications.async.exchange` + `notifications.async.routing-key`).
 - `notifications.async.fallback-to-sync=true`: if async publish fails, listener falls back to sync persistence.
+
+## Admin user management APIs (`#54`)
+
+Admin-only endpoints for managing courier/customer accounts:
+
+- `GET /api/admin/couriers` and `GET /api/admin/customers`
+- `POST /api/admin/couriers` and `POST /api/admin/customers`
+
+List behavior:
+
+- pageable contract (`page`, `size`, `sort`)
+- optional search (`q` or `search`) over `email`, `displayName`, `phoneNumber`
+- deterministic sorting (requested sort + `id DESC` tie-breaker; default `createdAt DESC`)
+
+Create behavior:
+
+- validates `email`, `displayName`, and password complexity
+- stores password as BCrypt hash (never returned in responses)
+- duplicate email returns `409` with `code=USER_EMAIL_CONFLICT` and `fieldErrors.email`
+- courier creation also creates a `courier_profiles` row in the same transaction
+
+Current onboarding assumption for MVP:
+
+- admin submits an initial password in create payloads
+- invite/reset-password workflow is deferred to a later milestone
