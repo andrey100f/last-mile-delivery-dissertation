@@ -1,10 +1,13 @@
 package com.ubb.deliveryhub.admin.service;
 
 import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardDto;
+import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardSeriesPointDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardWindowDto;
 import com.ubb.deliveryhub.admin.domain.exception.AdminDashboardValidationException;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
+import com.ubb.deliveryhub.delivery.repository.DeliveryDateCountView;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
+import com.ubb.deliveryhub.delivery.repository.DeliveryStatusCountView;
 import com.ubb.deliveryhub.notification.domain.NotificationCategory;
 import com.ubb.deliveryhub.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +90,9 @@ public class AdminDashboardService {
             window.toExclusive()
         );
 
+        List<AdminDashboardSeriesPointDto> deliveryVolumeSeries = buildDeliveryVolumeSeries(window);
+        List<AdminDashboardSeriesPointDto> statusDistributionSeries = buildStatusDistributionSeries(window);
+
         return AdminDashboardDto.builder()
             .activeDeliveriesCount(activeDeliveriesCount)
             .couriersOnlineCount(couriersOnlineCount)
@@ -99,6 +107,8 @@ public class AdminDashboardService {
                     .timezone(WINDOW_TIMEZONE)
                     .build()
             )
+            .deliveryVolumeSeries(deliveryVolumeSeries)
+            .statusDistributionSeries(statusDistributionSeries)
             .build();
     }
 
@@ -145,6 +155,54 @@ public class AdminDashboardService {
         }
 
         return new DashboardWindow(fromInclusive, toExclusive);
+    }
+
+    private List<AdminDashboardSeriesPointDto> buildDeliveryVolumeSeries(DashboardWindow window) {
+        List<DeliveryDateCountView> groupedRows = deliveryRepository.countByStatusesGroupedByCreatedDateInWindow(
+            ACTIVE_DELIVERY_STATUSES,
+            window.fromInclusive(),
+            window.toExclusive()
+        );
+
+        Map<LocalDate, Long> countByDate = new HashMap<>();
+        for (DeliveryDateCountView row : groupedRows) {
+            LocalDate bucketDate = row.getBucketDate();
+            if (bucketDate == null) {
+                continue;
+            }
+            countByDate.put(bucketDate, Math.max(0, row.getMetricValue()));
+        }
+
+        LocalDate fromDate = window.fromInclusive().atOffset(ZoneOffset.UTC).toLocalDate();
+        LocalDate toExclusiveDate = window.toExclusive().atOffset(ZoneOffset.UTC).toLocalDate();
+
+        List<AdminDashboardSeriesPointDto> series = new ArrayList<>();
+        for (LocalDate cursor = fromDate; cursor.isBefore(toExclusiveDate); cursor = cursor.plusDays(1)) {
+            series.add(AdminDashboardSeriesPointDto.builder()
+                .label(cursor.toString())
+                .value(countByDate.getOrDefault(cursor, 0L))
+                .build());
+        }
+        return series;
+    }
+
+    private List<AdminDashboardSeriesPointDto> buildStatusDistributionSeries(DashboardWindow window) {
+        List<DeliveryStatusCountView> groupedRows = deliveryRepository.countGroupedByStatusInCreatedWindow(
+            window.fromInclusive(),
+            window.toExclusive()
+        );
+
+        List<AdminDashboardSeriesPointDto> series = new ArrayList<>();
+        for (DeliveryStatusCountView row : groupedRows) {
+            if (row.getStatus() == null) {
+                continue;
+            }
+            series.add(AdminDashboardSeriesPointDto.builder()
+                .label(row.getStatus().name())
+                .value(Math.max(0, row.getMetricValue()))
+                .build());
+        }
+        return series;
     }
 
     private Instant parseFromBoundary(String raw, String fieldName) {

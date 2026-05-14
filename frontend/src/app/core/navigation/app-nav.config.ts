@@ -26,7 +26,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
       },
       {
         label: 'Dashboard',
-        routerCommands: ['admin'],
+        routerCommands: ['admin', 'dashboard'],
         icon: 'pi pi-home',
         roles: [UserRole.ADMIN],
         linkActiveExact: true,
@@ -75,12 +75,6 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         roles: [UserRole.COURIER],
       },
       {
-        label: 'Deliveries monitoring',
-        routerCommands: ['admin', 'deliveries'],
-        icon: 'pi pi-truck',
-        roles: [UserRole.ADMIN],
-      },
-      {
         label: 'Couriers',
         routerCommands: ['admin', 'couriers'],
         icon: 'pi pi-users',
@@ -90,12 +84,6 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         label: 'Customers',
         routerCommands: ['admin', 'customers'],
         icon: 'pi pi-user',
-        roles: [UserRole.ADMIN],
-      },
-      {
-        label: 'Exceptions',
-        routerCommands: ['admin', 'exceptions'],
-        icon: 'pi pi-exclamation-triangle',
         roles: [UserRole.ADMIN],
       },
     ],

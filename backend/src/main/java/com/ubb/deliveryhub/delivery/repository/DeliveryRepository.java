@@ -124,4 +124,36 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive
     );
+
+    @Query("""
+        SELECT
+          FUNCTION('date', d.createdAt) AS bucketDate,
+          COUNT(d) AS metricValue
+        FROM Delivery d
+        WHERE d.status IN :statuses
+          AND d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        GROUP BY FUNCTION('date', d.createdAt)
+        ORDER BY FUNCTION('date', d.createdAt) ASC
+        """)
+    List<DeliveryDateCountView> countByStatusesGroupedByCreatedDateInWindow(
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
+
+    @Query("""
+        SELECT
+          d.status AS status,
+          COUNT(d) AS metricValue
+        FROM Delivery d
+        WHERE d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        GROUP BY d.status
+        ORDER BY COUNT(d) DESC, d.status ASC
+        """)
+    List<DeliveryStatusCountView> countGroupedByStatusInCreatedWindow(
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
 }
