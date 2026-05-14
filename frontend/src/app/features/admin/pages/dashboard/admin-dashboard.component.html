@@ -1,0 +1,170 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="space-y-5 p-5">
+    @if (loading() && !hasLoadedAtLeastOnce()) {
+      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        @for (_card of loadingSkeletonCards; track _card) {
+          <article
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+          >
+            <div class="space-y-2">
+              <p-skeleton width="8rem" height="0.9rem" />
+              <p-skeleton width="6rem" height="1.8rem" />
+            </div>
+          </article>
+        }
+      </section>
+    } @else if (hardError(); as loadError) {
+      <section
+        class="rounded-(--p-radius-lg) border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-(--p-shadow-xs)"
+      >
+        <p class="font-semibold">Dashboard unavailable</p>
+        <p class="mt-1">{{ loadError }}</p>
+        <div class="mt-3">
+          <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+        </div>
+      </section>
+    } @else if (dashboard()) {
+      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        @for (card of kpiCards(); track card.label) {
+          <article
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="mb-1 text-[12px] text-p-text-muted">{{ card.label }}</p>
+                <p class="text-[28px] leading-none font-semibold text-p-text-primary">
+                  {{ card.value }}
+                </p>
+              </div>
+              <span
+                class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md)"
+                [class]="card.iconBgClass + ' ' + card.iconColorClass"
+              >
+                <i [class]="card.icon + ' text-base'" aria-hidden="true"></i>
+              </span>
+            </div>
+          </article>
+        }
+      </section>
+
+      @if (transientError(); as refreshError) {
+        <section
+          class="rounded-(--p-radius-lg) border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+        >
+          <span class="font-semibold">Refresh failed.</span>
+          <span class="ml-1">{{ refreshError }}</span>
+          <span class="ml-1">Showing last successful snapshot.</span>
+        </section>
+      }
+
+      @if (chartWarnings().length > 0) {
+        <section
+          class="rounded-(--p-radius-lg) border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700"
+        >
+          @for (warning of chartWarnings(); track warning) {
+            <p>{{ warning }}</p>
+          }
+        </section>
+      }
+
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+      >
+        <div
+          class="mb-4 flex flex-wrap items-end justify-center gap-3 border-b border-p-surface-border pb-3"
+        >
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+              From
+              <input
+                type="date"
+                class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                [value]="fromDate()"
+                [disabled]="loading() || refreshing()"
+                (change)="updateFromDate($any($event.target).value)"
+              />
+            </label>
+            <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+              To
+              <input
+                type="date"
+                class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                [value]="toDate()"
+                [disabled]="loading() || refreshing()"
+                (change)="updateToDate($any($event.target).value)"
+              />
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <p-button
+                label="Apply"
+                icon="pi pi-filter"
+                size="small"
+                [disabled]="loading() || refreshing()"
+                (onClick)="applyDateRange()"
+              />
+              <p-button
+                label="Clear"
+                icon="pi pi-times"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="loading() || refreshing()"
+                (onClick)="clearDateRange()"
+              />
+            </div>
+          </div>
+        </div>
+
+        @if (dateRangeError(); as dateError) {
+          <p class="mb-3 text-xs text-red-600">{{ dateError }}</p>
+        }
+
+        <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+          <article class="rounded-(--p-radius-md) border border-p-surface-border bg-white p-3">
+            <div class="-mx-3 mb-4 border-b border-p-surface-border px-3 pb-3">
+              <h3 class="text-sm font-semibold text-p-text-primary">Delivery Trend</h3>
+            </div>
+            @if (lineChartData(); as trendChart) {
+              <div class="h-[280px] px-1 pb-1">
+                <p-chart type="line" [data]="trendChart" [options]="lineChartOptions()" />
+              </div>
+            } @else {
+              <p class="text-sm text-p-text-muted">
+                No trend series available for this window yet. KPI cards remain fully active.
+              </p>
+            }
+          </article>
+
+          <article class="rounded-(--p-radius-md) border border-p-surface-border bg-white p-3">
+            <div class="-mx-3 mb-4 border-b border-p-surface-border px-3 pb-3">
+              <h3 class="text-sm font-semibold text-p-text-primary">Delivery Status</h3>
+            </div>
+            @if (pieChartData(); as distributionChart) {
+              <div class="mx-auto h-[160px] max-w-[220px]">
+                <p-chart type="pie" [data]="distributionChart" [options]="pieChartOptions()" />
+              </div>
+              <div class="mt-3 space-y-2">
+                @for (item of pieLegendItems(); track item.label) {
+                  <div class="grid grid-cols-[1fr_auto] items-center gap-2 text-xs">
+                    <span class="inline-flex items-center gap-2 text-p-text-secondary">
+                      <span
+                        class="h-2.5 w-2.5 rounded-full"
+                        [style.background-color]="item.color"
+                      ></span>
+                      {{ item.label }}
+                    </span>
+                    <span class="font-semibold text-p-text-primary">{{ item.value }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-sm text-p-text-muted">
+                No grouped distribution data was returned by the API for this period.
+              </p>
+            }
+          </article>
+        </div>
+      </section>
+    }
+  </div>
+</div>

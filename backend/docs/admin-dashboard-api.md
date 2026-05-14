@@ -33,6 +33,8 @@ Fields:
 - `exceptionBacklogCount`
 - `generatedAt` (UTC instant)
 - `window` (`from`, `to`, `timezone`)
+- `deliveryVolumeSeries` (daily buckets in selected window; label = `YYYY-MM-DD`, value = count)
+- `statusDistributionSeries` (delivery status grouped counts in selected window)
 
 All numeric metrics are zero-safe (never `null`).
 
@@ -50,7 +52,17 @@ Example response:
     "from": "2026-05-07T14:00:00Z",
     "to": "2026-05-14T14:00:00Z",
     "timezone": "UTC"
-  }
+  },
+  "deliveryVolumeSeries": [
+    { "label": "2026-05-08", "value": 1 },
+    { "label": "2026-05-09", "value": 2 },
+    { "label": "2026-05-10", "value": 0 }
+  ],
+  "statusDistributionSeries": [
+    { "label": "CREATED", "value": 3 },
+    { "label": "ASSIGNED", "value": 2 },
+    { "label": "IN_TRANSIT", "value": 1 }
+  ]
 }
 ```
 

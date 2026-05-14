@@ -8,9 +8,19 @@ const loadStub = () =>
 export const adminRoutes: Routes = [
   {
     path: '',
-    data: { pageTitle: 'Dashboard' },
+    pathMatch: 'full',
+    redirectTo: 'dashboard',
+  },
+  {
+    path: 'dashboard',
+    data: {
+      pageTitle: 'Dashboard',
+      subtitle: 'System overview and key performance indicators',
+    },
     loadComponent: () =>
-      import('./pages/admin-home/admin-home').then((m) => m.AdminHome),
+      import('./pages/dashboard/admin-dashboard.component').then(
+        (m) => m.AdminDashboardComponent,
+      ),
   },
   {
     path: 'deliveries',
