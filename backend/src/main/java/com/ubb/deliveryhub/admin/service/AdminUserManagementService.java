@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -156,7 +157,7 @@ public class AdminUserManagementService {
     }
 
     private static String normalizeEmail(String emailRaw) {
-        return emailRaw.trim().toLowerCase();
+        return emailRaw.trim().toLowerCase(Locale.ROOT);
     }
 
     private static String normalizeDisplayName(String displayNameRaw) {
@@ -179,7 +180,7 @@ public class AdminUserManagementService {
         if (message == null) {
             return false;
         }
-        String lowered = message.toLowerCase();
+        String lowered = message.toLowerCase(Locale.ROOT);
         return lowered.contains("users_email")
             || lowered.contains("users_email_idx")
             || lowered.contains("users_email_key");
