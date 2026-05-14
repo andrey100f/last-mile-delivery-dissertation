@@ -264,7 +264,11 @@ public class AdminUserManagementService {
 
     private String resolveCustomerRevenueCurrency() {
         List<String> currencies = deliveryRepository.findRevenueCurrenciesForCustomers();
-        return currencies.isEmpty() ? "RON" : currencies.get(0);
+        if (currencies.isEmpty()) {
+            return "RON";
+        }
+        String currency = currencies.get(0);
+        return (currency == null || currency.isBlank()) ? "RON" : currency;
     }
 
     private static Boolean normalizeAvailabilityFilter(String availabilityRaw) {

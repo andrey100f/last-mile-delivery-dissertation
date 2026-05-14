@@ -164,6 +164,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
           COALESCE(SUM(d.totalAmount), 0) AS totalSpend
         FROM Delivery d
         WHERE d.customer.id IN :customerIds
+          AND d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
         GROUP BY d.customer.id
         """)
     List<CustomerOrderSpendView> aggregateCustomerOrdersAndSpend(
@@ -192,12 +193,14 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
     @Query("""
         SELECT COALESCE(SUM(d.totalAmount), 0)
         FROM Delivery d
+        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
         """)
     BigDecimal sumTotalRevenueForCustomers();
 
     @Query("""
         SELECT d.currency
         FROM Delivery d
+        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
         GROUP BY d.currency
         ORDER BY COUNT(d) DESC, d.currency ASC
         """)
