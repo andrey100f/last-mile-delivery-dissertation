@@ -32,6 +32,7 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(fe ->
             errors.computeIfAbsent(fe.getField(), k -> new ArrayList<>()).add(fe.getDefaultMessage()));
         pd.setProperty("errors", errors);
+        pd.setProperty("fieldErrors", errors);
         return ResponseEntity.badRequest().body(pd);
     }
 
