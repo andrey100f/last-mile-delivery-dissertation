@@ -13,7 +13,7 @@ public class AdminDashboardExceptionHandler {
     @ExceptionHandler(AdminDashboardValidationException.class)
     public ResponseEntity<ProblemDetail> handleValidation(AdminDashboardValidationException ex) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        pd.setProperty("fieldErrors", ex.getFieldErrors());
+        pd.setProperty("errors", ex.getErrors());
         return ResponseEntity.badRequest().body(pd);
     }
 }

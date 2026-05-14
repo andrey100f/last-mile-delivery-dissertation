@@ -117,7 +117,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
           AND d.createdAt >= :fromInclusive
           AND d.createdAt < :toExclusive
         GROUP BY d.currency
-        ORDER BY COUNT(d) DESC
+        ORDER BY COUNT(d) DESC, d.currency ASC
         """)
     List<String> findRevenueCurrenciesByStatusesInCreatedWindow(
         @Param("statuses") Set<DeliveryStatus> statuses,

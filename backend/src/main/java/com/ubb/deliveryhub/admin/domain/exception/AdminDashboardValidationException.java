@@ -10,10 +10,10 @@ import java.util.Map;
 @Getter
 public class AdminDashboardValidationException extends RuntimeException {
 
-    private final Map<String, List<String>> fieldErrors;
+    private final Map<String, List<String>> errors;
 
-    public AdminDashboardValidationException(String message, Map<String, List<String>> fieldErrors) {
+    public AdminDashboardValidationException(String message, Map<String, List<String>> errors) {
         super(message);
-        this.fieldErrors = Collections.unmodifiableMap(new LinkedHashMap<>(fieldErrors));
+        this.errors = Collections.unmodifiableMap(new LinkedHashMap<>(errors));
     }
 }

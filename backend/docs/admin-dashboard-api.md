@@ -1,4 +1,4 @@
-# Admin Dashboard API (`#51`)
+# Admin Dashboard API (Task `#51`)
 
 Base path: `/api`
 
@@ -20,7 +20,7 @@ Time parsing rules:
 - default window when missing params: last 7 days ending at request time.
 - max allowed window span: 31 days.
 
-Invalid windows return `400` with `ProblemDetail` and `fieldErrors`.
+Invalid windows return `400` with `ProblemDetail` and `errors`.
 
 ## Response contract
 
