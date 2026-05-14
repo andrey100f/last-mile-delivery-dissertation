@@ -20,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
     Optional<User> findByEmailAndRole(String email, UserRole role);
 
+    long countByRole(UserRole role);
+
     boolean existsByEmailIgnoreCase(String email);
 
     @Query("""
@@ -27,15 +29,42 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         FROM User u
         WHERE u.role = :role
           AND (
-            :search IS NULL
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(COALESCE(u.displayName, '')) LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(COALESCE(u.phoneNumber, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+            :searchPattern IS NULL
+            OR LOWER(u.email) LIKE :searchPattern
+            OR LOWER(COALESCE(u.displayName, '')) LIKE :searchPattern
+            OR LOWER(COALESCE(u.phoneNumber, '')) LIKE :searchPattern
           )
         """)
     Page<User> findByRoleWithSearch(
         @Param("role") UserRole role,
-        @Param("search") String search,
+        @Param("searchPattern") String searchPattern,
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.role = :role
+          AND (
+            :searchPattern IS NULL
+            OR LOWER(u.email) LIKE :searchPattern
+            OR LOWER(COALESCE(u.displayName, '')) LIKE :searchPattern
+            OR LOWER(COALESCE(u.phoneNumber, '')) LIKE :searchPattern
+          )
+          AND (
+            :availableNow IS NULL
+            OR EXISTS (
+              SELECT 1
+              FROM CourierProfile cp
+              WHERE cp.user = u
+                AND cp.availableNow = :availableNow
+            )
+          )
+        """)
+    Page<User> findCouriersByRoleWithSearchAndAvailability(
+        @Param("role") UserRole role,
+        @Param("searchPattern") String searchPattern,
+        @Param("availableNow") Boolean availableNow,
         Pageable pageable
     );
 }

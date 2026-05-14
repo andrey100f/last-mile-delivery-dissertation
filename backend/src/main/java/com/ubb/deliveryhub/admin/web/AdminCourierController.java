@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.admin.web;
 
 import com.ubb.deliveryhub.admin.AdminUserListDefaults;
+import com.ubb.deliveryhub.admin.domain.dto.AdminCourierSummaryDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminManagedUserDto;
 import com.ubb.deliveryhub.admin.domain.dto.CreateAdminCourierRequestDto;
 import com.ubb.deliveryhub.admin.service.AdminUserManagementService;
@@ -36,10 +37,17 @@ public class AdminCourierController {
             direction = Sort.Direction.DESC
         ) Pageable pageable,
         @RequestParam(required = false) String q,
-        @RequestParam(required = false) String search
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String availability
     ) {
         String effectiveSearch = (q != null && !q.isBlank()) ? q : search;
-        return adminUserManagementService.listCouriers(pageable, effectiveSearch);
+        return adminUserManagementService.listCouriers(pageable, effectiveSearch, availability);
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AdminCourierSummaryDto getCourierSummary() {
+        return adminUserManagementService.getCourierSummary();
     }
 
     @PostMapping

@@ -1,12 +1,12 @@
 <div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
   <div class="space-y-5 p-5">
     @if (loading() && !hasLoadedAtLeastOnce()) {
-      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @for (_card of loadingSkeletonCards; track _card) {
           <article
-            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
           >
-            <div class="space-y-2">
+            <div class="space-y-3">
               <p-skeleton width="8rem" height="0.9rem" />
               <p-skeleton width="6rem" height="1.8rem" />
             </div>
@@ -24,23 +24,23 @@
         </div>
       </section>
     } @else if (dashboard()) {
-      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @for (card of kpiCards(); track card.label) {
           <article
-            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
           >
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center justify-between gap-4">
               <div>
-                <p class="mb-1 text-[12px] text-p-text-muted">{{ card.label }}</p>
-                <p class="text-[28px] leading-none font-semibold text-p-text-primary">
+                <p class="mb-2 text-[13px] text-p-text-muted">{{ card.label }}</p>
+                <p class="text-[30px] leading-none font-semibold text-p-text-primary">
                   {{ card.value }}
                 </p>
               </div>
               <span
-                class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-md)"
+                class="inline-flex h-14 w-14 items-center justify-center rounded-(--p-radius-lg)"
                 [class]="card.iconBgClass + ' ' + card.iconColorClass"
               >
-                <i [class]="card.icon + ' text-base'" aria-hidden="true"></i>
+                <i [class]="card.icon + ' text-lg'" aria-hidden="true"></i>
               </span>
             </div>
           </article>

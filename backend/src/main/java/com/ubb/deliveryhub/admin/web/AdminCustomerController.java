@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.admin.web;
 
 import com.ubb.deliveryhub.admin.AdminUserListDefaults;
+import com.ubb.deliveryhub.admin.domain.dto.AdminCustomerSummaryDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminManagedUserDto;
 import com.ubb.deliveryhub.admin.domain.dto.CreateAdminCustomerRequestDto;
 import com.ubb.deliveryhub.admin.service.AdminUserManagementService;
@@ -40,6 +41,12 @@ public class AdminCustomerController {
     ) {
         String effectiveSearch = (q != null && !q.isBlank()) ? q : search;
         return adminUserManagementService.listCustomers(pageable, effectiveSearch);
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AdminCustomerSummaryDto getCustomerSummary() {
+        return adminUserManagementService.getCustomerSummary();
     }
 
     @PostMapping

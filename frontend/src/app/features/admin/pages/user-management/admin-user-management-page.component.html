@@ -1,0 +1,411 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="space-y-4 p-5">
+    @if (showCustomerMetrics()) {
+      <section class="mb-3 grid gap-4 sm:grid-cols-2">
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-[13px] text-p-text-muted">Total Customers</p>
+          <p class="mt-2 text-[32px] leading-none font-semibold text-p-text-primary">
+            {{
+              customerSummaryLoading()
+                ? '...'
+                : (customerSummary()?.totalCustomers ?? totalRecords())
+            }}
+          </p>
+        </article>
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-[13px] text-p-text-muted">Total Revenue</p>
+          <p class="mt-2 text-[32px] leading-none font-semibold text-emerald-600">
+            {{
+              customerSummaryLoading()
+                ? '...'
+                : ((customerSummary()?.totalRevenue ?? 0)
+                  | currency: (customerSummary()?.revenueCurrency ?? 'RON') : 'symbol' : '1.0-0')
+            }}
+          </p>
+        </article>
+      </section>
+    }
+
+    @if (showCourierSummary()) {
+      <section class="mb-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-[13px] text-p-text-muted">Total Couriers</p>
+          <p class="mt-2 text-[32px] leading-none font-semibold text-p-text-primary">
+            {{
+              courierSummaryLoading()
+                ? '...'
+                : (courierSummary()?.totalCouriers ?? totalRecords())
+            }}
+          </p>
+        </article>
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-[13px] text-p-text-muted">Active Now</p>
+          <p class="mt-2 text-[32px] leading-none font-semibold text-emerald-600">
+            {{ courierSummaryLoading() ? '...' : (courierSummary()?.activeNow ?? 0) }}
+          </p>
+        </article>
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-[13px] text-p-text-muted">Total Deliveries</p>
+          <p class="mt-2 text-[32px] leading-none font-semibold text-p-text-primary">
+            {{ courierSummaryLoading() ? '...' : (courierSummary()?.totalDeliveries ?? 0) }}
+          </p>
+        </article>
+      </section>
+    }
+    @if (showCourierFilters()) {
+      <section class="mt-5 py-1">
+        <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-3">
+          <i class="pi pi-filter text-p-text-muted" aria-hidden="true"></i>
+          <span class="text-sm text-p-text-muted">Filter:</span>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+            [class.border-blue-500]="isAvailabilityFilterActive(undefined)"
+            [class.bg-blue-500]="isAvailabilityFilterActive(undefined)"
+            [class.text-white]="isAvailabilityFilterActive(undefined)"
+            [class.border-p-surface-border]="!isAvailabilityFilterActive(undefined)"
+            [class.bg-p-surface-card]="!isAvailabilityFilterActive(undefined)"
+            [class.text-p-text-primary]="!isAvailabilityFilterActive(undefined)"
+            (click)="setAvailabilityFilter(undefined)"
+          >
+            All Couriers
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+            [class.border-blue-500]="isAvailabilityFilterActive('available')"
+            [class.bg-blue-500]="isAvailabilityFilterActive('available')"
+            [class.text-white]="isAvailabilityFilterActive('available')"
+            [class.border-p-surface-border]="!isAvailabilityFilterActive('available')"
+            [class.bg-p-surface-card]="!isAvailabilityFilterActive('available')"
+            [class.text-p-text-primary]="!isAvailabilityFilterActive('available')"
+            (click)="setAvailabilityFilter('available')"
+          >
+            Available
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+            [class.border-blue-500]="isAvailabilityFilterActive('unavailable')"
+            [class.bg-blue-500]="isAvailabilityFilterActive('unavailable')"
+            [class.text-white]="isAvailabilityFilterActive('unavailable')"
+            [class.border-p-surface-border]="!isAvailabilityFilterActive('unavailable')"
+            [class.bg-p-surface-card]="!isAvailabilityFilterActive('unavailable')"
+            [class.text-p-text-primary]="!isAvailabilityFilterActive('unavailable')"
+            (click)="setAvailabilityFilter('unavailable')"
+          >
+            Unavailable
+          </button>
+        </div>
+      </section>
+    }
+
+    @if (hardError(); as loadError) {
+      <section
+        class="rounded-(--p-radius-lg) border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-(--p-shadow-xs)"
+      >
+        <p class="font-semibold">Could not load {{ tableTitle().toLowerCase() }}</p>
+        <p class="mt-1">{{ loadError }}</p>
+        <div class="mt-3">
+          <p-button label="Retry" icon="pi pi-refresh" (onClick)="retryAfterError()" />
+        </div>
+      </section>
+    } @else {
+      @if (transientError(); as refreshError) {
+        <section
+          class="rounded-(--p-radius-lg) border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+        >
+          <span class="font-semibold">Refresh failed.</span>
+          <span class="ml-1">{{ refreshError }}</span>
+          <span class="ml-1">Showing last successful list snapshot.</span>
+        </section>
+      }
+
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)"
+      >
+        <p-table
+          [value]="rows()"
+          [lazy]="true"
+          [paginator]="true"
+          [rows]="activeQuery().size"
+          [first]="firstRowIndex()"
+          [totalRecords]="totalRecords()"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          [loading]="loading() || refreshing()"
+          dataKey="id"
+          responsiveLayout="scroll"
+          size="small"
+          styleClass="delivery-list-table"
+          (onLazyLoad)="onLazyLoad($event)"
+        >
+          <ng-template #header>
+            <tr class="border-b border-p-surface-border bg-p-surface-ground">
+              <th
+                class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+              >
+                ID
+              </th>
+              <th
+                class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+              >
+                Name
+              </th>
+              <th
+                class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+              >
+                Email
+              </th>
+              <th
+                class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+              >
+                Phone
+              </th>
+              <th
+                class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+              >
+                Joined
+              </th>
+              @if (showCourierMetrics()) {
+                <th
+                  class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+                >
+                  Status
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+                >
+                  Deliveries
+                </th>
+              }
+              @if (showCustomerMetrics()) {
+                <th
+                  class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+                >
+                  Orders
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase"
+                >
+                  Total Spend
+                </th>
+              }
+            </tr>
+          </ng-template>
+
+          <ng-template #body let-user>
+            <tr class="text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
+              <td class="w-36 px-4 py-3.5 align-top text-[12px] font-semibold text-blue-600 uppercase">
+                {{ toShortPublicId(user.id) }}
+              </td>
+              <td class="w-56 px-4 py-3.5 align-top text-[13px] font-medium text-p-text-primary">
+                {{ user.displayName || '-' }}
+              </td>
+              <td class="min-w-72 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                {{ user.email }}
+              </td>
+              <td class="w-56 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                {{ user.phoneNumber || '-' }}
+              </td>
+              <td class="w-56 px-4 py-3.5 align-top text-[13px] text-p-text-muted">
+                {{ user.createdAt ? (user.createdAt | date: 'mediumDate') : '-' }}
+              </td>
+              @if (showCourierMetrics()) {
+                <td class="w-40 px-4 py-3.5 align-top">
+                  @if (isCourierAvailable(user)) {
+                    <span
+                      class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700"
+                    >
+                      Available
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                    >
+                      Unavailable
+                    </span>
+                  }
+                </td>
+                <td class="w-36 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                  {{ deliveriesForCourier(user) }}
+                </td>
+              }
+              @if (showCustomerMetrics()) {
+                <td class="w-36 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                  {{ ordersFor(user) }}
+                </td>
+                <td class="w-48 px-4 py-3.5 align-top text-[13px] font-semibold text-emerald-600">
+                  {{
+                    totalSpendFor(user)
+                      | currency: totalSpendCurrencyFor(user) : 'symbol' : '1.0-0'
+                  }}
+                </td>
+              }
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td [attr.colspan]="showCustomerMetrics() || showCourierMetrics() ? 7 : 5">
+                <app-table-empty-state
+                  [title]="emptyStateTitle()"
+                  [message]="emptyStateMessage()"
+                  icon="pi pi-users"
+                />
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #loadingbody>
+            @for (_row of loadingSkeletonRows; track _row) {
+              <tr>
+                <td><p-skeleton height="1rem" width="6rem" /></td>
+                <td><p-skeleton height="1rem" width="9rem" /></td>
+                <td><p-skeleton height="1rem" width="12rem" /></td>
+                <td><p-skeleton height="1rem" width="8rem" /></td>
+                <td><p-skeleton height="1rem" width="10rem" /></td>
+                @if (showCourierMetrics()) {
+                  <td><p-skeleton height="1rem" width="6rem" /></td>
+                  <td><p-skeleton height="1rem" width="4rem" /></td>
+                }
+                @if (showCustomerMetrics()) {
+                  <td><p-skeleton height="1rem" width="4rem" /></td>
+                  <td><p-skeleton height="1rem" width="7rem" /></td>
+                }
+              </tr>
+            }
+          </ng-template>
+        </p-table>
+      </section>
+    }
+  </div>
+</div>
+
+<p-dialog
+  [visible]="dialogOpen()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [focusOnShow]="true"
+  [closable]="!creating()"
+  [closeOnEscape]="!creating()"
+  [dismissableMask]="!creating()"
+  [style]="{ width: '34rem', maxWidth: '96vw' }"
+  [header]="createDialogTexts().title"
+  (visibleChange)="onDialogVisibleChange($event)"
+>
+  <form class="space-y-4" [formGroup]="createForm" (ngSubmit)="createUser()">
+    <div class="space-y-1">
+      <label for="create-email" class="block text-sm font-medium text-p-text-primary">Email</label>
+      <input
+        id="create-email"
+        pInputText
+        type="email"
+        class="w-full"
+        [class.border-red-500]="isFieldInvalid('email')"
+        formControlName="email"
+      />
+      @if (fieldError('email'); as error) {
+        <p class="text-xs text-red-600">{{ error }}</p>
+      }
+    </div>
+
+    <div class="space-y-1">
+      <label for="create-password" class="block text-sm font-medium text-p-text-primary">
+        Password
+      </label>
+      <p-password
+        inputId="create-password"
+        formControlName="password"
+        [feedback]="false"
+        [toggleMask]="true"
+        styleClass="w-full"
+        [inputStyleClass]="isFieldInvalid('password') ? 'w-full border-red-500' : 'w-full'"
+      />
+      @if (fieldError('password'); as error) {
+        <p class="text-xs text-red-600">{{ error }}</p>
+      }
+    </div>
+
+    <div class="space-y-1">
+      <label for="create-display-name" class="block text-sm font-medium text-p-text-primary">
+        Display name
+      </label>
+      <input
+        id="create-display-name"
+        pInputText
+        type="text"
+        class="w-full"
+        [class.border-red-500]="isFieldInvalid('displayName')"
+        formControlName="displayName"
+      />
+      @if (fieldError('displayName'); as error) {
+        <p class="text-xs text-red-600">{{ error }}</p>
+      }
+    </div>
+
+    <div class="space-y-1">
+      <label for="create-phone-number" class="block text-sm font-medium text-p-text-primary">
+        Phone (optional)
+      </label>
+      <input
+        id="create-phone-number"
+        pInputText
+        type="text"
+        class="w-full"
+        [class.border-red-500]="isFieldInvalid('phoneNumber')"
+        formControlName="phoneNumber"
+      />
+      @if (fieldError('phoneNumber'); as error) {
+        <p class="text-xs text-red-600">{{ error }}</p>
+      }
+    </div>
+
+    @if (showCourierProfileControls()) {
+      <div class="grid gap-3 rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground p-3">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <p class="text-sm font-medium text-p-text-primary">Available now</p>
+            <p class="text-xs text-p-text-muted">Courier can accept requests immediately.</p>
+          </div>
+          <p-toggleswitch formControlName="availableNow" />
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <p class="text-sm font-medium text-p-text-primary">Express capable</p>
+            <p class="text-xs text-p-text-muted">
+              Courier can receive express delivery assignments.
+            </p>
+          </div>
+          <p-toggleswitch formControlName="expressCapable" />
+        </div>
+      </div>
+    }
+
+    <div class="flex justify-end gap-2 pt-2">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="creating()"
+        (onClick)="closeCreateDialog()"
+      />
+      <p-button
+        [label]="createDialogTexts().submitLabel"
+        type="submit"
+        [loading]="creating()"
+        [disabled]="creating()"
+      />
+    </div>
+  </form>
+</p-dialog>

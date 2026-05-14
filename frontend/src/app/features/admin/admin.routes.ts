@@ -29,13 +29,25 @@ export const adminRoutes: Routes = [
   },
   {
     path: 'couriers',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Couriers' },
+    data: {
+      pageTitle: 'Courier Management',
+      subtitle: 'Manage courier accounts and performance',
+    },
+    loadComponent: () =>
+      import('./pages/couriers/admin-couriers.component').then(
+        (m) => m.AdminCouriersComponent,
+      ),
   },
   {
     path: 'customers',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Customers' },
+    data: {
+      pageTitle: 'Customer Management',
+      subtitle: 'Manage customer accounts and activity',
+    },
+    loadComponent: () =>
+      import('./pages/customers/admin-customers.component').then(
+        (m) => m.AdminCustomersComponent,
+      ),
   },
   {
     path: 'exceptions',

@@ -4,6 +4,7 @@ import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardSeriesPointDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminDashboardWindowDto;
 import com.ubb.deliveryhub.admin.domain.exception.AdminDashboardValidationException;
+import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.repository.DeliveryDateCountView;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
@@ -47,6 +48,7 @@ public class AdminDashboardService {
     private static final Set<DeliveryStatus> REVENUE_DELIVERY_STATUSES = Set.of(DeliveryStatus.DELIVERED);
 
     private final DeliveryRepository deliveryRepository;
+    private final CourierProfileRepository courierProfileRepository;
     private final NotificationRepository notificationRepository;
 
     @Transactional(readOnly = true)
@@ -70,11 +72,7 @@ public class AdminDashboardService {
             window.toExclusive()
         );
 
-        long couriersOnlineCount = deliveryRepository.countDistinctCouriersByStatusesInCreatedWindow(
-            ACTIVE_DELIVERY_STATUSES,
-            window.fromInclusive(),
-            window.toExclusive()
-        );
+        long couriersOnlineCount = courierProfileRepository.countByAvailableNowTrue();
 
         BigDecimal revenueTotal = deliveryRepository.sumRevenueByStatusesInCreatedWindow(
             REVENUE_DELIVERY_STATUSES,
