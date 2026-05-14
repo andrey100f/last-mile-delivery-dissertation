@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.notification.repository;
 
 import com.ubb.deliveryhub.notification.domain.Notification;
+import com.ubb.deliveryhub.notification.domain.NotificationCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -38,5 +39,19 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     int markAllRead(
         @Param("userId") UUID userId,
         @Param("readAt") Instant readAt
+    );
+
+    @Query("""
+        SELECT COUNT(n)
+        FROM Notification n
+        WHERE n.category = :category
+          AND n.readAt IS NULL
+          AND n.createdAt >= :fromInclusive
+          AND n.createdAt < :toExclusive
+        """)
+    long countUnreadByCategoryInWindow(
+        @Param("category") NotificationCategory category,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
     );
 }
