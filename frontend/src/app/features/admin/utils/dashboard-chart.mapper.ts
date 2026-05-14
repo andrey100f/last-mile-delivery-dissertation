@@ -90,7 +90,9 @@ function buildPieChartData(
     datasets: [
       {
         data: series.map((point) => point.value),
-        backgroundColor: DASHBOARD_CHART_COLORS.pie,
+        backgroundColor: series.map(
+          (_point, index) => DASHBOARD_CHART_COLORS.pie[index % DASHBOARD_CHART_COLORS.pie.length],
+        ),
         borderColor: '#ffffff',
         borderWidth: 2,
       },

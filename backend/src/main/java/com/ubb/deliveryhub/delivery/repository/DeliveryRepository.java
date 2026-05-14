@@ -127,14 +127,14 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
 
     @Query("""
         SELECT
-          FUNCTION('date', d.createdAt) AS bucketDate,
+          FUNCTION('date', FUNCTION('timezone', 'UTC', d.createdAt)) AS bucketDate,
           COUNT(d) AS metricValue
         FROM Delivery d
         WHERE d.status IN :statuses
           AND d.createdAt >= :fromInclusive
           AND d.createdAt < :toExclusive
-        GROUP BY FUNCTION('date', d.createdAt)
-        ORDER BY FUNCTION('date', d.createdAt) ASC
+        GROUP BY FUNCTION('date', FUNCTION('timezone', 'UTC', d.createdAt))
+        ORDER BY FUNCTION('date', FUNCTION('timezone', 'UTC', d.createdAt)) ASC
         """)
     List<DeliveryDateCountView> countByStatusesGroupedByCreatedDateInWindow(
         @Param("statuses") Set<DeliveryStatus> statuses,

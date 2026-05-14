@@ -174,10 +174,10 @@ public class AdminDashboardService {
         }
 
         LocalDate fromDate = window.fromInclusive().atOffset(ZoneOffset.UTC).toLocalDate();
-        LocalDate toExclusiveDate = window.toExclusive().atOffset(ZoneOffset.UTC).toLocalDate();
+        LocalDate toInclusiveDate = window.toExclusive().minusNanos(1).atOffset(ZoneOffset.UTC).toLocalDate();
 
         List<AdminDashboardSeriesPointDto> series = new ArrayList<>();
-        for (LocalDate cursor = fromDate; cursor.isBefore(toExclusiveDate); cursor = cursor.plusDays(1)) {
+        for (LocalDate cursor = fromDate; !cursor.isAfter(toInclusiveDate); cursor = cursor.plusDays(1)) {
             series.add(AdminDashboardSeriesPointDto.builder()
                 .label(cursor.toString())
                 .value(countByDate.getOrDefault(cursor, 0L))

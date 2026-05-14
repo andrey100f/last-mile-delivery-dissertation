@@ -132,6 +132,23 @@ export class AdminDashboardService extends BaseService {
       const firstError = errors.find((entry) => this.toText(entry));
       return this.toText(firstError) ?? null;
     }
+    if (errors && typeof errors === 'object') {
+      const errorMap = errors as Record<string, unknown>;
+      for (const fieldName of Object.keys(errorMap)) {
+        const entry = errorMap[fieldName];
+        if (Array.isArray(entry)) {
+          const firstEntry = entry.find((item) => this.toText(item));
+          const message = this.toText(firstEntry);
+          if (message) {
+            return `${fieldName}: ${message}`;
+          }
+        }
+        const singleMessage = this.toText(entry);
+        if (singleMessage) {
+          return `${fieldName}: ${singleMessage}`;
+        }
+      }
+    }
     return null;
   }
 
