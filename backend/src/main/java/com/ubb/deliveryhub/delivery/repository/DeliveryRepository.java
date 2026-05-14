@@ -156,4 +156,53 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive
     );
+
+    @Query("""
+        SELECT
+          d.customer.id AS customerId,
+          COUNT(d) AS ordersCount,
+          COALESCE(SUM(d.totalAmount), 0) AS totalSpend
+        FROM Delivery d
+        WHERE d.customer.id IN :customerIds
+          AND d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
+        GROUP BY d.customer.id
+        """)
+    List<CustomerOrderSpendView> aggregateCustomerOrdersAndSpend(
+        @Param("customerIds") List<UUID> customerIds
+    );
+
+    @Query("""
+        SELECT
+          d.courier.id AS courierId,
+          COUNT(d) AS deliveriesCount
+        FROM Delivery d
+        WHERE d.courier.id IN :courierIds
+        GROUP BY d.courier.id
+        """)
+    List<CourierDeliveriesCountView> countDeliveriesByCourierIds(
+        @Param("courierIds") List<UUID> courierIds
+    );
+
+    @Query("""
+        SELECT COUNT(d)
+        FROM Delivery d
+        WHERE d.courier.id IS NOT NULL
+        """)
+    long countAllCourierDeliveries();
+
+    @Query("""
+        SELECT COALESCE(SUM(d.totalAmount), 0)
+        FROM Delivery d
+        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
+        """)
+    BigDecimal sumTotalRevenueForCustomers();
+
+    @Query("""
+        SELECT d.currency
+        FROM Delivery d
+        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
+        GROUP BY d.currency
+        ORDER BY COUNT(d) DESC, d.currency ASC
+        """)
+    List<String> findRevenueCurrenciesForCustomers();
 }

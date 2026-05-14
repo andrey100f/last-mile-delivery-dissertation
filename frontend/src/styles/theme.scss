@@ -371,3 +371,15 @@
     color: var(--p-text-primary);
   }
 }
+
+/* Keep paginator rows-per-page option highlight on primary blue. */
+.p-paginator-rpp-dropdown .p-select-option.p-select-option-selected {
+  background: color-mix(in srgb, var(--p-primary) 18%, white);
+  color: var(--p-primary);
+  font-weight: 600;
+}
+
+.p-paginator-rpp-dropdown .p-select-option.p-select-option-selected:hover,
+.p-paginator-rpp-dropdown .p-select-option.p-select-option-selected.p-focus {
+  background: color-mix(in srgb, var(--p-primary) 24%, white);
+}

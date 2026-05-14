@@ -1,6 +1,8 @@
 package com.ubb.deliveryhub.admin.service;
 
 import com.ubb.deliveryhub.admin.AdminUserListDefaults;
+import com.ubb.deliveryhub.admin.domain.dto.AdminCourierSummaryDto;
+import com.ubb.deliveryhub.admin.domain.dto.AdminCustomerSummaryDto;
 import com.ubb.deliveryhub.admin.domain.dto.AdminManagedUserDto;
 import com.ubb.deliveryhub.admin.domain.dto.CreateAdminCourierRequestDto;
 import com.ubb.deliveryhub.admin.domain.dto.CreateAdminCustomerRequestDto;
@@ -8,7 +10,11 @@ import com.ubb.deliveryhub.admin.domain.exception.AdminUserEmailConflictExceptio
 import com.ubb.deliveryhub.admin.domain.exception.InvalidAdminUserPaginationException;
 import com.ubb.deliveryhub.admin.domain.exception.InvalidAdminUserSortException;
 import com.ubb.deliveryhub.courier.domain.CourierProfile;
+import com.ubb.deliveryhub.courier.repository.CourierAvailabilityView;
 import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
+import com.ubb.deliveryhub.delivery.repository.CourierDeliveriesCountView;
+import com.ubb.deliveryhub.delivery.repository.CustomerOrderSpendView;
+import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.embedded.UserRole;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
@@ -22,8 +28,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,16 +51,107 @@ public class AdminUserManagementService {
 
     private final UserRepository userRepository;
     private final CourierProfileRepository courierProfileRepository;
+    private final DeliveryRepository deliveryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public Page<AdminManagedUserDto> listCouriers(Pageable pageable, String searchRaw) {
-        return listByRole(UserRole.COURIER, pageable, searchRaw);
+    public Page<AdminManagedUserDto> listCouriers(Pageable pageable, String searchRaw, String availabilityRaw) {
+        if (pageable == null || !pageable.isPaged()) {
+            throw new InvalidAdminUserPaginationException();
+        }
+
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDeterministicSort(pageable);
+        String searchPattern = normalizeSearchPattern(searchRaw);
+        Boolean availableNow = normalizeAvailabilityFilter(availabilityRaw);
+        Page<User> page = userRepository
+            .findCouriersByRoleWithSearchAndAvailability(
+                UserRole.COURIER,
+                searchPattern,
+                availableNow,
+                effective
+            );
+
+        List<UUID> courierIds = page.stream().map(User::getId).toList();
+        Map<UUID, CourierAvailabilityView> availabilityByCourier = courierIds.isEmpty()
+            ? Map.of()
+            : courierProfileRepository
+                .findAvailabilityByUserIds(courierIds)
+                .stream()
+                .collect(Collectors.toMap(CourierAvailabilityView::getUserId, Function.identity()));
+        Map<UUID, CourierDeliveriesCountView> deliveriesByCourier = courierIds.isEmpty()
+            ? Map.of()
+            : deliveryRepository
+                .countDeliveriesByCourierIds(courierIds)
+                .stream()
+                .collect(Collectors.toMap(CourierDeliveriesCountView::getCourierId, Function.identity()));
+
+        return page.map((user) -> {
+            CourierAvailabilityView availability = availabilityByCourier.get(user.getId());
+            CourierDeliveriesCountView deliveries = deliveriesByCourier.get(user.getId());
+            boolean isAvailable = availability != null && availability.isAvailableNow();
+            long deliveriesCount = deliveries != null ? deliveries.getDeliveriesCount() : 0L;
+            return AdminManagedUserDto.fromUserWithCourierStats(
+                user,
+                isAvailable,
+                deliveriesCount
+            );
+        });
     }
 
     @Transactional(readOnly = true)
     public Page<AdminManagedUserDto> listCustomers(Pageable pageable, String searchRaw) {
-        return listByRole(UserRole.CUSTOMER, pageable, searchRaw);
+        if (pageable == null || !pageable.isPaged()) {
+            throw new InvalidAdminUserPaginationException();
+        }
+
+        assertAllowedSort(pageable.getSort());
+        Pageable effective = applyDeterministicSort(pageable);
+        String searchPattern = normalizeSearchPattern(searchRaw);
+        Page<User> page = userRepository.findByRoleWithSearch(UserRole.CUSTOMER, searchPattern, effective);
+
+        List<UUID> customerIds = page.stream().map(User::getId).toList();
+        Map<UUID, CustomerOrderSpendView> orderSpendByCustomer = customerIds.isEmpty()
+            ? Map.of()
+            : deliveryRepository
+                .aggregateCustomerOrdersAndSpend(customerIds)
+                .stream()
+                .collect(Collectors.toMap(CustomerOrderSpendView::getCustomerId, Function.identity()));
+
+        String revenueCurrency = resolveCustomerRevenueCurrency();
+        return page.map((user) -> {
+            CustomerOrderSpendView stats = orderSpendByCustomer.get(user.getId());
+            long ordersCount = stats != null ? stats.getOrdersCount() : 0L;
+            BigDecimal totalSpend = stats != null && stats.getTotalSpend() != null
+                ? stats.getTotalSpend()
+                : BigDecimal.ZERO;
+            return AdminManagedUserDto.fromUserWithCustomerStats(
+                user,
+                ordersCount,
+                totalSpend,
+                revenueCurrency
+            );
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public AdminCourierSummaryDto getCourierSummary() {
+        return AdminCourierSummaryDto.builder()
+            .totalCouriers(userRepository.countByRole(UserRole.COURIER))
+            .activeNow(courierProfileRepository.countByAvailableNowTrue())
+            .totalDeliveries(deliveryRepository.countAllCourierDeliveries())
+            .build();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminCustomerSummaryDto getCustomerSummary() {
+        long totalCustomers = userRepository.countByRole(UserRole.CUSTOMER);
+        BigDecimal totalRevenue = deliveryRepository.sumTotalRevenueForCustomers();
+        return AdminCustomerSummaryDto.builder()
+            .totalCustomers(totalCustomers)
+            .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
+            .revenueCurrency(resolveCustomerRevenueCurrency())
+            .build();
     }
 
     @Transactional
@@ -89,8 +192,8 @@ public class AdminUserManagementService {
 
         assertAllowedSort(pageable.getSort());
         Pageable effective = applyDeterministicSort(pageable);
-        String search = normalizeSearch(searchRaw);
-        return userRepository.findByRoleWithSearch(role, search, effective).map(AdminManagedUserDto::fromUser);
+        String searchPattern = normalizeSearchPattern(searchRaw);
+        return userRepository.findByRoleWithSearch(role, searchPattern, effective).map(AdminManagedUserDto::fromUser);
     }
 
     private User createUser(
@@ -148,12 +251,41 @@ public class AdminUserManagementService {
         );
     }
 
-    private static String normalizeSearch(String searchRaw) {
+    private static String normalizeSearchPattern(String searchRaw) {
         if (searchRaw == null) {
             return null;
         }
         String normalized = searchRaw.trim();
-        return normalized.isEmpty() ? null : normalized;
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        return "%" + normalized.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private String resolveCustomerRevenueCurrency() {
+        List<String> currencies = deliveryRepository.findRevenueCurrenciesForCustomers();
+        if (currencies.isEmpty()) {
+            return "RON";
+        }
+        String currency = currencies.get(0);
+        return (currency == null || currency.isBlank()) ? "RON" : currency;
+    }
+
+    private static Boolean normalizeAvailabilityFilter(String availabilityRaw) {
+        if (availabilityRaw == null) {
+            return null;
+        }
+
+        String normalized = availabilityRaw.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            return null;
+        }
+
+        return switch (normalized) {
+            case "available" -> Boolean.TRUE;
+            case "unavailable" -> Boolean.FALSE;
+            default -> null;
+        };
     }
 
     private static String normalizeEmail(String emailRaw) {
