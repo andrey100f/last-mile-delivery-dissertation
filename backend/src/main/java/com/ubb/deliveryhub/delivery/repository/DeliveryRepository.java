@@ -13,6 +13,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -65,5 +68,60 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("courierId") UUID courierId,
         @Param("statuses") Set<DeliveryStatus> statuses,
         Pageable pageable
+    );
+
+    @Query("""
+        SELECT COUNT(d)
+        FROM Delivery d
+        WHERE d.status IN :statuses
+          AND d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        """)
+    long countByStatusesInCreatedWindow(
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
+
+    @Query("""
+        SELECT COUNT(DISTINCT c.id)
+        FROM Delivery d
+        JOIN d.courier c
+        WHERE d.status IN :statuses
+          AND d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        """)
+    long countDistinctCouriersByStatusesInCreatedWindow(
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(d.totalAmount), 0)
+        FROM Delivery d
+        WHERE d.status IN :statuses
+          AND d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        """)
+    BigDecimal sumRevenueByStatusesInCreatedWindow(
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
+    );
+
+    @Query("""
+        SELECT d.currency
+        FROM Delivery d
+        WHERE d.status IN :statuses
+          AND d.createdAt >= :fromInclusive
+          AND d.createdAt < :toExclusive
+        GROUP BY d.currency
+        ORDER BY COUNT(d) DESC, d.currency ASC
+        """)
+    List<String> findRevenueCurrenciesByStatusesInCreatedWindow(
+        @Param("statuses") Set<DeliveryStatus> statuses,
+        @Param("fromInclusive") Instant fromInclusive,
+        @Param("toExclusive") Instant toExclusive
     );
 }
