@@ -1,0 +1,205 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="space-y-4 p-5">
+    @if (loading() && !hasLoadedAtLeastOnce()) {
+      <section class="space-y-3">
+        <p-skeleton width="18rem" height="1.4rem" />
+        <p-skeleton width="100%" height="16rem" />
+      </section>
+    } @else if (hardError(); as loadError) {
+      <section
+        class="rounded-(--p-radius-lg) border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-(--p-shadow-xs)"
+      >
+        <p class="font-semibold">Reports unavailable</p>
+        <p class="mt-1">{{ loadError }}</p>
+        <div class="mt-3">
+          <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+        </div>
+      </section>
+    } @else {
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+      >
+        <div class="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              @for (item of reportTypeOptions; track item.id) {
+                <p-button
+                  [label]="item.label"
+                  size="small"
+                  [severity]="reportType() === item.id ? undefined : 'secondary'"
+                  [outlined]="reportType() !== item.id"
+                  [disabled]="loading() || refreshing()"
+                  (onClick)="setReportType(item.id)"
+                />
+              }
+            </div>
+
+            <div class="flex flex-wrap items-end gap-2">
+              <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+                From
+                <input
+                  type="date"
+                  class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                  [value]="fromDate()"
+                  [disabled]="loading() || refreshing()"
+                  (change)="updateFromDate($any($event.target).value)"
+                />
+              </label>
+              <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+                To
+                <input
+                  type="date"
+                  class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                  [value]="toDate()"
+                  [disabled]="loading() || refreshing()"
+                  (change)="updateToDate($any($event.target).value)"
+                />
+              </label>
+              <label class="flex min-w-28 flex-col gap-1 text-xs text-p-text-muted">
+                Granularity
+                <select
+                  class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                  [value]="granularity()"
+                  [disabled]="loading() || refreshing()"
+                  (change)="updateGranularity($any($event.target).value)"
+                >
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                </select>
+              </label>
+              <div class="flex flex-wrap gap-2">
+                <p-button
+                  label="Apply"
+                  icon="pi pi-filter"
+                  size="small"
+                  [disabled]="loading() || refreshing()"
+                  (onClick)="applyFilters()"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <p-button
+              label="Chart"
+              size="small"
+              [severity]="viewMode() === 'chart' ? undefined : 'secondary'"
+              [outlined]="viewMode() !== 'chart'"
+              (onClick)="setViewMode('chart')"
+            />
+            <p-button
+              label="Table"
+              size="small"
+              [severity]="viewMode() === 'table' ? undefined : 'secondary'"
+              [outlined]="viewMode() !== 'table'"
+              (onClick)="setViewMode('table')"
+            />
+          </div>
+        </div>
+
+        @if (dateRangeError(); as dateError) {
+          <p class="mt-3 text-xs text-red-600">{{ dateError }}</p>
+        }
+
+        @if (transientError(); as refreshError) {
+          <div class="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <span class="font-semibold">Refresh failed.</span>
+            <span class="ml-1">{{ refreshError }}</span>
+            <span class="ml-1">Showing last successful snapshot.</span>
+          </div>
+        }
+
+        @if (isCurrentReportEmpty()) {
+          <div class="mt-4 rounded border border-dashed border-p-surface-border bg-p-surface-ground p-4 text-sm text-p-text-muted">
+            {{ noDataMessage() }}
+          </div>
+        } @else if (viewMode() === 'chart') {
+          <div class="mt-4 rounded-(--p-radius-md) border border-p-surface-border bg-white p-3">
+            @if (chartModel().chartData; as chartData) {
+              <div class="h-[500px]">
+                <p-chart
+                  styleClass="block h-full w-full"
+                  [style]="{ height: '100%' }"
+                  [type]="reportType() === 'revenue' ? 'line' : 'bar'"
+                  [data]="chartData"
+                  [options]="chartModel().chartOptions"
+                />
+              </div>
+            } @else {
+              <p class="text-sm text-p-text-muted">No chart data available for this selection.</p>
+            }
+          </div>
+        } @else {
+          <div class="mt-4 rounded-(--p-radius-md) border border-p-surface-border bg-white p-2">
+            @if (reportType() === 'deliveries' && deliveriesReport(); as report) {
+              <p-table
+                [value]="report.buckets"
+                responsiveLayout="scroll"
+                size="small"
+                styleClass="delivery-list-table"
+              >
+                <ng-template #header>
+                  <tr class="border-b border-p-surface-border bg-p-surface-ground">
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      From
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      To
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      Deliveries
+                    </th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-row>
+                  <tr class="text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
+                    <td class="px-3 py-2 text-sm">{{ formatDate(row.bucketStart) }}</td>
+                    <td class="px-3 py-2 text-sm">{{ formatDate(row.bucketEnd) }}</td>
+                    <td class="px-3 py-2 text-sm font-semibold">{{ formatNumber(row.total) }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+
+            @if (reportType() === 'revenue' && revenueReport(); as report) {
+              <p-table
+                [value]="report.buckets"
+                responsiveLayout="scroll"
+                size="small"
+                styleClass="delivery-list-table"
+              >
+                <ng-template #header>
+                  <tr class="border-b border-p-surface-border bg-p-surface-ground">
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      From
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      To
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      Delivered
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-p-text-muted uppercase">
+                      Revenue
+                    </th>
+                  </tr>
+                </ng-template>
+                <ng-template #body let-row>
+                  <tr class="text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
+                    <td class="px-3 py-2 text-sm">{{ formatDate(row.bucketStart) }}</td>
+                    <td class="px-3 py-2 text-sm">{{ formatDate(row.bucketEnd) }}</td>
+                    <td class="px-3 py-2 text-sm">{{ formatNumber(row.deliveredCount) }}</td>
+                    <td class="px-3 py-2 text-sm font-semibold">
+                      {{ formatCurrency(row.revenue, report.currency) }}
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            }
+
+          </div>
+        }
+      </section>
+    }
+  </div>
+</div>

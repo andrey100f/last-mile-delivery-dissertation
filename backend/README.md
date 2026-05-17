@@ -223,3 +223,26 @@ Current onboarding assumption for MVP:
 
 - admin submits an initial password in create payloads
 - invite/reset-password workflow is deferred to a later milestone
+
+## Admin reports APIs (`#57`)
+
+Admin-only analytics endpoints are available under `/api/admin/reports`:
+
+- `GET /deliveries-by-status`
+- `GET /revenue`
+- `GET /exceptions`
+
+Shared query contract:
+
+- required `from` and `to` (`ISO-8601` timestamp or `YYYY-MM-DD`)
+- optional `granularity=day|week` (defaults to `day`)
+- UTC-normalized aggregation buckets on the backend
+- max window enforced to `180` days (validation error when exceeded)
+
+CSV export strategy is route-based (explicit `/export` endpoints):
+
+- `GET /deliveries-by-status/export`
+- `GET /revenue/export`
+- `GET /exceptions/export`
+
+All export endpoints return `text/csv` with `Content-Disposition: attachment`.

@@ -56,8 +56,14 @@ export const adminRoutes: Routes = [
   },
   {
     path: 'reports',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Reports' },
+    data: {
+      pageTitle: 'Reports & Analytics',
+      subtitle: 'Historical delivery, revenue and exception trends',
+    },
+    loadComponent: () =>
+      import('./pages/reports/admin-reports.component').then(
+        (m) => m.AdminReportsComponent,
+      ),
   },
   {
     path: 'notifications',
