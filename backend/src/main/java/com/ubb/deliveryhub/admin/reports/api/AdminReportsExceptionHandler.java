@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = AdminReportsController.class)
 public class AdminReportsExceptionHandler {
 
     @ExceptionHandler(AdminReportsValidationException.class)

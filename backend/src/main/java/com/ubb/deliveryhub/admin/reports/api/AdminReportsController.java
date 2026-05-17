@@ -1,7 +1,6 @@
 package com.ubb.deliveryhub.admin.reports.api;
 
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminDeliveriesByStatusReportDto;
-import com.ubb.deliveryhub.admin.reports.api.dto.AdminExceptionsReportDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminReportsQueryDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminRevenueReportDto;
 import com.ubb.deliveryhub.admin.reports.application.AdminReportsService;
@@ -34,13 +33,5 @@ public class AdminReportsController {
         @Valid @ModelAttribute AdminReportsQueryDto query
     ) {
         return adminReportsService.getRevenueReport(query);
-    }
-
-    @GetMapping("/exceptions")
-    @PreAuthorize("hasRole('ADMIN')")
-    public AdminExceptionsReportDto getExceptionsReport(
-        @Valid @ModelAttribute AdminReportsQueryDto query
-    ) {
-        return adminReportsService.getExceptionsReport(query);
     }
 }

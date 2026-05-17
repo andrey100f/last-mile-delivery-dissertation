@@ -1,18 +1,15 @@
 package com.ubb.deliveryhub.admin.reports.application;
 
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminDeliveriesByStatusReportDto;
-import com.ubb.deliveryhub.admin.reports.api.dto.AdminExceptionsReportDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminReportsQueryDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.AdminRevenueReportDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.ReportBucketStatusDto;
-import com.ubb.deliveryhub.admin.reports.api.dto.ReportExceptionBucketDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.ReportRevenueBucketDto;
 import com.ubb.deliveryhub.admin.reports.api.dto.ReportWindowDto;
 import com.ubb.deliveryhub.admin.reports.domain.ReportGranularity;
 import com.ubb.deliveryhub.admin.reports.domain.exception.AdminReportsValidationException;
 import com.ubb.deliveryhub.admin.reports.infrastructure.AdminReportsQueryRepository;
 import com.ubb.deliveryhub.admin.reports.infrastructure.row.DeliveryStatusAggregateRow;
-import com.ubb.deliveryhub.admin.reports.infrastructure.row.ExceptionAggregateRow;
 import com.ubb.deliveryhub.admin.reports.infrastructure.row.RevenueAggregateRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -136,66 +133,20 @@ public class AdminReportsService {
 
         return AdminRevenueReportDto.builder()
             .window(toWindowDto(window))
-            .currency(reportsQueryRepository.findRevenueCurrency(window.fromInclusive(), window.toExclusive()))
+            .currency(resolveDominantRevenueCurrency(rows))
             .deliveredCount(totalDeliveredCount)
             .totalRevenue(totalRevenue)
             .buckets(buckets)
             .build();
     }
 
-    @Transactional(readOnly = true)
-    public AdminExceptionsReportDto getExceptionsReport(AdminReportsQueryDto query) {
-        ReportWindow window = resolveWindow(query);
-        List<ExceptionAggregateRow> rows = reportsQueryRepository.fetchExceptionCountsByType(
-            window.fromInclusive(),
-            window.toExclusive(),
-            window.granularity()
-        );
-
-        Set<String> typesSet = new LinkedHashSet<>();
-        Map<Instant, Map<String, Long>> countsByBucket = new LinkedHashMap<>();
-        for (ExceptionAggregateRow row : rows) {
-            if (row.notificationType() == null || row.notificationType().isBlank()) {
-                continue;
+    private String resolveDominantRevenueCurrency(List<RevenueAggregateRow> rows) {
+        for (RevenueAggregateRow row : rows) {
+            if (row.dominantCurrency() != null && !row.dominantCurrency().isBlank()) {
+                return row.dominantCurrency();
             }
-            typesSet.add(row.notificationType());
-            countsByBucket
-                .computeIfAbsent(row.bucketStart(), _ignored -> new LinkedHashMap<>())
-                .merge(row.notificationType(), Math.max(0, row.count()), Long::sum);
         }
-
-        List<String> types = typesSet.stream().sorted().toList();
-        List<ReportExceptionBucketDto> buckets = new ArrayList<>();
-        long totalExceptions = 0;
-        for (Instant bucketStart : listBuckets(window)) {
-            Instant bucketEnd = bucketStart.plus(window.granularity().bucketStep());
-            if (bucketEnd.isAfter(window.toExclusive())) {
-                bucketEnd = window.toExclusive();
-            }
-
-            Map<String, Long> source = countsByBucket.getOrDefault(bucketStart, Map.of());
-            Map<String, Long> normalized = new LinkedHashMap<>();
-            long bucketTotal = 0;
-            for (String type : types) {
-                long value = Math.max(0, source.getOrDefault(type, 0L));
-                normalized.put(type, value);
-                bucketTotal += value;
-            }
-            totalExceptions += bucketTotal;
-            buckets.add(ReportExceptionBucketDto.builder()
-                .bucketStart(bucketStart)
-                .bucketEnd(bucketEnd)
-                .countsByType(normalized)
-                .total(bucketTotal)
-                .build());
-        }
-
-        return AdminExceptionsReportDto.builder()
-            .window(toWindowDto(window))
-            .totalExceptions(totalExceptions)
-            .exceptionTypes(types)
-            .buckets(buckets)
-            .build();
+        return "RON";
     }
 
     private List<Instant> listBuckets(ReportWindow window) {
@@ -267,12 +218,14 @@ public class AdminReportsService {
 
     private Instant parseIsoTemporal(String raw, String fieldName, boolean endOfDayExclusiveForDateOnly) {
         try {
-            return Instant.parse(raw);
+            Instant parsed = Instant.parse(raw);
+            return endOfDayExclusiveForDateOnly ? parsed.plusNanos(1) : parsed;
         } catch (DateTimeParseException ignored) {
             // fallback parsers below
         }
         try {
-            return OffsetDateTime.parse(raw).toInstant();
+            Instant parsed = OffsetDateTime.parse(raw).toInstant();
+            return endOfDayExclusiveForDateOnly ? parsed.plusNanos(1) : parsed;
         } catch (DateTimeParseException ignored) {
             // fallback parsers below
         }

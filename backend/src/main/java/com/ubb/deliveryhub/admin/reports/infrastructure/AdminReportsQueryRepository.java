@@ -2,7 +2,6 @@ package com.ubb.deliveryhub.admin.reports.infrastructure;
 
 import com.ubb.deliveryhub.admin.reports.domain.ReportGranularity;
 import com.ubb.deliveryhub.admin.reports.infrastructure.row.DeliveryStatusAggregateRow;
-import com.ubb.deliveryhub.admin.reports.infrastructure.row.ExceptionAggregateRow;
 import com.ubb.deliveryhub.admin.reports.infrastructure.row.RevenueAggregateRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -66,17 +65,33 @@ public class AdminReportsQueryRepository {
         ReportGranularity granularity
     ) {
         String sql = """
+            WITH revenue_base AS (
+              SELECT
+                %s AS bucket_start_utc,
+                d.currency AS currency,
+                d.total_amount AS total_amount
+              FROM delivery_status_history h
+              JOIN deliveries d ON d.id = h.delivery_id
+              WHERE h.status = 'DELIVERED'
+                AND h.recorded_at >= :fromInclusive
+                AND h.recorded_at < :toExclusive
+            ),
+            dominant_currency AS (
+              SELECT currency
+              FROM revenue_base
+              GROUP BY currency
+              ORDER BY COUNT(*) DESC, currency ASC
+              LIMIT 1
+            )
             SELECT
-              %s AS bucket_start_utc,
+              rb.bucket_start_utc,
               COUNT(*) AS delivered_count,
-              COALESCE(SUM(d.total_amount), 0) AS revenue_total
-            FROM delivery_status_history h
-            JOIN deliveries d ON d.id = h.delivery_id
-            WHERE h.status = 'DELIVERED'
-              AND h.recorded_at >= :fromInclusive
-              AND h.recorded_at < :toExclusive
-            GROUP BY 1
-            ORDER BY 1 ASC
+              COALESCE(SUM(rb.total_amount), 0) AS revenue_total,
+              dc.currency AS dominant_currency
+            FROM revenue_base rb
+            LEFT JOIN dominant_currency dc ON true
+            GROUP BY rb.bucket_start_utc, dc.currency
+            ORDER BY rb.bucket_start_utc ASC
             """.formatted(BUCKET_EXPRESSION.formatted("h.recorded_at"));
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -90,72 +105,8 @@ public class AdminReportsQueryRepository {
             (rs, _rowNum) -> new RevenueAggregateRow(
                 readInstant(rs, "bucket_start_utc"),
                 rs.getLong("delivered_count"),
-                readBigDecimal(rs, "revenue_total")
-            )
-        );
-    }
-
-    public String findRevenueCurrency(
-        Instant fromInclusive,
-        Instant toExclusive
-    ) {
-        String sql = """
-            SELECT d.currency
-            FROM delivery_status_history h
-            JOIN deliveries d ON d.id = h.delivery_id
-            WHERE h.status = 'DELIVERED'
-              AND h.recorded_at >= :fromInclusive
-              AND h.recorded_at < :toExclusive
-            GROUP BY d.currency
-            ORDER BY COUNT(*) DESC, d.currency ASC
-            LIMIT 1
-            """;
-
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("fromInclusive", toSqlTimestamp(fromInclusive))
-            .addValue("toExclusive", toSqlTimestamp(toExclusive));
-
-        List<String> currencies = jdbcTemplate.query(
-            sql,
-            params,
-            (rs, _rowNum) -> rs.getString("currency")
-        );
-        if (currencies.isEmpty() || currencies.get(0) == null || currencies.get(0).isBlank()) {
-            return "RON";
-        }
-        return currencies.get(0);
-    }
-
-    public List<ExceptionAggregateRow> fetchExceptionCountsByType(
-        Instant fromInclusive,
-        Instant toExclusive,
-        ReportGranularity granularity
-    ) {
-        String sql = """
-            SELECT
-              %s AS bucket_start_utc,
-              n.type AS notification_type,
-              COUNT(*) AS metric_value
-            FROM notifications n
-            WHERE n.category = 'EXCEPTION'
-              AND n.created_at >= :fromInclusive
-              AND n.created_at < :toExclusive
-            GROUP BY 1, n.type
-            ORDER BY 1 ASC, n.type ASC
-            """.formatted(BUCKET_EXPRESSION.formatted("n.created_at"));
-
-        MapSqlParameterSource params = new MapSqlParameterSource()
-            .addValue("fromInclusive", toSqlTimestamp(fromInclusive))
-            .addValue("toExclusive", toSqlTimestamp(toExclusive))
-            .addValue("granularity", granularity.sqlToken());
-
-        return jdbcTemplate.query(
-            sql,
-            params,
-            (rs, _rowNum) -> new ExceptionAggregateRow(
-                readInstant(rs, "bucket_start_utc"),
-                rs.getString("notification_type"),
-                rs.getLong("metric_value")
+                readBigDecimal(rs, "revenue_total"),
+                rs.getString("dominant_currency")
             )
         );
     }

@@ -6,6 +6,7 @@ import java.time.Instant;
 public record RevenueAggregateRow(
     Instant bucketStart,
     long deliveredCount,
-    BigDecimal revenue
+    BigDecimal revenue,
+    String dominantCurrency
 ) {
 }
