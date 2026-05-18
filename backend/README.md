@@ -199,6 +199,38 @@ Runtime mode is controlled by properties:
 - `notifications.async.enabled=true`: listener publishes event payload to RabbitMQ (`notifications.async.exchange` + `notifications.async.routing-key`).
 - `notifications.async.fallback-to-sync=true`: if async publish fails, listener falls back to sync persistence.
 
+## Async assignment consumer (`#68`)
+
+Delivery creation now publishes a versioned `DeliveryCreated` event after transaction commit (feature-flagged), and RabbitMQ consumer-based assignment can process the event asynchronously with idempotency + retry + DLQ flow.
+
+Sequence:
+
+```mermaid
+sequenceDiagram
+    participant API as Delivery API
+    participant EX as Exchange delivery.events
+    participant Q as Queue delivery.assign.async.q
+    participant C as DeliveryCreated consumer
+    participant S as AsyncAssignmentService
+    API->>EX: publish DeliveryCreated (after commit)
+    EX->>Q: routing key delivery.created
+    Q->>C: consume (manual ack)
+    C->>S: transactional assign + idempotency marker
+    S-->>C: ASSIGNED / NOOP / failure
+    C-->>Q: ack on success/noop
+    C->>EX: transient failure -> retry queue
+    C->>DLQ: permanent/exhausted -> delivery.assign.async.dlq
+```
+
+Main properties:
+
+- `delivery.assignment.async.enabled` - publishes `DeliveryCreated` events when deliveries are created.
+- `delivery.assignment.async.consumer-enabled` - toggles Rabbit listener startup.
+- `delivery.assignment.async.max-retries` - bounded retry attempts before DLQ handoff.
+- `delivery.assignment.async.retry-backoff-millis` - retry delay schedule in milliseconds.
+- `delivery.assignment.async.queue` / `retry-queue` / `dlq` - queue names for main retry and DLQ paths.
+- `delivery.assignment.async.exchange` / `routing-key` / `retry-routing-key` / `dlx` / `dlq-routing-key` - exchange/routing topology.
+
 ## Admin user management APIs (`#54`)
 
 Admin-only endpoints for managing courier/customer accounts:
