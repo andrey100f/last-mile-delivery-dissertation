@@ -98,9 +98,9 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         roles: [UserRole.ADMIN],
       },
       {
-        label: 'System notifications',
-        routerCommands: ['admin', 'notifications'],
-        icon: 'pi pi-bell',
+        label: 'System Events',
+        routerCommands: ['admin', 'events'],
+        icon: 'pi pi-list-check',
         roles: [UserRole.ADMIN],
       },
     ],

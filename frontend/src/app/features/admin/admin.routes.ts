@@ -66,6 +66,17 @@ export const adminRoutes: Routes = [
       ),
   },
   {
+    path: 'events',
+    data: {
+      pageTitle: 'System Events & Notifications',
+      subtitle: 'Monitor system activity and platform events',
+    },
+    loadComponent: () =>
+      import('./pages/events/admin-events.component').then(
+        (m) => m.AdminEventsComponent,
+      ),
+  },
+  {
     path: 'notifications',
     loadComponent: loadStub,
     data: { pageTitle: 'System notifications' },
