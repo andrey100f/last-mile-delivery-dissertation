@@ -36,6 +36,7 @@ import com.ubb.deliveryhub.notification.events.NotificationRequested;
 import com.ubb.deliveryhub.delivery.application.DeliveryCreatedEventPublisher;
 import com.ubb.deliveryhub.delivery.messaging.DeliveryCreatedMessage;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -381,20 +382,30 @@ public class DeliveryService {
     }
 
     private void publishDeliveryCreatedAfterCommit(Delivery delivery) {
+        UUID eventId = UUID.randomUUID();
+        String correlationId = resolveCorrelationId();
         runAfterCommit(() ->
             deliveryCreatedEventPublisher.publish(
                 new DeliveryCreatedMessage(
                     1,
-                    UUID.randomUUID(),
-                    null,
+                    eventId,
+                    UUID.randomUUID().toString(),
                     delivery.getId(),
                     delivery.getCustomer() != null ? delivery.getCustomer().getId() : null,
                     delivery.getCreatedAt(),
-                    null,
+                    correlationId,
                     Map.of("source", "delivery.create")
                 )
             )
         );
+    }
+
+    private static String resolveCorrelationId() {
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null || correlationId.isBlank()) {
+            correlationId = MDC.get("traceId");
+        }
+        return (correlationId == null || correlationId.isBlank()) ? null : correlationId;
     }
 
     private void runAfterCommit(Runnable action) {

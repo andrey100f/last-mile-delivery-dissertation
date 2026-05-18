@@ -226,10 +226,12 @@ Main properties:
 
 - `delivery.assignment.async.enabled` - publishes `DeliveryCreated` events when deliveries are created.
 - `delivery.assignment.async.consumer-enabled` - toggles Rabbit listener startup.
-- `delivery.assignment.async.max-retries` - bounded retry attempts before DLQ handoff.
+- `delivery.assignment.async.max-retries` - number of retries after the initial failed consume attempt (e.g. `5` = initial try + up to 5 retries, then DLQ).
 - `delivery.assignment.async.retry-backoff-millis` - retry delay schedule in milliseconds.
 - `delivery.assignment.async.queue` / `retry-queue` / `dlq` - queue names for main retry and DLQ paths.
 - `delivery.assignment.async.exchange` / `routing-key` / `retry-routing-key` / `dlx` / `dlq-routing-key` - exchange/routing topology.
+
+Retry note: current retry scheduling uses per-message TTL on a single retry queue. For high retry volume where strict delay fairness matters, prefer bucketed retry queues (fixed queue TTL per bucket) or delayed-message exchange plugin.
 
 ## Admin user management APIs (`#54`)
 

@@ -9,6 +9,11 @@ public class PermanentMessageProcessingException extends RuntimeException {
         this.reason = reason;
     }
 
+    public PermanentMessageProcessingException(String reason, String message, Throwable cause) {
+        super(message, cause);
+        this.reason = reason;
+    }
+
     public String reason() {
         return reason;
     }

@@ -46,7 +46,8 @@ public class AsyncAssignmentService {
 
     @Transactional
     public AsyncAssignmentOutcome assignFromDeliveryCreated(DeliveryCreatedMessage message, String consumerName) {
-        if (processedMessageRepository.existsByConsumerNameAndEventId(consumerName, message.eventId())) {
+        ProcessedMessage marker = createProcessingMarker(consumerName, message);
+        if (marker == null) {
             return AsyncAssignmentOutcome.NOOP_DUPLICATE;
         }
 
@@ -58,13 +59,16 @@ public class AsyncAssignmentService {
 
         if (delivery.getCourier() != null
             || !deliveryStateMachine.canTransition(delivery.getStatus(), DeliveryStatus.ASSIGNED)) {
-            markProcessed(consumerName, message, AsyncAssignmentOutcome.NOOP_ALREADY_ASSIGNED);
+            marker.setOutcome(AsyncAssignmentOutcome.NOOP_ALREADY_ASSIGNED.name());
+            marker.setProcessedAt(Instant.now());
             return AsyncAssignmentOutcome.NOOP_ALREADY_ASSIGNED;
         }
 
         CourierProfile courierProfile = selectCourier(delivery.getDeliveryType());
         delivery.setCourier(courierProfile.getUser());
         delivery.setStatus(DeliveryStatus.ASSIGNED);
+        // Mark courier as unavailable after auto-assignment to avoid repeated selection in concurrent flows.
+        courierProfile.setAvailableNow(false);
 
         DeliveryStatusHistory historyEntry = new DeliveryStatusHistory();
         historyEntry.setDelivery(delivery);
@@ -74,9 +78,8 @@ public class AsyncAssignmentService {
 
         deliveryRepository.save(delivery);
 
-        if (!markProcessed(consumerName, message, AsyncAssignmentOutcome.ASSIGNED)) {
-            return AsyncAssignmentOutcome.NOOP_DUPLICATE;
-        }
+        marker.setOutcome(AsyncAssignmentOutcome.ASSIGNED.name());
+        marker.setProcessedAt(Instant.now());
         return AsyncAssignmentOutcome.ASSIGNED;
     }
 
@@ -93,22 +96,17 @@ public class AsyncAssignmentService {
             ));
     }
 
-    private boolean markProcessed(
-        String consumerName,
-        DeliveryCreatedMessage message,
-        AsyncAssignmentOutcome outcome
-    ) {
+    private ProcessedMessage createProcessingMarker(String consumerName, DeliveryCreatedMessage message) {
         ProcessedMessage processed = new ProcessedMessage();
         processed.setConsumerName(consumerName);
         processed.setEventId(message.eventId());
         processed.setDeliveryId(message.deliveryId());
-        processed.setOutcome(outcome.name());
+        processed.setOutcome("PROCESSING");
         processed.setProcessedAt(Instant.now());
         try {
-            processedMessageRepository.save(processed);
-            return true;
+            return processedMessageRepository.save(processed);
         } catch (DataIntegrityViolationException ex) {
-            return false;
+            return null;
         }
     }
 }

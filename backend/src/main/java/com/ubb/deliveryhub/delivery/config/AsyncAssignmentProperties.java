@@ -12,6 +12,7 @@ public class AsyncAssignmentProperties {
 
     private boolean enabled = false;
     private boolean consumerEnabled = false;
+    // maxRetries means additional retries after the initial consume attempt.
     private int maxRetries = 5;
     private String exchange = "delivery.events";
     private String routingKey = "delivery.created";

@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -78,7 +80,16 @@ public class DeliveryCreatedConsumer {
                 metricOutcome
             );
         } catch (Exception ex) {
-            handleFailure(rawMessage, channel, deliveryTag, message, attempt, ex, startedAt);
+            try {
+                handleFailure(rawMessage, channel, deliveryTag, message, attempt, ex, startedAt);
+            } catch (Exception failureHandlingEx) {
+                log.error(
+                    "Failure while handling DeliveryCreated error path; requeueing original message deliveryTag={}",
+                    deliveryTag,
+                    failureHandlingEx
+                );
+                channel.basicNack(deliveryTag, false, true);
+            }
         }
     }
 
@@ -158,15 +169,22 @@ public class DeliveryCreatedConsumer {
         } catch (PermanentMessageProcessingException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new PermanentMessageProcessingException("INVALID_PAYLOAD", "Failed to decode DeliveryCreated payload");
+            throw new PermanentMessageProcessingException(
+                "INVALID_PAYLOAD",
+                "Failed to decode DeliveryCreated payload",
+                ex
+            );
         }
     }
 
     private void publishToRetry(Message original, int nextAttempt, Exception ex) {
         long delayMillis = resolveBackoffMillis(nextAttempt);
+        MessageProperties propertiesCopy = MessagePropertiesBuilder
+            .fromClonedProperties(original.getMessageProperties())
+            .build();
         Message retryMessage = MessageBuilder
             .withBody(original.getBody())
-            .andProperties(original.getMessageProperties())
+            .andProperties(propertiesCopy)
             .setHeader("x-retry-count", nextAttempt)
             .setHeader("x-last-failure-reason", extractFailureReason(ex))
             .setHeader("x-last-exception-class", ex.getClass().getName())
@@ -184,9 +202,12 @@ public class DeliveryCreatedConsumer {
         headers.put("x-retry-count", retryCount);
         headers.putIfAbsent("x-first-failure-at", Instant.now().toString());
 
+        MessageProperties propertiesCopy = MessagePropertiesBuilder
+            .fromClonedProperties(original.getMessageProperties())
+            .build();
         Message dlqMessage = MessageBuilder
             .withBody(original.getBody())
-            .andProperties(original.getMessageProperties())
+            .andProperties(propertiesCopy)
             .copyHeaders(headers)
             .build();
         rabbitTemplate.send(properties.getDlx(), properties.getDlqRoutingKey(), dlqMessage);
