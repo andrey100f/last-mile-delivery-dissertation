@@ -45,7 +45,9 @@ public class NotificationPersistenceService {
         notification.setMessage(draft.message());
         notification.setDedupeKey(dedupeKey);
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("eventVersion", event.eventVersion());
         payload.put("eventId", event.eventId() != null ? event.eventId().toString() : null);
+        payload.put("correlationId", event.correlationId());
         payload.put("eventType", event.eventType() != null ? event.eventType().name() : null);
         payload.put("status", event.status() != null ? event.status().name() : null);
         // Store as ISO-8601 text to avoid runtime mapper module mismatch for java.time types.

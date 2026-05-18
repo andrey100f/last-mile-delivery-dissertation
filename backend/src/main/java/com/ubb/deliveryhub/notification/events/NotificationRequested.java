@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.UUID;
 
 public record NotificationRequested(
+    Integer eventVersion,
     UUID eventId,
+    String correlationId,
     NotificationEventType eventType,
     UUID deliveryId,
     UUID actorUserId,

@@ -109,10 +109,9 @@ public class NotificationRequestedListener {
     }
 
     private static String dedupeKey(NotificationRequested event, UUID recipientUserId) {
-        String statusToken = event.status() == null ? "NA" : event.status().name();
-        String deliveryToken = Objects.toString(event.deliveryId(), "NA");
-        return ("%s:%s:%s:%s")
-            .formatted(recipientUserId, deliveryToken, event.eventType(), statusToken)
+        String eventToken = Objects.toString(event.eventId(), "NA");
+        return ("%s:%s")
+            .formatted(eventToken, recipientUserId)
             .toLowerCase(Locale.ROOT);
     }
 }
