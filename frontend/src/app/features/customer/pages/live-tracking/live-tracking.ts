@@ -382,7 +382,7 @@ export class LiveTrackingPage {
   }
 
   private handleRouteParams(params: ParamMap): void {
-    const deliveryId = params.get('id')?.trim() ?? '';
+    const deliveryId = (params.get('id') ?? params.get('deliveryId') ?? '').trim();
     const nextEntrySource = this.resolveEntrySource();
     this.entrySource.set(nextEntrySource);
     this.pageHeaderService.clearAction();

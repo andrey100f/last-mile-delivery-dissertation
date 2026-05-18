@@ -23,6 +23,17 @@ export const adminRoutes: Routes = [
       ),
   },
   {
+    path: 'deliveries/:deliveryId',
+    data: {
+      pageTitle: 'Delivery Tracking',
+      subtitle: 'Real-time status updates',
+    },
+    loadComponent: () =>
+      import('../customer/pages/live-tracking/live-tracking').then(
+        (m) => m.LiveTrackingPage,
+      ),
+  },
+  {
     path: 'deliveries',
     loadComponent: loadStub,
     data: { pageTitle: 'Deliveries monitoring' },
@@ -63,6 +74,17 @@ export const adminRoutes: Routes = [
     loadComponent: () =>
       import('./pages/reports/admin-reports.component').then(
         (m) => m.AdminReportsComponent,
+      ),
+  },
+  {
+    path: 'events',
+    data: {
+      pageTitle: 'System Events & Notifications',
+      subtitle: 'Monitor system activity and platform events',
+    },
+    loadComponent: () =>
+      import('./pages/events/admin-events.component').then(
+        (m) => m.AdminEventsComponent,
       ),
   },
   {

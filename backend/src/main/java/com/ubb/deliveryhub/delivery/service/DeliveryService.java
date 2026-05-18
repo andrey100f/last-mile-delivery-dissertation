@@ -26,6 +26,7 @@ import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
 import com.ubb.deliveryhub.delivery.repository.DeliverySpecifications;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
 import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
+import com.ubb.deliveryhub.events.application.SystemEventService;
 import com.ubb.deliveryhub.identity.domain.User;
 import com.ubb.deliveryhub.identity.domain.exception.EntityNotFoundException;
 import com.ubb.deliveryhub.identity.repository.UserRepository;
@@ -83,6 +84,7 @@ public class DeliveryService {
     private final DeliveryStateMachine deliveryStateMachine;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final SystemEventService systemEventService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
@@ -274,6 +276,9 @@ public class DeliveryService {
         deliveryStatusHistoryRepository.save(historyEntry);
 
         Delivery saved = deliveryRepository.save(delivery);
+        emitSystemEventAfterCommit(() ->
+            systemEventService.emitDeliveryAssigned(saved.getId(), courierId, saved.getUpdatedAt())
+        );
         emitAssignmentNotification(saved, courierId, saved.getUpdatedAt());
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
@@ -305,6 +310,15 @@ public class DeliveryService {
 
         Delivery saved = deliveryRepository.save(delivery);
         publishAfterCommit(saved.getId(), fromStatus, targetStatus, courierId, saved.getUpdatedAt());
+        emitSystemEventAfterCommit(() ->
+            systemEventService.emitDeliveryStatusChanged(
+                saved.getId(),
+                courierId,
+                fromStatus,
+                targetStatus,
+                saved.getUpdatedAt()
+            )
+        );
         emitStatusNotification(saved, courierId, targetStatus, saved.getUpdatedAt());
         var history = deliveryStatusHistoryRepository.findByDelivery_IdOrderByRecordedAtAsc(saved.getId());
         return DeliveryMapper.toDetailDto(saved, history);
@@ -351,12 +365,26 @@ public class DeliveryService {
         UUID actorId,
         Instant updatedAt
     ) {
+        runAfterCommit(() ->
+            eventPublisher.publishEvent(
+                new DeliveryStatusChangedEvent(deliveryId, fromStatus, toStatus, actorId, updatedAt)
+            )
+        );
+    }
+
+    private void emitSystemEventAfterCommit(Runnable action) {
+        runAfterCommit(action);
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                eventPublisher.publishEvent(
-                    new DeliveryStatusChangedEvent(deliveryId, fromStatus, toStatus, actorId, updatedAt)
-                );
+                action.run();
             }
         });
     }

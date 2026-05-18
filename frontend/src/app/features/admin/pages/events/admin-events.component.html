@@ -1,0 +1,195 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="mx-auto w-full max-w-[1100px] space-y-3 p-4">
+    @if (loading() && !hasLoadedAtLeastOnce()) {
+      <section class="space-y-3">
+        <div class="grid gap-3 sm:grid-cols-2">
+          @for (_card of [1, 2]; track _card) {
+            <article
+              class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-4 py-2.5 shadow-(--p-shadow-xs)"
+            >
+              <p-skeleton width="6rem" height="0.9rem" />
+              <div class="mt-2">
+                <p-skeleton width="3rem" height="1.6rem" />
+              </div>
+            </article>
+          }
+        </div>
+        <p-skeleton width="100%" height="22rem" />
+      </section>
+    } @else if (hardError(); as loadError) {
+      <section
+        class="rounded-(--p-radius-lg) border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-(--p-shadow-xs)"
+      >
+        <p class="font-semibold">System events unavailable</p>
+        <p class="mt-1">{{ loadError }}</p>
+        <div class="mt-3">
+          <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+        </div>
+      </section>
+    } @else {
+      <section class="grid gap-3 sm:grid-cols-2">
+        @for (card of summaryCards(); track card.label) {
+          <article
+            class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-4 py-2.5 shadow-(--p-shadow-xs)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-[12px] text-p-text-muted">{{ card.label }}</p>
+                <p class="mt-1 text-[30px] leading-none font-semibold text-p-text-primary">
+                  {{ card.value }}
+                </p>
+              </div>
+              <span
+                class="inline-flex h-9 w-9 items-center justify-center rounded-(--p-radius-sm)"
+                [class]="card.iconClass"
+              >
+                <i [class]="card.icon"></i>
+              </span>
+            </div>
+          </article>
+        }
+      </section>
+
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-3 shadow-(--p-shadow-xs)"
+      >
+        <header class="mb-1 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-3">
+            <p class="text-sm font-medium text-p-text-muted">Filter:</p>
+            <div class="flex flex-wrap gap-2">
+              @for (chip of viewFilters; track chip.label) {
+                <button
+                  type="button"
+                  class="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+                  [class.border-blue-500]="isFilterSelected(chip.value)"
+                  [class.bg-blue-500]="isFilterSelected(chip.value)"
+                  [class.text-white]="isFilterSelected(chip.value)"
+                  [class.border-p-surface-border]="!isFilterSelected(chip.value)"
+                  [class.bg-p-surface-ground]="!isFilterSelected(chip.value)"
+                  [class.text-p-text-secondary]="!isFilterSelected(chip.value)"
+                  (click)="selectFilter(chip.value)"
+                >
+                  {{ chip.label }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <p-button
+              label="Mark Page Read"
+              icon="pi pi-check"
+              [text]="true"
+              styleClass="hover:!bg-slate-100"
+              (onClick)="markAllAsRead()"
+            />
+          </div>
+        </header>
+
+        @if (transientError(); as refreshError) {
+          <div class="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <span class="font-semibold">Refresh failed.</span>
+            <span class="ml-1">{{ refreshError }}</span>
+            <span class="ml-1">Showing last successful snapshot.</span>
+          </div>
+        }
+      </section>
+
+      @if (eventRows().length === 0) {
+        <section
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-6 text-center shadow-(--p-shadow-xs)"
+        >
+          <div class="mx-auto flex max-w-md flex-col items-center gap-2">
+            <span
+              class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-p-surface-ground text-p-text-muted"
+            >
+              <i class="pi pi-list-check text-lg" aria-hidden="true"></i>
+            </span>
+            <h2 class="text-base font-semibold text-p-text-primary">No events</h2>
+            <p class="text-sm text-p-text-muted">No system events match the current filters.</p>
+          </div>
+        </section>
+      } @else {
+        <section class="space-y-1.5">
+          @for (row of eventRows(); track row.id) {
+            <article
+              [class]="
+                row.read
+                  ? 'rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-card px-3 py-2 transition-colors hover:bg-p-surface-hover/60'
+                  : 'rounded-(--p-radius-md) border border-blue-200 bg-blue-50/35 px-3 py-2 transition-colors hover:bg-blue-100/50'
+              "
+            >
+              <div class="grid grid-cols-[auto_1fr_auto] items-start gap-3">
+              <span
+                class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                [class]="row.iconContainerClass"
+              >
+                <i [class]="row.icon + ' text-[13px] ' + row.iconColorClass"></i>
+              </span>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold leading-tight text-p-text-primary">
+                  {{ row.title }}
+                </p>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-p-text-muted">
+                  <span>{{ row.subtitlePrefix }}</span>
+                  @if (row.deliveryCode) {
+                    <span class="font-semibold text-blue-600">{{ row.deliveryCode }}</span>
+                  }
+                  <span>{{ row.subtitleSuffix }}</span>
+                </div>
+              </div>
+              <div class="mt-0.5 flex items-center justify-end gap-1">
+                @if (row.deliveryId) {
+                  <p-button
+                    label="Open delivery"
+                    icon="pi pi-arrow-right"
+                    size="small"
+                    [text]="true"
+                    styleClass="!border !border-transparent !rounded-md hover:!border-blue-300 hover:!bg-transparent"
+                    (onClick)="openDelivery(row)"
+                  />
+                }
+                @if (!row.read) {
+                  <p-button
+                    label="Mark as read"
+                    icon="pi pi-check"
+                    size="small"
+                    [text]="true"
+                    styleClass="!border !border-transparent !rounded-md hover:!border-blue-300 hover:!bg-transparent"
+                    (onClick)="markAsRead(row)"
+                  />
+                } @else {
+                  <span class="px-2 text-xs text-p-text-muted">{{ row.relativeTime }}</span>
+                }
+              </div>
+              </div>
+            </article>
+          }
+        </section>
+
+        <section
+          class="flex flex-wrap items-center justify-between gap-3 rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-3 py-2 shadow-(--p-shadow-xs)"
+        >
+          <p class="text-xs text-p-text-muted">{{ pageLabel() }}</p>
+          <div class="flex items-center gap-2">
+            <p-button
+              label="Previous"
+              size="small"
+              [outlined]="true"
+              styleClass="!text-blue-600 !border-blue-200 hover:!bg-blue-50 disabled:!text-slate-400 disabled:!border-slate-200"
+              [disabled]="!(snapshot()?.hasPrevious)"
+              (onClick)="previousPage()"
+            />
+            <p-button
+              label="Next"
+              size="small"
+              [outlined]="true"
+              styleClass="!text-blue-600 !border-blue-200 hover:!bg-blue-50 disabled:!text-slate-400 disabled:!border-slate-200"
+              [disabled]="!(snapshot()?.hasNext)"
+              (onClick)="nextPage()"
+            />
+          </div>
+        </section>
+      }
+    }
+  </div>
+</div>
