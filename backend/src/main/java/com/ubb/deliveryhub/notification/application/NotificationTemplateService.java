@@ -6,6 +6,7 @@ import com.ubb.deliveryhub.notification.domain.NotificationType;
 import com.ubb.deliveryhub.notification.events.NotificationRequested;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -20,7 +21,7 @@ public class NotificationTemplateService {
     }
 
     private static NotificationDraft assignmentAccepted(NotificationRequested event, UUID recipientUserId) {
-        boolean actorIsRecipient = event.actorUserId().equals(recipientUserId);
+        boolean actorIsRecipient = Objects.equals(event.actorUserId(), recipientUserId);
         String title = actorIsRecipient ? "Delivery assignment confirmed" : "Courier assigned";
         String message = actorIsRecipient
             ? "You are now assigned to delivery %s.".formatted(shortDeliveryCode(event.deliveryId()))
@@ -52,6 +53,9 @@ public class NotificationTemplateService {
     }
 
     private static String shortDeliveryCode(UUID deliveryId) {
+        if (deliveryId == null) {
+            return "UNKNOWN";
+        }
         String raw = deliveryId.toString().replace("-", "");
         return "DH-" + raw.substring(0, Math.min(8, raw.length())).toUpperCase();
     }

@@ -199,6 +199,41 @@ Runtime mode is controlled by properties:
 - `notifications.async.enabled=true`: listener publishes event payload to RabbitMQ (`notifications.async.exchange` + `notifications.async.routing-key`).
 - `notifications.async.fallback-to-sync=true`: if async publish fails, listener falls back to sync persistence.
 
+## Async notification consumer with DLQ (`#69`)
+
+`NotificationRequested` is consumed with manual-ack semantics and explicit transient/permanent classification:
+
+- validation failures (unsupported `eventVersion`, malformed payload, invalid recipients, oversized metadata) are treated as permanent and routed directly to DLQ
+- transient failures are retried using `notifications.async.retry-backoff-millis` until `notifications.async.max-retries` is exhausted
+- exhausted messages are published to DLQ with diagnostic headers:
+  - `x-failure-reason`
+  - `x-exception-class`
+  - `x-attempt-count`
+  - `x-original-exchange`
+  - `x-original-routing-key`
+  - `x-correlation-id`
+
+Topology defaults:
+
+- exchange: `notification.events`
+- routing key: `notification.requested`
+- queue: `notification.consume.q`
+- retry queue: `notification.consume.retry.q`
+- DLX/DLQ: `notification.consume.dlx` / `notification.consume.dlq`
+
+Migration note (breaking default rename):
+
+- previous defaults were `deliveryhub.notifications` + `requested`
+- environments still using legacy topology must explicitly override:
+  - `notifications.async.exchange=deliveryhub.notifications`
+  - `notifications.async.routing-key=requested`
+  - `notifications.async.retry-routing-key=requested.retry`
+  - `notifications.async.dlx=deliveryhub.notifications.dlx`
+  - `notifications.async.dlq-routing-key=requested.dlq`
+- if any legacy exchange/queue bindings are provisioned outside app startup, update or keep overrides before deploying this branch
+
+Operational replay guidance is documented in `docs/notification-dlq-runbook.md`.
+
 ## Async assignment consumer (`#68`)
 
 Delivery creation now publishes a versioned `DeliveryCreated` event after transaction commit (feature-flagged), and RabbitMQ consumer-based assignment can process the event asynchronously with idempotency + retry + DLQ flow.

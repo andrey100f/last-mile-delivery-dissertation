@@ -427,7 +427,9 @@ public class DeliveryService {
         }
         notificationEventPublisher.publish(
             new NotificationRequested(
+                1,
                 UUID.randomUUID(),
+                resolveCorrelationId(),
                 NotificationEventType.ASSIGNMENT_ACCEPTED,
                 delivery.getId(),
                 actorId,
@@ -448,7 +450,9 @@ public class DeliveryService {
         }
         notificationEventPublisher.publish(
             new NotificationRequested(
+                1,
                 UUID.randomUUID(),
+                resolveCorrelationId(),
                 NotificationEventType.STATUS_UPDATED,
                 delivery.getId(),
                 actorId,
