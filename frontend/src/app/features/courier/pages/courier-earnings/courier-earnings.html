@@ -1,0 +1,243 @@
+<div class="flex min-h-0 flex-1 flex-col bg-p-surface-ground">
+  <div class="space-y-4 p-5">
+    @if (loading() && !hasLoadedAtLeastOnce()) {
+      <section class="space-y-3">
+        <p-skeleton width="14rem" height="1.2rem" />
+        <p-skeleton width="100%" height="14rem" />
+      </section>
+    } @else if (hardError(); as loadError) {
+      <section
+        class="rounded-(--p-radius-lg) border border-red-200 bg-red-50 p-5 text-sm text-red-700 shadow-(--p-shadow-xs)"
+      >
+        <p class="font-semibold">Earnings unavailable</p>
+        <p class="mt-1">{{ loadError }}</p>
+        <div class="mt-3">
+          <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+        </div>
+      </section>
+    } @else {
+      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">Today's Earnings</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-emerald-600">
+                {{ todayTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-emerald-50 text-emerald-600"
+            >
+              <i class="pi pi-dollar text-base" aria-hidden="true"></i>
+            </span>
+          </div>
+        </article>
+
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">This Week</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ weekTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-blue-50 text-blue-600"
+            >
+              <i class="pi pi-chart-line text-base" aria-hidden="true"></i>
+            </span>
+          </div>
+        </article>
+
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">This Month</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ monthTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-cyan-50 text-cyan-700"
+            >
+              <i class="pi pi-calendar text-base" aria-hidden="true"></i>
+            </span>
+          </div>
+        </article>
+
+        <article
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">Total Earnings</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ customRangeTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-amber-50 text-amber-700"
+            >
+              <i class="pi pi-wallet text-base" aria-hidden="true"></i>
+            </span>
+          </div>
+          <p class="mt-2 text-xs text-p-text-muted">{{ customWindowLabel() }}</p>
+          @if (trendLabel(); as trend) {
+            <p class="mt-1 text-xs text-p-text-muted">{{ trend }}</p>
+          }
+        </article>
+      </section>
+
+      <section
+        class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
+      >
+        <div class="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+              From
+              <input
+                type="date"
+                class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                [value]="fromDate()"
+                [disabled]="loading() || refreshing() || entriesLoading()"
+                (change)="updateFromDate($any($event.target).value)"
+              />
+            </label>
+            <label class="flex min-w-32 flex-col gap-1 text-xs text-p-text-muted">
+              To
+              <input
+                type="date"
+                class="rounded-(--p-radius-md) border border-p-surface-border bg-p-surface-ground px-2 py-1.5 text-sm text-p-text-primary"
+                [value]="toDate()"
+                [disabled]="loading() || refreshing() || entriesLoading()"
+                (change)="updateToDate($any($event.target).value)"
+              />
+            </label>
+            <div class="flex gap-2">
+              <p-button
+                label="Apply"
+                icon="pi pi-filter"
+                size="small"
+                [disabled]="loading() || refreshing() || entriesLoading()"
+                (onClick)="applyFilters()"
+              />
+            </div>
+          </div>
+        </div>
+
+        @if (dateRangeError(); as dateError) {
+          <p class="mt-3 text-xs text-red-600">{{ dateError }}</p>
+        }
+
+        @if (transientError(); as refreshError) {
+          <div class="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <span class="font-semibold">Refresh failed.</span>
+            <span class="ml-1">{{ refreshError }}</span>
+            <span class="ml-1">Showing last successful snapshot.</span>
+          </div>
+        }
+
+        <div class="mt-4 rounded-(--p-radius-md) border border-p-surface-border bg-white p-3">
+          <p class="mb-3 text-sm font-semibold text-p-text-primary">Earnings Trend</p>
+          @if (chartModel().chartData; as chartData) {
+            <div class="h-[360px]">
+              <p-chart
+                styleClass="block h-full w-full"
+                [style]="{ height: '100%' }"
+                type="line"
+                [data]="chartData"
+                [options]="chartModel().chartOptions"
+              />
+            </div>
+          } @else {
+            <div
+              class="rounded border border-dashed border-p-surface-border bg-p-surface-ground p-4 text-sm text-p-text-muted"
+            >
+              No delivered earnings found in the selected range.
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)">
+        <p-table
+          [value]="rows()"
+          [lazy]="true"
+          [paginator]="true"
+          [rows]="pageSize()"
+          [first]="activePage() * pageSize()"
+          [totalRecords]="totalRecords()"
+          [loading]="entriesLoading()"
+          dataKey="deliveryId"
+          responsiveLayout="scroll"
+          size="small"
+          styleClass="delivery-list-table"
+          (onLazyLoad)="onLazyLoad($event)"
+        >
+          <ng-template #header>
+            <tr class="border-b border-p-surface-border bg-p-surface-ground">
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Delivery
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Earned at
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Status
+              </th>
+              <th class="px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-p-text-muted uppercase">
+                Amount
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template #body let-row>
+            <tr class="text-sm text-p-text-secondary transition-colors hover:bg-p-surface-hover">
+              <td class="w-44 px-4 py-3.5 align-top text-[12px] font-semibold text-blue-600">
+                {{ row.shortCode }}
+              </td>
+              <td class="w-44 px-4 py-3.5 align-top text-[13px] text-p-text-primary">
+                {{ row.earnedAt | date: 'medium' }}
+              </td>
+              <td class="w-32 px-4 py-3.5 align-top">
+                <app-status-tag [status]="row.status" size="sm" />
+              </td>
+              <td class="w-36 px-4 py-3.5 align-top text-[13px] font-semibold text-emerald-600">
+                {{ row.amount | currency: row.currency : 'symbol' : '1.2-2' }}
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4">
+                <app-table-empty-state
+                  title="No earnings entries"
+                  message="No delivered jobs were found in this period."
+                  icon="pi pi-wallet"
+                />
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #loadingbody>
+            @for (_row of loadingSkeletonRows; track _row) {
+              <tr>
+                <td><p-skeleton height="1rem" width="6rem" /></td>
+                <td><p-skeleton height="1rem" width="9rem" /></td>
+                <td><p-skeleton height="1rem" width="5rem" /></td>
+                <td><p-skeleton height="1rem" width="6rem" /></td>
+              </tr>
+            }
+          </ng-template>
+        </p-table>
+      </section>
+    }
+  </div>
+</div>

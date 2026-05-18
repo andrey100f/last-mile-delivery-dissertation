@@ -1,10 +1,5 @@
 import { Routes } from '@angular/router';
 
-const loadStub = () =>
-  import('@shared/pages/portal-route-stub/portal-route-stub').then(
-    (m) => m.PortalRouteStub,
-  );
-
 export const courierRoutes: Routes = [
   {
     path: '',
@@ -58,8 +53,14 @@ export const courierRoutes: Routes = [
   },
   {
     path: 'earnings',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Earnings' },
+    loadComponent: () =>
+      import('./pages/courier-earnings/courier-earnings').then(
+        (m) => m.CourierEarningsPage,
+      ),
+    data: {
+      pageTitle: 'Earnings & History',
+      subtitle: 'Track your earnings and delivery history',
+    },
   },
   {
     path: 'profile',

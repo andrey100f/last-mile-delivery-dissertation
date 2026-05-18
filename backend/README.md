@@ -237,3 +237,36 @@ Shared query contract:
 - optional `granularity=day|week` (defaults to `day`)
 - UTC-normalized aggregation buckets on the backend
 - max window enforced to `180` days (validation error when exceeded)
+
+## Courier earnings APIs (`#58`)
+
+Courier-only earnings visibility endpoints are available under `/api/couriers/me/earnings`:
+
+- `GET /summary`
+- `GET /entries`
+
+The current MVP uses a **derived** earnings model (no dedicated ledger table yet):
+
+- earning entries are derived from `DELIVERED` rows in `delivery_status_history` joined with `deliveries`
+- entry timestamp is `delivery_status_history.recorded_at` (UTC semantics)
+- amount source is `deliveries.total_amount`
+
+Shared query semantics:
+
+- optional `from` and `to` (`ISO-8601` timestamp or `YYYY-MM-DD`)
+- when provided, `from` and `to` must be sent together
+- max range is `180` days
+- range boundaries are interpreted in UTC (date-only `to` is treated as end-of-day exclusive)
+
+Summary payload includes:
+
+- `todayTotal`, `weekTotal`, `monthTotal`
+- `customRangeTotal` and `trend` (vs previous period with same span)
+- UTC `window` metadata and daily chart buckets (`chartPoints`)
+- `currency` (dominant delivered currency for the selected window, fallback `RON`)
+
+Entries payload:
+
+- paginated rows with deterministic default sort (`recordedAt,desc`)
+- fields: `deliveryId`, `trackingCode`, `amount`, `currency`, `status`, `earnedAt`, optional `note`
+- no customer-sensitive fields are exposed
