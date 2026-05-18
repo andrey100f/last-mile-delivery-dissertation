@@ -221,6 +221,17 @@ Topology defaults:
 - retry queue: `notification.consume.retry.q`
 - DLX/DLQ: `notification.consume.dlx` / `notification.consume.dlq`
 
+Migration note (breaking default rename):
+
+- previous defaults were `deliveryhub.notifications` + `requested`
+- environments still using legacy topology must explicitly override:
+  - `notifications.async.exchange=deliveryhub.notifications`
+  - `notifications.async.routing-key=requested`
+  - `notifications.async.retry-routing-key=requested.retry`
+  - `notifications.async.dlx=deliveryhub.notifications.dlx`
+  - `notifications.async.dlq-routing-key=requested.dlq`
+- if any legacy exchange/queue bindings are provisioned outside app startup, update or keep overrides before deploying this branch
+
 Operational replay guidance is documented in `docs/notification-dlq-runbook.md`.
 
 ## Async assignment consumer (`#68`)

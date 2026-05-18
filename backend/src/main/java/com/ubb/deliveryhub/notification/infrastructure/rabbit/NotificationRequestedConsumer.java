@@ -58,7 +58,7 @@ public class NotificationRequestedConsumer {
 
     @RabbitListener(
         queues = "${notifications.async.queue:notification.consume.q}",
-        containerFactory = "manualAckRabbitListenerContainerFactory",
+        containerFactory = "manualAckNotificationRabbitListenerContainerFactory",
         autoStartup = "${notifications.async.consumer-enabled:false}"
     )
     public void consume(Message rawMessage, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag)
@@ -170,7 +170,10 @@ public class NotificationRequestedConsumer {
     private NotificationRequested decodeAndValidate(Message rawMessage) {
         try {
             NotificationRequested message = objectMapper.readValue(rawMessage.getBody(), NotificationRequested.class);
-            if (message.eventVersion() == null || message.eventVersion() != 1) {
+            if (message.eventVersion() == null) {
+                throw new PermanentNotificationMessageException("MISSING_EVENT_VERSION", "eventVersion is required");
+            }
+            if (message.eventVersion() != 1) {
                 throw new PermanentNotificationMessageException(
                     "UNSUPPORTED_EVENT_VERSION",
                     "Unsupported eventVersion " + message.eventVersion()

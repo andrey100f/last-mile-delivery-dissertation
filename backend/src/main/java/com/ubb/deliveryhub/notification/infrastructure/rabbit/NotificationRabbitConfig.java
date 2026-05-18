@@ -1,11 +1,14 @@
 package com.ubb.deliveryhub.notification.infrastructure.rabbit;
 
 import com.ubb.deliveryhub.notification.config.NotificationProperties;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +23,17 @@ public class NotificationRabbitConfig {
     @Bean
     public MessageConverter notificationMessageConverter() {
         return new JacksonJsonMessageConverter();
+    }
+
+    @Bean(name = "manualAckNotificationRabbitListenerContainerFactory")
+    public SimpleRabbitListenerContainerFactory manualAckNotificationRabbitListenerContainerFactory(
+        ConnectionFactory connectionFactory
+    ) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        factory.setDefaultRequeueRejected(false);
+        return factory;
     }
 
     @Bean

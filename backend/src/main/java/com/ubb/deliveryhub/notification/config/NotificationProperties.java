@@ -1,15 +1,22 @@
 package com.ubb.deliveryhub.notification.config;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "notifications")
 public class NotificationProperties {
 
+    @Valid
     private final Async async = new Async();
 
     public Async getAsync() {
@@ -21,18 +28,30 @@ public class NotificationProperties {
         private boolean enabled = false;
         private boolean consumerEnabled = false;
         private boolean fallbackToSync = true;
+        @Min(0)
         private int maxRetries = 5;
+        @Min(1)
         private int maxTargetUserIds = 100;
+        @Min(256)
         private int maxMetadataBytes = 8192;
+        @NotBlank
         private String exchange = "notification.events";
+        @NotBlank
         private String routingKey = "notification.requested";
+        @NotBlank
         private String queue = "notification.consume.q";
+        @NotBlank
         private String retryQueue = "notification.consume.retry.q";
+        @NotBlank
         private String retryRoutingKey = "notification.requested.retry";
+        @NotBlank
         private String dlx = "notification.consume.dlx";
+        @NotBlank
         private String dlq = "notification.consume.dlq";
+        @NotBlank
         private String dlqRoutingKey = "notification.requested.dlq";
-        private List<Long> retryBackoffMillis = new ArrayList<>(List.of(1000L, 3000L, 10000L, 30000L, 60000L));
+        @NotEmpty
+        private List<@Min(1) Long> retryBackoffMillis = new ArrayList<>(List.of(1000L, 3000L, 10000L, 30000L, 60000L));
 
         public boolean isEnabled() {
             return enabled;
@@ -63,7 +82,7 @@ public class NotificationProperties {
         }
 
         public void setMaxRetries(int maxRetries) {
-            this.maxRetries = Math.max(0, maxRetries);
+            this.maxRetries = maxRetries;
         }
 
         public int getMaxTargetUserIds() {
@@ -71,7 +90,7 @@ public class NotificationProperties {
         }
 
         public void setMaxTargetUserIds(int maxTargetUserIds) {
-            this.maxTargetUserIds = Math.max(1, maxTargetUserIds);
+            this.maxTargetUserIds = maxTargetUserIds;
         }
 
         public int getMaxMetadataBytes() {
@@ -79,7 +98,7 @@ public class NotificationProperties {
         }
 
         public void setMaxMetadataBytes(int maxMetadataBytes) {
-            this.maxMetadataBytes = Math.max(256, maxMetadataBytes);
+            this.maxMetadataBytes = maxMetadataBytes;
         }
 
         public String getExchange() {
@@ -146,15 +165,11 @@ public class NotificationProperties {
             this.dlqRoutingKey = dlqRoutingKey;
         }
 
-        public List<Long> getRetryBackoffMillis() {
+        public List<@Min(1) Long> getRetryBackoffMillis() {
             return retryBackoffMillis;
         }
 
-        public void setRetryBackoffMillis(List<Long> retryBackoffMillis) {
-            if (retryBackoffMillis == null || retryBackoffMillis.isEmpty()) {
-                this.retryBackoffMillis = new ArrayList<>(List.of(1000L));
-                return;
-            }
+        public void setRetryBackoffMillis(List<@Min(1) Long> retryBackoffMillis) {
             this.retryBackoffMillis = new ArrayList<>(retryBackoffMillis);
         }
     }

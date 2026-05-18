@@ -2,6 +2,20 @@
 
 This runbook covers safe inspection and replay for `NotificationRequested` poison or exhausted messages.
 
+## Topology migration note
+
+This branch uses new notification topology defaults:
+
+- exchange: `notification.events`
+- routing key: `notification.requested`
+
+Legacy deployments may still publish to:
+
+- exchange: `deliveryhub.notifications`
+- routing key: `requested`
+
+If legacy naming is still active in your environment, set explicit property overrides before deploy/replay to avoid silent interoperability breaks.
+
 ## 1) Inspect DLQ messages safely
 
 1. Pause or scale down the notification consumer if you need a stable snapshot.
