@@ -5,6 +5,7 @@ import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
+import com.ubb.deliveryhub.delivery.domain.dto.CustomerHistorySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryStatusSnapshotDto;
@@ -54,6 +55,12 @@ public class DeliveryController {
         @RequestParam(required = false) DeliveryStatus status
     ) {
         return deliveryService.listForCurrentCustomer(authentication, pageable, status);
+    }
+
+    @GetMapping("/history/summary")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public CustomerHistorySummaryDto historySummaryForCurrentCustomer(Authentication authentication) {
+        return deliveryService.getHistorySummaryForCurrentCustomer(authentication);
     }
 
     @GetMapping("/available")

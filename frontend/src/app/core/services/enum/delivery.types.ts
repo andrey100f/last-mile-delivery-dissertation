@@ -6,6 +6,13 @@ export interface PageDto<T> {
   number: number;
 }
 
+export interface CustomerHistorySummaryDto {
+  totalDeliveries: number;
+  deliveredDeliveries: number;
+  totalSpent: number;
+  totalSpentCurrency: string;
+}
+
 export interface DeliverySummaryDto {
   id: string;
   trackingCode?: string | null;

@@ -32,7 +32,7 @@ public class DeliveryStatusHistory {
     private Delivery delivery;
 
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = DeliveryStatusHistoryId.STATUS, nullable = false)
+    @Column(name = DeliveryStatusHistoryId.STATUS, nullable = false, columnDefinition = "delivery_status")
     private DeliveryStatus status;
 
     @Column(name = DeliveryStatusHistoryId.RECORDED_AT, nullable = false)
