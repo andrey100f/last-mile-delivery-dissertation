@@ -33,7 +33,10 @@ import com.ubb.deliveryhub.identity.repository.UserRepository;
 import com.ubb.deliveryhub.notification.application.NotificationEventPublisher;
 import com.ubb.deliveryhub.notification.events.NotificationEventType;
 import com.ubb.deliveryhub.notification.events.NotificationRequested;
+import com.ubb.deliveryhub.delivery.application.DeliveryCreatedEventPublisher;
+import com.ubb.deliveryhub.delivery.messaging.DeliveryCreatedMessage;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -84,6 +87,7 @@ public class DeliveryService {
     private final DeliveryStateMachine deliveryStateMachine;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final DeliveryCreatedEventPublisher deliveryCreatedEventPublisher;
     private final SystemEventService systemEventService;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -104,6 +108,7 @@ public class DeliveryService {
                 history.setStatus(DeliveryStatus.CREATED);
                 history.setActor(customer);
                 deliveryStatusHistoryRepository.save(history);
+                publishDeliveryCreatedAfterCommit(saved);
                 return DeliveryMapper.toDto(saved);
             } catch (DataIntegrityViolationException ex) {
                 if (attempt == TRACKING_CODE_SAVE_ATTEMPTS - 1) {
@@ -374,6 +379,33 @@ public class DeliveryService {
 
     private void emitSystemEventAfterCommit(Runnable action) {
         runAfterCommit(action);
+    }
+
+    private void publishDeliveryCreatedAfterCommit(Delivery delivery) {
+        UUID eventId = UUID.randomUUID();
+        String correlationId = resolveCorrelationId();
+        runAfterCommit(() ->
+            deliveryCreatedEventPublisher.publish(
+                new DeliveryCreatedMessage(
+                    1,
+                    eventId,
+                    UUID.randomUUID().toString(),
+                    delivery.getId(),
+                    delivery.getCustomer() != null ? delivery.getCustomer().getId() : null,
+                    delivery.getCreatedAt(),
+                    correlationId,
+                    Map.of("source", "delivery.create")
+                )
+            )
+        );
+    }
+
+    private static String resolveCorrelationId() {
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null || correlationId.isBlank()) {
+            correlationId = MDC.get("traceId");
+        }
+        return (correlationId == null || correlationId.isBlank()) ? null : correlationId;
     }
 
     private void runAfterCommit(Runnable action) {
