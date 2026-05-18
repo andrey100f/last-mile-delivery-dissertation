@@ -98,7 +98,7 @@ export class AdminEventsComponent implements OnDestroy {
     const items = this.snapshot()?.items ?? [];
     return [
       {
-        label: 'Deliveries',
+        label: 'Deliveries (page)',
         value: items.filter((event) =>
           ['DELIVERY_ASSIGNED', 'DELIVERY_STATUS_CHANGED'].includes(event.type),
         ).length,
@@ -106,7 +106,7 @@ export class AdminEventsComponent implements OnDestroy {
         iconClass: 'bg-blue-50 text-blue-600',
       },
       {
-        label: 'Total today',
+        label: 'Today (page)',
         value: items.filter((event) => this.isTodayUtc(event.createdAt)).length,
         icon: 'pi pi-calendar',
         iconClass: 'bg-emerald-50 text-emerald-700',
@@ -188,7 +188,10 @@ export class AdminEventsComponent implements OnDestroy {
     void this.router.navigate(['/admin', 'deliveries', row.deliveryId]);
   }
 
-  protected formatDateTime(value: string): string {
+  protected formatDateTime(value: string | null): string {
+    if (!value) {
+      return '-';
+    }
     const parsed = Date.parse(value);
     if (Number.isNaN(parsed)) {
       return '-';
@@ -355,7 +358,10 @@ export class AdminEventsComponent implements OnDestroy {
     return true;
   }
 
-  private toRelativeTime(value: string): string {
+  private toRelativeTime(value: string | null): string {
+    if (!value) {
+      return '-';
+    }
     const parsed = Date.parse(value);
     if (Number.isNaN(parsed)) {
       return '-';
@@ -384,7 +390,10 @@ export class AdminEventsComponent implements OnDestroy {
     return id.slice(0, 8).toUpperCase();
   }
 
-  private isTodayUtc(value: string): boolean {
+  private isTodayUtc(value: string | null): boolean {
+    if (!value) {
+      return false;
+    }
     const parsed = Date.parse(value);
     if (Number.isNaN(parsed)) {
       return false;

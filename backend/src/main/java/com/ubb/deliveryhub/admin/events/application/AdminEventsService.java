@@ -107,22 +107,31 @@ public class AdminEventsService {
     private QueryWindow resolveWindow(AdminEventsQueryDto query) {
         Instant fromInclusive = parseBoundary(query != null ? query.getFrom() : null, "from", false);
         Instant toExclusive = parseBoundary(query != null ? query.getTo() : null, "to", true);
+        Instant now = Instant.now();
 
-        if (fromInclusive != null && toExclusive != null) {
-            if (!fromInclusive.isBefore(toExclusive)) {
-                throw new AdminEventsValidationException(
-                    "Invalid events query",
-                    Map.of("from", List.of("'from' must be before 'to'"))
-                );
-            }
-            Duration span = Duration.between(fromInclusive, toExclusive);
-            if (span.compareTo(MAX_ALLOWED_WINDOW_SIZE) > 0) {
-                throw new AdminEventsValidationException(
-                    "Invalid events query",
-                    Map.of("to", List.of("Requested window is too large. Maximum allowed span is 180 days."))
-                );
-            }
+        if (fromInclusive == null && toExclusive == null) {
+            toExclusive = now;
+            fromInclusive = toExclusive.minus(MAX_ALLOWED_WINDOW_SIZE);
+        } else if (fromInclusive == null) {
+            fromInclusive = toExclusive.minus(MAX_ALLOWED_WINDOW_SIZE);
+        } else if (toExclusive == null) {
+            toExclusive = fromInclusive.plus(MAX_ALLOWED_WINDOW_SIZE);
         }
+
+        if (!fromInclusive.isBefore(toExclusive)) {
+            throw new AdminEventsValidationException(
+                "Invalid events query",
+                Map.of("from", List.of("'from' must be before 'to'"))
+            );
+        }
+        Duration span = Duration.between(fromInclusive, toExclusive);
+        if (span.compareTo(MAX_ALLOWED_WINDOW_SIZE) > 0) {
+            throw new AdminEventsValidationException(
+                "Invalid events query",
+                Map.of("to", List.of("Requested window is too large. Maximum allowed span is 180 days."))
+            );
+        }
+
         return new QueryWindow(fromInclusive, toExclusive);
     }
 

@@ -77,7 +77,7 @@ export class AdminEventsService extends BaseService {
       targetType: this.toText(candidate['targetType']) ?? 'UNKNOWN',
       targetId: this.toText(candidate['targetId']),
       metadata: this.toObject(candidate['metadata']),
-      createdAt: this.toIsoDate(candidate['createdAt']) ?? new Date().toISOString(),
+      createdAt: this.toIsoDate(candidate['createdAt']),
     };
   }
 

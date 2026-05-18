@@ -14,7 +14,7 @@ export interface AdminSystemEventDto {
   targetType: string;
   targetId: string | null;
   metadata: Record<string, unknown>;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 export interface AdminSystemEventsPageDto {
