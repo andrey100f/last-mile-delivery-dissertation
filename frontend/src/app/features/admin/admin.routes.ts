@@ -23,6 +23,17 @@ export const adminRoutes: Routes = [
       ),
   },
   {
+    path: 'deliveries/:deliveryId',
+    data: {
+      pageTitle: 'Delivery Tracking',
+      subtitle: 'Real-time status updates',
+    },
+    loadComponent: () =>
+      import('../customer/pages/live-tracking/live-tracking').then(
+        (m) => m.LiveTrackingPage,
+      ),
+  },
+  {
     path: 'deliveries',
     loadComponent: loadStub,
     data: { pageTitle: 'Deliveries monitoring' },
