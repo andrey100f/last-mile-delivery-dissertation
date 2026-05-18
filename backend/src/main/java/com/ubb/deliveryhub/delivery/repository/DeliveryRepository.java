@@ -23,6 +23,8 @@ import java.util.UUID;
 public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSpecificationExecutor<Delivery> {
 
     boolean existsByCustomer_IdAndId(UUID customerId, UUID id);
+    long countByCustomer_Id(UUID customerId);
+    long countByCustomer_IdAndStatus(UUID customerId, DeliveryStatus status);
 
     @EntityGraph(attributePaths = {"customer", "courier"})
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
@@ -157,21 +159,19 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("toExclusive") Instant toExclusive
     );
 
-    @Query(
-        value = """
-            SELECT
-              d.customer_id AS customerId,
-              COUNT(d.id) AS ordersCount,
-              COALESCE(SUM(d.total_amount), 0) AS totalSpend
-            FROM deliveries d
-            WHERE d.customer_id IN (:customerIds)
-              AND d.status = 'DELIVERED'::delivery_status
-            GROUP BY d.customer_id
-            """,
-        nativeQuery = true
-    )
+    @Query("""
+        SELECT
+          d.customer.id AS customerId,
+          COUNT(d) AS ordersCount,
+          COALESCE(SUM(d.totalAmount), 0) AS totalSpend
+        FROM Delivery d
+        WHERE d.customer.id IN :customerIds
+          AND d.status = :status
+        GROUP BY d.customer.id
+        """)
     List<CustomerOrderSpendView> aggregateCustomerOrdersAndSpend(
-        @Param("customerIds") List<UUID> customerIds
+        @Param("customerIds") List<UUID> customerIds,
+        @Param("status") DeliveryStatus status
     );
 
     @Query("""
@@ -193,25 +193,45 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         """)
     long countAllCourierDeliveries();
 
-    @Query(
-        value = """
-            SELECT COALESCE(SUM(d.total_amount), 0)
-            FROM deliveries d
-            WHERE d.status = 'DELIVERED'::delivery_status
-            """,
-        nativeQuery = true
-    )
-    BigDecimal sumTotalRevenueForCustomers();
+    @Query("""
+        SELECT COALESCE(SUM(d.totalAmount), 0)
+        FROM Delivery d
+        WHERE d.status = :status
+        """)
+    BigDecimal sumTotalRevenueForCustomers(@Param("status") DeliveryStatus status);
 
-    @Query(
-        value = """
-            SELECT d.currency
-            FROM deliveries d
-            WHERE d.status = 'DELIVERED'::delivery_status
-            GROUP BY d.currency
-            ORDER BY COUNT(d.id) DESC, d.currency ASC
-            """,
-        nativeQuery = true
-    )
-    List<String> findRevenueCurrenciesForCustomers();
+    @Query("""
+        SELECT d.currency
+        FROM Delivery d
+        WHERE d.status = :status
+        GROUP BY d.currency
+        ORDER BY COUNT(d) DESC, d.currency ASC
+        """)
+    List<String> findRevenueCurrenciesForCustomers(@Param("status") DeliveryStatus status);
+
+    @Query("""
+        SELECT d.currency
+        FROM Delivery d
+        WHERE d.customer.id = :customerId
+          AND d.status = :status
+        GROUP BY d.currency
+        ORDER BY COUNT(d) DESC, d.currency ASC
+        """)
+    List<String> findTopCurrenciesForCustomerByStatus(
+        @Param("customerId") UUID customerId,
+        @Param("status") DeliveryStatus status
+    );
+
+    @Query("""
+        SELECT COALESCE(SUM(d.totalAmount), 0)
+        FROM Delivery d
+        WHERE d.customer.id = :customerId
+          AND d.status = :status
+          AND d.currency = :currency
+        """)
+    BigDecimal sumTotalAmountByCustomerStatusAndCurrency(
+        @Param("customerId") UUID customerId,
+        @Param("status") DeliveryStatus status,
+        @Param("currency") String currency
+    );
 }

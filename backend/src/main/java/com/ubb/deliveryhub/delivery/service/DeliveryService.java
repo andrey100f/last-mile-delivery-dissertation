@@ -9,6 +9,7 @@ import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
 import com.ubb.deliveryhub.delivery.domain.DeliveryType;
 import com.ubb.deliveryhub.delivery.domain.dto.AvailableDeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.CreateDeliveryRequest;
+import com.ubb.deliveryhub.delivery.domain.dto.CustomerHistorySummaryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDetailDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryDto;
 import com.ubb.deliveryhub.delivery.domain.dto.DeliveryStatusSnapshotDto;
@@ -152,6 +153,41 @@ public class DeliveryService {
         UUID customerId = principalUserId(authentication);
         Specification<Delivery> spec = DeliverySpecifications.forCustomerWithOptionalStatus(customerId, statusFilter);
         return deliveryRepository.findAll(spec, effective).map(DeliveryMapper::toSummaryDto);
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerHistorySummaryDto getHistorySummaryForCurrentCustomer(Authentication authentication) {
+        UUID customerId = principalUserId(authentication);
+        long totalDeliveries = deliveryRepository.countByCustomer_Id(customerId);
+        long deliveredDeliveries = deliveryRepository.countByCustomer_IdAndStatus(customerId, DeliveryStatus.DELIVERED);
+        if (deliveredDeliveries == 0) {
+            return CustomerHistorySummaryDto.builder()
+                .totalDeliveries(totalDeliveries)
+                .deliveredDeliveries(0)
+                .totalSpent(java.math.BigDecimal.ZERO)
+                .totalSpentCurrency("RON")
+                .build();
+        }
+
+        List<String> currencies = deliveryRepository.findTopCurrenciesForCustomerByStatus(
+            customerId,
+            DeliveryStatus.DELIVERED
+        );
+        String currency = currencies.isEmpty() || currencies.get(0) == null || currencies.get(0).isBlank()
+            ? "RON"
+            : currencies.get(0);
+        var totalSpent = deliveryRepository.sumTotalAmountByCustomerStatusAndCurrency(
+            customerId,
+            DeliveryStatus.DELIVERED,
+            currency
+        );
+
+        return CustomerHistorySummaryDto.builder()
+            .totalDeliveries(totalDeliveries)
+            .deliveredDeliveries(deliveredDeliveries)
+            .totalSpent(totalSpent != null ? totalSpent : java.math.BigDecimal.ZERO)
+            .totalSpentCurrency(currency)
+            .build();
     }
 
     @Transactional(readOnly = true)

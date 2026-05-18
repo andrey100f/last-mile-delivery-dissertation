@@ -2,7 +2,6 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   computed,
   inject,
   signal,
@@ -11,14 +10,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DeliveryService } from '@core/services/delivery/delivery';
 import {
+  CustomerHistorySummaryDto,
   DeliverySummaryDto,
-  PageDto,
 } from '@core/services/enum/delivery.types';
 import { StatusTagComponent, TableEmptyStateComponent } from '@shared/ui/public-api';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
-import { TableModule } from 'primeng/table';
-import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { catchError, finalize, of } from 'rxjs';
 
 type HistoryStatusFilter = 'all' | 'completed';
 
@@ -49,10 +48,14 @@ interface CustomerHistoryRow {
 })
 export class CustomerHistoryPage {
   private static readonly PAGE_SIZE = 8;
-  private static readonly FETCH_PAGE_SIZE = 200;
+  private static readonly DEFAULT_SUMMARY: CustomerHistorySummaryDto = {
+    totalDeliveries: 0,
+    deliveredDeliveries: 0,
+    totalSpent: 0,
+    totalSpentCurrency: 'RON',
+  };
 
   private readonly deliveryService = inject(DeliveryService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
@@ -62,39 +65,26 @@ export class CustomerHistoryPage {
   protected readonly pageFirst = signal(0);
   protected readonly rowsPerPage = CustomerHistoryPage.PAGE_SIZE;
   protected readonly loadingSkeletonRows = [0, 1, 2, 3];
+  protected readonly rows = signal<CustomerHistoryRow[]>([]);
+  protected readonly totalRecords = signal(0);
 
-  private readonly allRows = signal<CustomerHistoryRow[]>([]);
-
-  protected readonly filteredRows = computed(() =>
-    this.allRows().filter((row) => this.matchesStatusFilter(row.status)),
+  private readonly summary = signal<CustomerHistorySummaryDto>(
+    CustomerHistoryPage.DEFAULT_SUMMARY,
   );
 
-  protected readonly totalDeliveries = computed(() => this.allRows().length);
+  protected readonly totalDeliveries = computed(
+    () => this.summary().totalDeliveries,
+  );
   protected readonly completedDeliveries = computed(
-    () =>
-      this.allRows().filter((row) => this.normalizeStatus(row.status) === 'DELIVERED')
-        .length,
+    () => this.summary().deliveredDeliveries,
   );
-  protected readonly totalSpent = computed(() =>
-    this.allRows()
-      .filter((row) => this.normalizeStatus(row.status) === 'DELIVERED')
-      .reduce((sum, row) => sum + row.amount, 0),
-  );
-  protected readonly spendCurrency = computed(() => {
-    const delivered = this.allRows().find(
-      (row) => this.normalizeStatus(row.status) === 'DELIVERED',
-    );
-    return delivered?.currency ?? 'RON';
-  });
-
-  protected readonly showingStart = computed(() =>
-    this.filteredRows().length === 0 ? 0 : this.pageFirst() + 1,
-  );
-  protected readonly showingEnd = computed(() =>
-    Math.min(this.pageFirst() + this.rowsPerPage, this.filteredRows().length),
+  protected readonly totalSpent = computed(() => this.summary().totalSpent);
+  protected readonly spendCurrency = computed(
+    () => this.summary().totalSpentCurrency || 'RON',
   );
 
   constructor() {
+    this.loadSummary();
     this.loadHistoryData();
   }
 
@@ -104,14 +94,20 @@ export class CustomerHistoryPage {
     }
     this.statusFilter.set(filter);
     this.pageFirst.set(0);
+    this.loadHistoryData(0, this.rowsPerPage);
   }
 
   protected isStatusFilterActive(filter: HistoryStatusFilter): boolean {
     return this.statusFilter() === filter;
   }
 
-  protected onPageChange(event: { first?: number }): void {
-    this.pageFirst.set(typeof event.first === 'number' ? event.first : 0);
+  protected onLazyLoad(event: TableLazyLoadEvent): void {
+    const first = typeof event.first === 'number' ? event.first : this.pageFirst();
+    const rows = typeof event.rows === 'number' && event.rows > 0
+      ? event.rows
+      : this.rowsPerPage;
+    this.pageFirst.set(first);
+    this.loadHistoryData(Math.floor(first / rows), rows);
   }
 
   protected openDeliveryDetails(deliveryId: string): void {
@@ -119,66 +115,54 @@ export class CustomerHistoryPage {
   }
 
   protected retry(): void {
-    this.loadHistoryData();
+    this.loadSummary();
+    this.loadHistoryData(Math.floor(this.pageFirst() / this.rowsPerPage), this.rowsPerPage);
   }
 
-  private loadHistoryData(): void {
+  private loadSummary(): void {
+    this.deliveryService
+      .getCustomerHistorySummary()
+      .pipe(
+        takeUntilDestroyed(),
+        catchError(() => of(CustomerHistoryPage.DEFAULT_SUMMARY)),
+      )
+      .subscribe((summary) => {
+        this.summary.set({
+          totalDeliveries: this.toNonNegative(summary.totalDeliveries),
+          deliveredDeliveries: this.toNonNegative(summary.deliveredDeliveries),
+          totalSpent: this.toNonNegative(summary.totalSpent),
+          totalSpentCurrency: this.toCurrency(summary.totalSpentCurrency),
+        });
+      });
+  }
+
+  private loadHistoryData(page = 0, size = this.rowsPerPage): void {
     this.loading.set(true);
     this.loadError.set(null);
 
     this.deliveryService
       .listForCurrentCustomer({
-        page: 0,
-        size: CustomerHistoryPage.FETCH_PAGE_SIZE,
+        page,
+        size,
         sort: 'createdAt,desc',
+        status: this.statusFilter() === 'completed' ? 'DELIVERED' : undefined,
       })
       .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        switchMap((firstPage) => this.loadAllPages(firstPage)),
-        map((deliveries) => deliveries.map((delivery) => this.mapRow(delivery))),
+        takeUntilDestroyed(),
         catchError(() => {
           this.loadError.set('Could not load delivery history. Please retry.');
-          return of([] as CustomerHistoryRow[]);
+          return of({
+            content: [] as DeliverySummaryDto[],
+            totalElements: 0,
+          });
         }),
         finalize(() => this.loading.set(false)),
       )
-      .subscribe((rows) => {
-        this.allRows.set(rows);
-        this.pageFirst.set(0);
+      .subscribe((response) => {
+        const deliveries = Array.isArray(response.content) ? response.content : [];
+        this.rows.set(deliveries.map((delivery) => this.mapRow(delivery)));
+        this.totalRecords.set(this.toNonNegative(response.totalElements));
       });
-  }
-
-  private loadAllPages(
-    firstPage: PageDto<DeliverySummaryDto>,
-  ) {
-    const firstContent = Array.isArray(firstPage.content) ? firstPage.content : [];
-    const totalPages =
-      typeof firstPage.totalPages === 'number' && firstPage.totalPages > 0
-        ? firstPage.totalPages
-        : 1;
-
-    if (totalPages <= 1) {
-      return of(firstContent);
-    }
-
-    const remainingRequests = Array.from({ length: totalPages - 1 }, (_unused, index) =>
-      this.deliveryService
-        .listForCurrentCustomer({
-          page: index + 1,
-          size: CustomerHistoryPage.FETCH_PAGE_SIZE,
-          sort: 'createdAt,desc',
-        })
-        .pipe(
-          map((response) =>
-            Array.isArray(response.content) ? response.content : ([] as DeliverySummaryDto[]),
-          ),
-          catchError(() => of([] as DeliverySummaryDto[])),
-        ),
-    );
-
-    return forkJoin(remainingRequests).pipe(
-      map((remainingPages) => [firstContent, ...remainingPages].flat()),
-    );
   }
 
   private mapRow(delivery: DeliverySummaryDto): CustomerHistoryRow {
@@ -208,17 +192,16 @@ export class CustomerHistoryPage {
     return normalized && normalized.length > 0 ? normalized : '-';
   }
 
-  private matchesStatusFilter(statusRaw: string): boolean {
-    const status = this.normalizeStatus(statusRaw);
-    switch (this.statusFilter()) {
-      case 'completed':
-        return status === 'DELIVERED';
-      default:
-        return true;
+  private toNonNegative(value: unknown): number {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return 0;
     }
+    return Math.max(0, value);
   }
 
-  private normalizeStatus(status: string): string {
-    return status.trim().toUpperCase();
+  private toCurrency(value: unknown): string {
+    return typeof value === 'string' && value.trim().length > 0
+      ? value.trim().toUpperCase()
+      : 'RON';
   }
 }

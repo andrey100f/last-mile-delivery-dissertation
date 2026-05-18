@@ -12,6 +12,7 @@ import com.ubb.deliveryhub.admin.domain.exception.InvalidAdminUserSortException;
 import com.ubb.deliveryhub.courier.domain.CourierProfile;
 import com.ubb.deliveryhub.courier.repository.CourierAvailabilityView;
 import com.ubb.deliveryhub.courier.repository.CourierProfileRepository;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.repository.CourierDeliveriesCountView;
 import com.ubb.deliveryhub.delivery.repository.CustomerOrderSpendView;
 import com.ubb.deliveryhub.delivery.repository.DeliveryRepository;
@@ -114,7 +115,7 @@ public class AdminUserManagementService {
         Map<UUID, CustomerOrderSpendView> orderSpendByCustomer = customerIds.isEmpty()
             ? Map.of()
             : deliveryRepository
-                .aggregateCustomerOrdersAndSpend(customerIds)
+                .aggregateCustomerOrdersAndSpend(customerIds, DeliveryStatus.DELIVERED)
                 .stream()
                 .collect(Collectors.toMap(CustomerOrderSpendView::getCustomerId, Function.identity()));
 
@@ -146,7 +147,7 @@ public class AdminUserManagementService {
     @Transactional(readOnly = true)
     public AdminCustomerSummaryDto getCustomerSummary() {
         long totalCustomers = userRepository.countByRole(UserRole.CUSTOMER);
-        BigDecimal totalRevenue = deliveryRepository.sumTotalRevenueForCustomers();
+        BigDecimal totalRevenue = deliveryRepository.sumTotalRevenueForCustomers(DeliveryStatus.DELIVERED);
         return AdminCustomerSummaryDto.builder()
             .totalCustomers(totalCustomers)
             .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
@@ -263,7 +264,7 @@ public class AdminUserManagementService {
     }
 
     private String resolveCustomerRevenueCurrency() {
-        List<String> currencies = deliveryRepository.findRevenueCurrenciesForCustomers();
+        List<String> currencies = deliveryRepository.findRevenueCurrenciesForCustomers(DeliveryStatus.DELIVERED);
         if (currencies.isEmpty()) {
             return "RON";
         }

@@ -4,6 +4,7 @@ import { FormGroup } from '@angular/forms';
 import { BaseService } from '@core/services/base.service';
 import {
   CreateDeliveryRequest,
+  CustomerHistorySummaryDto,
   DeliveryCreatedResponse,
   DeliveryDetailDto,
   DeliveryListQuery,
@@ -74,6 +75,12 @@ export class DeliveryService extends BaseService {
     query: DeliveryListQuery = {},
   ): Observable<PageDto<DeliverySummaryDto>> {
     return this.list(query);
+  }
+
+  getCustomerHistorySummary(): Observable<CustomerHistorySummaryDto> {
+    return this.httpClient.get<CustomerHistorySummaryDto>(
+      `${this.baseUrl}/deliveries/history/summary`,
+    );
   }
 
   getById(id: string): Observable<DeliveryDetailDto> {

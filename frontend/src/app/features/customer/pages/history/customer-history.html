@@ -12,7 +12,7 @@
       <article
         class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-6 py-5 shadow-(--p-shadow-xs)"
       >
-        <p class="text-[13px] text-p-text-muted">Completed</p>
+        <p class="text-[13px] text-p-text-muted">Delivered</p>
         <p class="mt-2 text-[32px] leading-none font-semibold text-emerald-600">
           {{ completedDeliveries() }}
         </p>
@@ -57,7 +57,7 @@
             [class.text-p-text-secondary]="!isStatusFilterActive('completed')"
             (click)="setStatusFilter('completed')"
           >
-            Completed
+            Delivered
           </button>
         </div>
       </div>
@@ -90,16 +90,17 @@
         </div>
       } @else {
         <p-table
-          [value]="filteredRows()"
+          [value]="rows()"
+          [lazy]="true"
           [paginator]="true"
           [rows]="rowsPerPage"
           [first]="pageFirst()"
-          [totalRecords]="filteredRows().length"
+          [totalRecords]="totalRecords()"
           dataKey="id"
           responsiveLayout="scroll"
           size="small"
           styleClass="delivery-list-table"
-          (onPage)="onPageChange($event)"
+          (onLazyLoad)="onLazyLoad($event)"
         >
           <ng-template #header>
             <tr class="border-b border-p-surface-border bg-p-surface-ground">
@@ -159,7 +160,7 @@
               <td colspan="6">
                 <app-table-empty-state
                   title="No deliveries found"
-                  message="Try a different status/date filter."
+                  message="Try a different status filter."
                   icon="pi pi-history"
                 />
               </td>

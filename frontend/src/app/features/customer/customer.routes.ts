@@ -68,7 +68,7 @@ export const customerRoutes: Routes = [
       ),
     data: {
       pageTitle: 'Delivery History',
-      subtitle: 'View and manage your completed deliveries',
+      subtitle: 'View and manage your delivery history',
     },
   },
   {
