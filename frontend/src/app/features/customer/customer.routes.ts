@@ -62,8 +62,14 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'history',
-    loadComponent: loadStub,
-    data: { pageTitle: 'History' },
+    loadComponent: () =>
+      import('./pages/history/customer-history').then(
+        (m) => m.CustomerHistoryPage,
+      ),
+    data: {
+      pageTitle: 'Delivery History',
+      subtitle: 'View and manage your completed deliveries',
+    },
   },
   {
     path: 'notifications',

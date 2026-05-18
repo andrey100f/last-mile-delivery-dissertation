@@ -50,7 +50,7 @@ public class Delivery {
     private User courier;
 
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = DeliveryId.STATUS, nullable = false)
+    @Column(name = DeliveryId.STATUS, nullable = false, columnDefinition = "delivery_status")
     private DeliveryStatus status;
 
     @Enumerated(EnumType.STRING)

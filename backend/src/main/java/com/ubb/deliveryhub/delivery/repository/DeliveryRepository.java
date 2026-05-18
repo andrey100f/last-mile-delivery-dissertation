@@ -157,16 +157,19 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         @Param("toExclusive") Instant toExclusive
     );
 
-    @Query("""
-        SELECT
-          d.customer.id AS customerId,
-          COUNT(d) AS ordersCount,
-          COALESCE(SUM(d.totalAmount), 0) AS totalSpend
-        FROM Delivery d
-        WHERE d.customer.id IN :customerIds
-          AND d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
-        GROUP BY d.customer.id
-        """)
+    @Query(
+        value = """
+            SELECT
+              d.customer_id AS customerId,
+              COUNT(d.id) AS ordersCount,
+              COALESCE(SUM(d.total_amount), 0) AS totalSpend
+            FROM deliveries d
+            WHERE d.customer_id IN (:customerIds)
+              AND d.status = 'DELIVERED'::delivery_status
+            GROUP BY d.customer_id
+            """,
+        nativeQuery = true
+    )
     List<CustomerOrderSpendView> aggregateCustomerOrdersAndSpend(
         @Param("customerIds") List<UUID> customerIds
     );
@@ -190,19 +193,25 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID>, JpaSp
         """)
     long countAllCourierDeliveries();
 
-    @Query("""
-        SELECT COALESCE(SUM(d.totalAmount), 0)
-        FROM Delivery d
-        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
-        """)
+    @Query(
+        value = """
+            SELECT COALESCE(SUM(d.total_amount), 0)
+            FROM deliveries d
+            WHERE d.status = 'DELIVERED'::delivery_status
+            """,
+        nativeQuery = true
+    )
     BigDecimal sumTotalRevenueForCustomers();
 
-    @Query("""
-        SELECT d.currency
-        FROM Delivery d
-        WHERE d.status = com.ubb.deliveryhub.delivery.domain.DeliveryStatus.DELIVERED
-        GROUP BY d.currency
-        ORDER BY COUNT(d) DESC, d.currency ASC
-        """)
+    @Query(
+        value = """
+            SELECT d.currency
+            FROM deliveries d
+            WHERE d.status = 'DELIVERED'::delivery_status
+            GROUP BY d.currency
+            ORDER BY COUNT(d.id) DESC, d.currency ASC
+            """,
+        nativeQuery = true
+    )
     List<String> findRevenueCurrenciesForCustomers();
 }
