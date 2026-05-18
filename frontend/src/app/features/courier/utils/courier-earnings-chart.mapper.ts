@@ -75,5 +75,6 @@ function formatShortDate(value: string): string {
   return new Intl.DateTimeFormat('en-GB', {
     month: 'short',
     day: '2-digit',
+    timeZone: 'UTC',
   }).format(new Date(parsed));
 }

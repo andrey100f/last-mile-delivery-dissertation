@@ -8,6 +8,7 @@ export interface CourierEarningsQueryParams {
 export interface CourierEarningsWindowDto {
   from: string;
   to: string;
+  toExclusive?: string;
   timezone: string;
   maxRangeDays: number;
 }

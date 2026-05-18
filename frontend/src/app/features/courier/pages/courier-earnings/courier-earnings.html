@@ -16,39 +16,81 @@
         </div>
       </section>
     } @else {
-      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article
-          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-5 py-4 shadow-(--p-shadow-xs)"
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
         >
-          <p class="text-[13px] text-p-text-muted">Today</p>
-          <p class="mt-2 text-[28px] leading-none font-semibold text-emerald-600">
-            {{ todayTotal() | currency: currency() : 'symbol' : '1.2-2' }}
-          </p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">Today's Earnings</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-emerald-600">
+                {{ todayTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-emerald-50 text-emerald-600"
+            >
+              <i class="pi pi-dollar text-base" aria-hidden="true"></i>
+            </span>
+          </div>
         </article>
+
         <article
-          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-5 py-4 shadow-(--p-shadow-xs)"
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
         >
-          <p class="text-[13px] text-p-text-muted">This week</p>
-          <p class="mt-2 text-[28px] leading-none font-semibold text-p-text-primary">
-            {{ weekTotal() | currency: currency() : 'symbol' : '1.2-2' }}
-          </p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">This Week</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ weekTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-blue-50 text-blue-600"
+            >
+              <i class="pi pi-chart-line text-base" aria-hidden="true"></i>
+            </span>
+          </div>
         </article>
+
         <article
-          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-5 py-4 shadow-(--p-shadow-xs)"
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
         >
-          <p class="text-[13px] text-p-text-muted">This month</p>
-          <p class="mt-2 text-[28px] leading-none font-semibold text-p-text-primary">
-            {{ monthTotal() | currency: currency() : 'symbol' : '1.2-2' }}
-          </p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">This Month</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ monthTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-cyan-50 text-cyan-700"
+            >
+              <i class="pi pi-calendar text-base" aria-hidden="true"></i>
+            </span>
+          </div>
         </article>
+
         <article
-          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card px-5 py-4 shadow-(--p-shadow-xs)"
+          class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card p-4 shadow-(--p-shadow-xs)"
         >
-          <p class="text-[13px] text-p-text-muted">{{ customWindowLabel() }}</p>
-          <p class="mt-2 text-[28px] leading-none font-semibold text-blue-600">
-            {{ customRangeTotal() | currency: currency() : 'symbol' : '1.2-2' }}
-          </p>
-          <p class="mt-2 text-xs text-p-text-muted">{{ trendLabel() }}</p>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[12px] text-p-text-muted">Total Earnings</p>
+              <p class="mt-2 text-[30px] leading-none font-semibold text-slate-800">
+                {{ customRangeTotal() | currency: currency() : 'symbol' : '1.2-2' }}
+              </p>
+            </div>
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-(--p-radius-sm) bg-amber-50 text-amber-700"
+            >
+              <i class="pi pi-wallet text-base" aria-hidden="true"></i>
+            </span>
+          </div>
+          <p class="mt-2 text-xs text-p-text-muted">{{ customWindowLabel() }}</p>
+          @if (trendLabel(); as trend) {
+            <p class="mt-1 text-xs text-p-text-muted">{{ trend }}</p>
+          }
         </article>
       </section>
 
@@ -102,6 +144,7 @@
         }
 
         <div class="mt-4 rounded-(--p-radius-md) border border-p-surface-border bg-white p-3">
+          <p class="mb-3 text-sm font-semibold text-p-text-primary">Earnings Trend</p>
           @if (chartModel().chartData; as chartData) {
             <div class="h-[360px]">
               <p-chart

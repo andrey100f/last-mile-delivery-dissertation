@@ -91,6 +91,7 @@ export class CourierEarningsService extends BaseService {
       window: {
         from: this.toIsoDate(window['from']) ?? new Date().toISOString(),
         to: this.toIsoDate(window['to']) ?? new Date().toISOString(),
+        toExclusive: this.toIsoDate(window['toExclusive']) ?? undefined,
         timezone: this.toText(window['timezone']) ?? 'UTC',
         maxRangeDays: this.toPositiveInt(window['maxRangeDays'], 180),
       },

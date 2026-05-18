@@ -93,7 +93,7 @@ export class CourierEarningsPage {
   protected readonly trendLabel = computed(() => {
     const trend = this.summary()?.trend;
     if (!trend || trend.deltaPercent === null) {
-      return 'No previous period baseline available yet';
+      return null;
     }
     const direction = trend.deltaPercent >= 0 ? '+' : '';
     return `${direction}${trend.deltaPercent.toFixed(2)}% vs previous period`;

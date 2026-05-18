@@ -58,8 +58,8 @@ export const courierRoutes: Routes = [
         (m) => m.CourierEarningsPage,
       ),
     data: {
-      pageTitle: 'Earnings',
-      subtitle: 'Track delivered-job income and period trends',
+      pageTitle: 'Earnings & History',
+      subtitle: 'Track your earnings and delivery history',
     },
   },
   {

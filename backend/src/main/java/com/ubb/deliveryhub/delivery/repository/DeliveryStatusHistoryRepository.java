@@ -1,6 +1,7 @@
 package com.ubb.deliveryhub.delivery.repository;
 
 import com.ubb.deliveryhub.delivery.domain.DeliveryStatusHistory;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,12 +22,13 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
         GROUP BY d.currency
         ORDER BY COUNT(h.id) DESC, d.currency ASC
         """)
     List<String> findDominantDeliveredCurrenciesForCourier(
-        @Param("courierId") UUID courierId
+        @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status
     );
 
     @Query("""
@@ -34,7 +36,7 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
           AND h.recordedAt >= :fromInclusive
           AND h.recordedAt < :toExclusive
         GROUP BY d.currency
@@ -42,6 +44,7 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         """)
     List<String> findDominantDeliveredCurrenciesForCourier(
         @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status,
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive
     );
@@ -51,13 +54,14 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
           AND h.recordedAt >= :fromInclusive
           AND h.recordedAt < :toExclusive
           AND d.currency = :currency
         """)
     BigDecimal sumDeliveredEarningsByCourierAndCurrencyInWindow(
         @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status,
         @Param("currency") String currency,
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive
@@ -74,13 +78,14 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
           AND h.recordedAt >= :fromInclusive
           AND h.recordedAt < :toExclusive
           AND d.currency = :currency
         """)
     Page<CourierEarningEntryView> findDeliveredEarningsEntriesForCourier(
         @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status,
         @Param("currency") String currency,
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive,
@@ -98,11 +103,12 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
           AND d.currency = :currency
         """)
     Page<CourierEarningEntryView> findDeliveredEarningsEntriesForCourier(
         @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status,
         @Param("currency") String currency,
         Pageable pageable
     );
@@ -118,7 +124,7 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         FROM DeliveryStatusHistory h
         JOIN h.delivery d
         WHERE d.courier.id = :courierId
-          AND cast(h.status as string) = 'DELIVERED'
+          AND h.status = :status
           AND h.recordedAt >= :fromInclusive
           AND h.recordedAt < :toExclusive
           AND d.currency = :currency
@@ -126,6 +132,7 @@ public interface DeliveryStatusHistoryRepository extends JpaRepository<DeliveryS
         """)
     List<CourierEarningEntryView> findDeliveredEarningsEntriesInWindow(
         @Param("courierId") UUID courierId,
+        @Param("status") DeliveryStatus status,
         @Param("currency") String currency,
         @Param("fromInclusive") Instant fromInclusive,
         @Param("toExclusive") Instant toExclusive

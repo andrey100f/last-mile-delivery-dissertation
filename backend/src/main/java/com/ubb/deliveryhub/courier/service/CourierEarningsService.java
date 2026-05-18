@@ -9,6 +9,7 @@ import com.ubb.deliveryhub.courier.api.dto.earnings.CourierEarningsTrendDto;
 import com.ubb.deliveryhub.courier.api.dto.earnings.CourierEarningsWindowDto;
 import com.ubb.deliveryhub.courier.domain.exception.CourierEarningsValidationException;
 import com.ubb.deliveryhub.courier.domain.exception.InvalidCourierEarningsSortException;
+import com.ubb.deliveryhub.delivery.domain.DeliveryStatus;
 import com.ubb.deliveryhub.delivery.repository.CourierEarningEntryView;
 import com.ubb.deliveryhub.delivery.repository.DeliveryStatusHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +77,7 @@ public class CourierEarningsService {
         List<CourierEarningsChartPointDto> chartPoints = toChartPoints(
             deliveryStatusHistoryRepository.findDeliveredEarningsEntriesInWindow(
                 courierId,
+                DeliveryStatus.DELIVERED,
                 currency,
                 customWindow.fromInclusive(),
                 customWindow.toExclusive()
@@ -96,7 +98,8 @@ public class CourierEarningsService {
                 .build())
             .window(CourierEarningsWindowDto.builder()
                 .from(customWindow.fromInclusive())
-                .to(customWindow.toExclusive())
+                .to(toInclusiveInstant(customWindow.toExclusive()))
+                .toExclusive(customWindow.toExclusive())
                 .timezone(CourierEarningsDefaults.TIMEZONE)
                 .maxRangeDays(CourierEarningsDefaults.MAX_RANGE_DAYS)
                 .build())
@@ -125,12 +128,14 @@ public class CourierEarningsService {
         if (window.fromInclusive() == null || window.toExclusive() == null) {
             return deliveryStatusHistoryRepository.findDeliveredEarningsEntriesForCourier(
                 courierId,
+                DeliveryStatus.DELIVERED,
                 currency,
                 effectivePage
             ).map(this::toEntryDto);
         }
         return deliveryStatusHistoryRepository.findDeliveredEarningsEntriesForCourier(
             courierId,
+            DeliveryStatus.DELIVERED,
             currency,
             window.fromInclusive(),
             window.toExclusive(),
@@ -154,8 +159,8 @@ public class CourierEarningsService {
     private List<CourierEarningsChartPointDto> toChartPoints(List<CourierEarningEntryView> entries, Window window) {
         Map<LocalDate, BigDecimal> totals = new LinkedHashMap<>();
         LocalDate dateCursor = toUtcDate(window.fromInclusive());
-        LocalDate toExclusiveDate = toUtcDate(window.toExclusive());
-        while (dateCursor.isBefore(toExclusiveDate)) {
+        LocalDate toInclusiveDate = toUtcDate(toInclusiveInstant(window.toExclusive()));
+        while (!dateCursor.isAfter(toInclusiveDate)) {
             totals.put(dateCursor, BigDecimal.ZERO);
             dateCursor = dateCursor.plusDays(1);
         }
@@ -186,16 +191,23 @@ public class CourierEarningsService {
     private String resolveCurrency(UUID courierId, Instant fromInclusive, Instant toExclusive) {
         List<String> currencies;
         if (fromInclusive == null || toExclusive == null) {
-            currencies = deliveryStatusHistoryRepository.findDominantDeliveredCurrenciesForCourier(courierId);
+            currencies = deliveryStatusHistoryRepository.findDominantDeliveredCurrenciesForCourier(
+                courierId,
+                DeliveryStatus.DELIVERED
+            );
         } else {
             currencies = deliveryStatusHistoryRepository.findDominantDeliveredCurrenciesForCourier(
                 courierId,
+                DeliveryStatus.DELIVERED,
                 fromInclusive,
                 toExclusive
             );
         }
         if (currencies.isEmpty()) {
-            currencies = deliveryStatusHistoryRepository.findDominantDeliveredCurrenciesForCourier(courierId);
+            currencies = deliveryStatusHistoryRepository.findDominantDeliveredCurrenciesForCourier(
+                courierId,
+                DeliveryStatus.DELIVERED
+            );
         }
         if (currencies.isEmpty()) {
             return "RON";
@@ -207,6 +219,7 @@ public class CourierEarningsService {
     private BigDecimal sumWindow(UUID courierId, String currency, Window window) {
         BigDecimal total = deliveryStatusHistoryRepository.sumDeliveredEarningsByCourierAndCurrencyInWindow(
             courierId,
+            DeliveryStatus.DELIVERED,
             currency,
             window.fromInclusive(),
             window.toExclusive()
@@ -318,14 +331,12 @@ public class CourierEarningsService {
 
     private Instant parseBoundary(String raw, String fieldName, boolean toExclusiveForDateOnly) {
         try {
-            Instant parsed = Instant.parse(raw);
-            return toExclusiveForDateOnly ? parsed.plusNanos(1) : parsed;
+            return Instant.parse(raw);
         } catch (DateTimeParseException ignored) {
             // fallback
         }
         try {
-            Instant parsed = OffsetDateTime.parse(raw).toInstant();
-            return toExclusiveForDateOnly ? parsed.plusNanos(1) : parsed;
+            return OffsetDateTime.parse(raw).toInstant();
         } catch (DateTimeParseException ignored) {
             // fallback
         }
@@ -354,6 +365,13 @@ public class CourierEarningsService {
 
     private static Instant dayStart(Instant point) {
         return toUtcDate(point).atStartOfDay().toInstant(ZoneOffset.UTC);
+    }
+
+    private static Instant toInclusiveInstant(Instant toExclusive) {
+        if (toExclusive == null) {
+            return null;
+        }
+        return toExclusive.minusNanos(1);
     }
 
     private static LocalDate toUtcDate(Instant point) {

@@ -10,6 +10,7 @@ import java.time.Instant;
 public class CourierEarningsWindowDto {
     Instant from;
     Instant to;
+    Instant toExclusive;
     String timezone;
     long maxRangeDays;
 }

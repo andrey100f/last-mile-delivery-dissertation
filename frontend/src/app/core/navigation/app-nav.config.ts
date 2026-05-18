@@ -69,7 +69,7 @@ export const APP_NAV_SECTIONS: readonly NavSection[] = [
         linkActiveExact: true,
       },
       {
-        label: 'Earnings',
+        label: 'Earnings & History',
         routerCommands: ['courier', 'earnings'],
         icon: 'pi pi-dollar',
         roles: [UserRole.COURIER],
