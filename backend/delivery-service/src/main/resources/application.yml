@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: delivery-service
+  config:
+    import: classpath:application-rabbitmq.yml
+  profiles:
+    default: local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: false
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+server:
+  servlet:
+    context-path: /api
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+jwt:
+  secret: ${JWT_SECRET:36cd8c7dd84ace459ec4e262e4aa96cd}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+services:
+  identity: ${SERVICES_IDENTITY_URL:http://localhost:8081/api}
+  delivery: ${SERVICES_DELIVERY_URL:http://localhost:8082/api}
+  courier: ${SERVICES_COURIER_URL:http://localhost:8083/api}
+  events: ${SERVICES_EVENTS_URL:http://localhost:8086/api}
+  notification: ${SERVICES_NOTIFICATION_URL:http://localhost:8085/api}
+  tracking: ${SERVICES_TRACKING_URL:http://localhost:8084/api}
+  admin: ${SERVICES_ADMIN_URL:http://localhost:8087/api}
+
+notifications:
+  async:
+    exchange: notification.events
+    routing-key: notification.requested
+
+tracking:
+  messaging:
+    exchange: tracking.events
+    routing-key: delivery.status.changed
+    queue: tracking.status.q
+
+delivery:
+  assignment:
+    async:
+      enabled: false
+      consumer-enabled: false
+
+app:
+  allowed-origin-patterns: ${APP_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  security:
+    permit-all: /actuator/health,/internal/**

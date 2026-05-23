@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: events-service
+  profiles:
+    default: local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+server:
+  servlet:
+    context-path: /api
+  port: 8086
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+jwt:
+  secret: ${JWT_SECRET:36cd8c7dd84ace459ec4e262e4aa96cd}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+services:
+  identity: ${SERVICES_IDENTITY_URL:http://localhost:8081/api}
+  delivery: ${SERVICES_DELIVERY_URL:http://localhost:8082/api}
+  courier: ${SERVICES_COURIER_URL:http://localhost:8083/api}
+  events: ${SERVICES_EVENTS_URL:http://localhost:8086/api}
+  notification: ${SERVICES_NOTIFICATION_URL:http://localhost:8085/api}
+  tracking: ${SERVICES_TRACKING_URL:http://localhost:8084/api}
+  admin: ${SERVICES_ADMIN_URL:http://localhost:8087/api}
+
+app:
+  allowed-origin-patterns: ${APP_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+  security:
+    permit-all: /actuator/health,/internal/**

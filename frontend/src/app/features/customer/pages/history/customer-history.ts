@@ -2,6 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   signal,
@@ -55,13 +56,17 @@ export class CustomerHistoryPage {
     totalSpentCurrency: 'RON',
   };
 
+  private readonly destroyRef = inject(DestroyRef);
   private readonly deliveryService = inject(DeliveryService);
   private readonly router = inject(Router);
 
-  protected readonly loading = signal(false);
+  protected readonly initialLoading = signal(false);
+  protected readonly tableLoading = signal(false);
   protected readonly loadError = signal<string | null>(null);
+  protected readonly hasLoadedAtLeastOnce = signal(false);
   protected readonly statusFilter = signal<HistoryStatusFilter>('all');
 
+  protected readonly activePage = signal(0);
   protected readonly pageFirst = signal(0);
   protected readonly rowsPerPage = CustomerHistoryPage.PAGE_SIZE;
   protected readonly loadingSkeletonRows = [0, 1, 2, 3];
@@ -93,6 +98,7 @@ export class CustomerHistoryPage {
       return;
     }
     this.statusFilter.set(filter);
+    this.activePage.set(0);
     this.pageFirst.set(0);
     this.loadHistoryData(0, this.rowsPerPage);
   }
@@ -102,12 +108,27 @@ export class CustomerHistoryPage {
   }
 
   protected onLazyLoad(event: TableLazyLoadEvent): void {
-    const first = typeof event.first === 'number' ? event.first : this.pageFirst();
-    const rows = typeof event.rows === 'number' && event.rows > 0
-      ? event.rows
-      : this.rowsPerPage;
+    if (!this.hasLoadedAtLeastOnce() || this.initialLoading() || this.tableLoading()) {
+      return;
+    }
+
+    const rows =
+      typeof event.rows === 'number' && event.rows > 0
+        ? event.rows
+        : this.rowsPerPage;
+    const first =
+      typeof event.first === 'number' && event.first >= 0
+        ? event.first
+        : this.pageFirst();
+    const page = Math.floor(first / rows);
+
+    if (page === this.activePage() && rows === this.rowsPerPage && first === this.pageFirst()) {
+      return;
+    }
+
+    this.activePage.set(page);
     this.pageFirst.set(first);
-    this.loadHistoryData(Math.floor(first / rows), rows);
+    this.loadHistoryData(page, rows);
   }
 
   protected openDeliveryDetails(deliveryId: string): void {
@@ -116,14 +137,14 @@ export class CustomerHistoryPage {
 
   protected retry(): void {
     this.loadSummary();
-    this.loadHistoryData(Math.floor(this.pageFirst() / this.rowsPerPage), this.rowsPerPage);
+    this.loadHistoryData(this.activePage(), this.rowsPerPage);
   }
 
   private loadSummary(): void {
     this.deliveryService
       .getCustomerHistorySummary()
       .pipe(
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
         catchError(() => of(CustomerHistoryPage.DEFAULT_SUMMARY)),
       )
       .subscribe((summary) => {
@@ -137,7 +158,16 @@ export class CustomerHistoryPage {
   }
 
   private loadHistoryData(page = 0, size = this.rowsPerPage): void {
-    this.loading.set(true);
+    if (this.initialLoading() || this.tableLoading()) {
+      return;
+    }
+
+    const isInitial = !this.hasLoadedAtLeastOnce();
+    if (isInitial) {
+      this.initialLoading.set(true);
+    } else {
+      this.tableLoading.set(true);
+    }
     this.loadError.set(null);
 
     this.deliveryService
@@ -148,7 +178,7 @@ export class CustomerHistoryPage {
         status: this.statusFilter() === 'completed' ? 'DELIVERED' : undefined,
       })
       .pipe(
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
         catchError(() => {
           this.loadError.set('Could not load delivery history. Please retry.');
           return of({
@@ -156,12 +186,18 @@ export class CustomerHistoryPage {
             totalElements: 0,
           });
         }),
-        finalize(() => this.loading.set(false)),
+        finalize(() => {
+          this.initialLoading.set(false);
+          this.tableLoading.set(false);
+        }),
       )
       .subscribe((response) => {
         const deliveries = Array.isArray(response.content) ? response.content : [];
+        this.activePage.set(page);
+        this.pageFirst.set(page * size);
         this.rows.set(deliveries.map((delivery) => this.mapRow(delivery)));
         this.totalRecords.set(this.toNonNegative(response.totalElements));
+        this.hasLoadedAtLeastOnce.set(true);
       });
   }
 

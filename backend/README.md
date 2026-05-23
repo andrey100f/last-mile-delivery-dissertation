@@ -1,341 +1,106 @@
-# Delivery Hub API (backend)
+# Last Mile Delivery Marketplace — Backend (Microservices)
 
-Spring Boot modular monolith for the Last Mile Delivery Marketplace. Bounded contexts are Java packages (not separate Maven modules). The **PostgreSQL** schema is owned by **Flyway** (`src/main/resources/db/migration`); Hibernate `ddl-auto` is `none` so SQL migrations and JPA stay aligned.
+The backend is a **Maven multi-module** project. Each bounded context runs as an independent Spring Boot service.
 
-**Local machine runs** use the **`local`** profile by default (`spring.profiles.default=local` in `application.properties`). JDBC settings live in `application-local.properties` so the main file stays free of hardcoded credentials.
+## Modules
+
+| Module | Port | Description |
+|--------|------|-------------|
+| `common` | — | Shared security, messaging contracts, Flyway migrations |
+| `identity-service` | 8081 | Auth, users, JWT issuance |
+| `delivery-service` | 8082 | Deliveries lifecycle, admin reports |
+| `courier-service` | 8083 | Courier profile & earnings |
+| `tracking-service` | 8084 | WebSocket/STOMP live tracking |
+| `messaging-notification-service` | 8085 | Notifications + RabbitMQ consumers |
+| `events-service` | 8086 | System events, admin events API |
+| `admin-service` | 8087 | Admin dashboard & user management |
+
+See **[docs/MICROSERVICES_MIGRATION_REPORT.md](docs/MICROSERVICES_MIGRATION_REPORT.md)** for the full migration report.
 
 ## Prerequisites
 
-- **JDK** version matching `pom.xml` (`java.version`; currently **25**).
-- **Apache Maven** 3.9+ (this repo does not include the Maven Wrapper).
-- **PostgreSQL** when running the app on your machine — easiest path is **Docker** (see [Database](#database)). A locally installed PostgreSQL 15+ on `localhost:5432` is fine if you create the same database and user.
+- JDK **25** (see parent `pom.xml`)
+- Maven **3.9+**
+- Docker (recommended for PostgreSQL + RabbitMQ)
 
-## Database
-
-### Why it matters
-
-The application does not start without a reachable datasource when the **`local`** profile is active (the default for `spring-boot:run`). If PostgreSQL is stopped, startup fails with a connection error. That is expected.
-
-### Option 1: Docker (recommended)
-
-From this directory (`backend/`):
+## Quick start
 
 ```bash
+# 1. Start infrastructure
 docker compose -f docker/docker-compose.yml up -d
+
+# 2. Build everything
+mvn clean package
+
+# 3. Start identity-service first (runs Flyway)
+mvn -pl identity-service spring-boot:run
+
+# 4. Start other services in separate terminals
+mvn -pl delivery-service spring-boot:run
+mvn -pl courier-service spring-boot:run
+mvn -pl tracking-service spring-boot:run
+mvn -pl messaging-notification-service spring-boot:run
+mvn -pl events-service spring-boot:run
+mvn -pl admin-service spring-boot:run
 ```
 
-This starts PostgreSQL **18** with:
+Default datasource: `jdbc:postgresql://localhost:5432/deliveryhub` (user/password `deliveryhub`).
+
+RabbitMQ defaults (delivery, tracking, messaging-notification services) match `docker/docker-compose.yml`:
 
 | Setting | Value |
 |--------|--------|
-| Host (from your machine) | `localhost` |
-| Port | `5432` |
-| Database | `deliveryhub` |
+| Host | `localhost:5672` |
 | User / password | `deliveryhub` / `deliveryhub` |
+| Virtual host | `/` |
 
-To stop and remove the container (data kept in the named volume):
+If you see `ACCESS_REFUSED` on RabbitMQ, ensure the broker user matches the app config above. After changing `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS` in Compose, recreate the broker volume:
 
 ```bash
 docker compose -f docker/docker-compose.yml down
-```
-
-### Option 2: Local PostgreSQL
-
-Create a database and role matching the defaults above, or override the datasource with environment variables (next section).
-
-### Datasource environment variables
-
-Defaults for the **`local`** profile are in `src/main/resources/application-local.properties`. Override with standard Spring Boot properties — for example:
-
-| Variable | Example |
-|----------|---------|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/deliveryhub` |
-| `SPRING_DATASOURCE_USERNAME` | `deliveryhub` |
-| `SPRING_DATASOURCE_PASSWORD` | `deliveryhub` |
-
-Do not commit real production credentials; use secrets or your host’s environment configuration.
-
-### Resetting development data
-
-**Docker (removes container and volume — all DB data is lost):**
-
-```bash
-docker compose -f docker/docker-compose.yml down -v
+docker rm -f deliveryhub-rabbitmq 2>/dev/null
 docker compose -f docker/docker-compose.yml up -d
 ```
 
-**Same database, SQL only (destructive):** connect with `psql` or a GUI and run:
+Check IDE/env overrides: empty `SPRING_RABBITMQ_USERNAME` or `SPRING_RABBITMQ_PASSWORD` overrides defaults and causes login failures.
 
-```sql
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-```
-
-Then restart the application so Flyway reapplies migrations from scratch.
-
-### Confirming Flyway
-
-After a successful startup against an empty database, Flyway creates `flyway_schema_history` and applies versioned scripts. To verify:
-
-```sql
-SELECT * FROM flyway_schema_history ORDER BY installed_rank;
-```
-
-You should see applied migrations (for example version `1` for `V1__init.sql`).
-
-## Run locally
-
-1. Start PostgreSQL (see [Database](#database)).
-2. From this directory:
+## Docker (all services)
 
 ```bash
-mvn spring-boot:run
+docker compose -f docker/docker-compose.microservices.yml up --build
 ```
 
-The **`local`** profile is active by default, so no extra `-Dspring-boot.run.profiles=local` is required unless you changed `spring.profiles.default`.
+## API context
 
-The API listens on **port 8080** (see `src/main/resources/application.properties`).
+Every service uses `server.servlet.context-path=/api`. Route the frontend/gateway by path prefix to the correct port (see migration report).
 
-## Build
+Legacy monolith documentation below still describes business rules and payload shapes; only deployment topology changed.
 
-Compile and package the application:
+---
+
+## Database
+
+PostgreSQL schema is owned by **Flyway** in `common/src/main/resources/db/migration`. Only **identity-service** applies migrations on startup.
 
 ```bash
-mvn -q package
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-## Verify
+| Setting | Value |
+|--------|--------|
+| Host | `localhost:5432` |
+| Database | `deliveryhub` |
+| User / password | `deliveryhub` / `deliveryhub` |
 
-With the app running, check actuator health:
+## Security
 
-```bash
-curl -s http://localhost:8080/actuator/health
-```
+JWT Bearer auth is enforced on protected routes. Login: `POST /api/auth/login` on **identity-service** (port 8081).
 
-Expected JSON includes `"status":"UP"`.
+## Original feature documentation
 
-## Security note
+Refer to existing docs for API contracts:
 
-JWT Bearer authentication is enforced for routes outside `/auth/**` and `/actuator/health`. Tokens are issued at login (`POST /api/auth/login`) and carry `sub` (user id) plus a `role` claim so `@PreAuthorize` can distinguish roles.
-
-## Delivery create payload (POST `/api/deliveries`)
-
-The create endpoint accepts the simplified frontend request shape:
-
-- `pickup`: `line1`, `contactName`, `contactPhone`
-- `destination`: `line1`, `contactName`, `contactPhone`
-- `package`: `weightKg`, `description`
-- `deliveryType`, `specialInstructions`
-- `pricing`: `baseAmount`, `feeAmount`, `taxAmount`, `totalAmount`, `currency`
-
-Pricing ownership is client-side for this flow: backend validates the pricing snapshot and persists it directly to `deliveries` (`base_amount`, `fee_amount`, `tax_amount`, `total_amount`, `currency`) without server-side recalculation.
-
-## Delivery list payload (GET `/api/deliveries`)
-
-List rows include route-friendly address fields in camelCase:
-
-- `destinationLine1` (main route text)
-- `pickupLine1` (route hint, e.g. "from ...")
-
-**Idempotency:** duplicate POSTs create separate deliveries (GitHub #31).
-
-## Courier available deliveries (GET `/api/deliveries/available`)
-
-Courier role only (`ROLE_COURIER`). Returns a paged list of assignable deliveries:
-
-- only `CREATED` rows
-- only unassigned rows (`courier_id IS NULL`)
-- optional filter: `deliveryType=STANDARD|EXPRESS`
-- supports pageable query params (`page`, `size`, `sort`)
-
-Response rows include:
-
-- identity/status: `id`, `status`, `deliveryType`
-- route summary: `pickupLine1`, `destinationLine1`
-- pricing snapshot: `baseAmount`, `feeAmount`, `taxAmount`, `totalAmount`, `currency`
-- placeholders for future matching signals: `distanceKm`, `etaMinutes` (`null` in current implementation)
-
-## Courier accept delivery (POST `/api/deliveries/{id}/accept`)
-
-Courier role only (`ROLE_COURIER`). Accept is transactional and concurrency-safe using a pessimistic row lock (`PESSIMISTIC_WRITE`) on the selected delivery:
-
-- acquires lock on delivery row by id
-- re-checks assignable conditions under lock (`status=CREATED`, `courier_id IS NULL`)
-- sets assignment atomically (`courier_id=current courier`, `status=ASSIGNED`)
-- appends `ASSIGNED` entry in `delivery_status_history` in the same transaction
-
-Conflict semantics:
-
-- returns `409 Conflict` with RFC 7807 payload and stable machine code `DELIVERY_TAKEN` when another courier already claimed the delivery or it is no longer assignable
-- returns `404` when delivery id does not exist
-
-## Delivery status snapshot (GET `/api/deliveries/{id}/status`)
-
-Compact polling endpoint for tracking and WS fallback:
-
-- response fields: `status`, `etaMinutes`, `updatedAt`, `progressPercent`
-- ownership semantics are identical to `GET /api/deliveries/{id}`
-- includes `ETag` so clients can use `If-None-Match` and receive `304 Not Modified` when unchanged
-
-Polling methodology and curl baseline loop are documented in `docs/polling-tracking-baseline.md`.
-
-## Notifications API (`#46`)
-
-Customer notifications persistence and read-state endpoints are available with strict user scoping (no client-provided `userId`):
-
-- `GET /api/notifications` with `page`, `size`, `sort`, `unreadOnly`, `type`
-- `PATCH /api/notifications/{id}/read` for idempotent mark-read
-- `PATCH /api/notifications/read-all` returning `{ "updatedCount": <number> }`
-
-Full contract and examples are documented in `docs/notifications-api.md`.
-
-## Notification emitters (`#47`)
-
-Delivery assignment and milestone status transitions now emit `NotificationRequested` domain events from transactional delivery flows (`accept` + `PATCH status`), and notifications are handled in an `AFTER_COMMIT` listener to avoid rolling back delivery updates on notification failures. In the current API scope, emitted recipients are customer-only.
-
-Runtime mode is controlled by properties:
-
-- `notifications.async.enabled=false` (default): listener persists notification rows synchronously.
-- `notifications.async.enabled=true`: listener publishes event payload to RabbitMQ (`notifications.async.exchange` + `notifications.async.routing-key`).
-- `notifications.async.fallback-to-sync=true`: if async publish fails, listener falls back to sync persistence.
-
-## Async notification consumer with DLQ (`#69`)
-
-`NotificationRequested` is consumed with manual-ack semantics and explicit transient/permanent classification:
-
-- validation failures (unsupported `eventVersion`, malformed payload, invalid recipients, oversized metadata) are treated as permanent and routed directly to DLQ
-- transient failures are retried using `notifications.async.retry-backoff-millis` until `notifications.async.max-retries` is exhausted
-- exhausted messages are published to DLQ with diagnostic headers:
-  - `x-failure-reason`
-  - `x-exception-class`
-  - `x-attempt-count`
-  - `x-original-exchange`
-  - `x-original-routing-key`
-  - `x-correlation-id`
-
-Topology defaults:
-
-- exchange: `notification.events`
-- routing key: `notification.requested`
-- queue: `notification.consume.q`
-- retry queue: `notification.consume.retry.q`
-- DLX/DLQ: `notification.consume.dlx` / `notification.consume.dlq`
-
-Migration note (breaking default rename):
-
-- previous defaults were `deliveryhub.notifications` + `requested`
-- environments still using legacy topology must explicitly override:
-  - `notifications.async.exchange=deliveryhub.notifications`
-  - `notifications.async.routing-key=requested`
-  - `notifications.async.retry-routing-key=requested.retry`
-  - `notifications.async.dlx=deliveryhub.notifications.dlx`
-  - `notifications.async.dlq-routing-key=requested.dlq`
-- if any legacy exchange/queue bindings are provisioned outside app startup, update or keep overrides before deploying this branch
-
-Operational replay guidance is documented in `docs/notification-dlq-runbook.md`.
-
-## Async assignment consumer (`#68`)
-
-Delivery creation now publishes a versioned `DeliveryCreated` event after transaction commit (feature-flagged), and RabbitMQ consumer-based assignment can process the event asynchronously with idempotency + retry + DLQ flow.
-
-Sequence:
-
-```mermaid
-sequenceDiagram
-    participant API as Delivery API
-    participant EX as Exchange delivery.events
-    participant Q as Queue delivery.assign.async.q
-    participant C as DeliveryCreated consumer
-    participant S as AsyncAssignmentService
-    API->>EX: publish DeliveryCreated (after commit)
-    EX->>Q: routing key delivery.created
-    Q->>C: consume (manual ack)
-    C->>S: transactional assign + idempotency marker
-    S-->>C: ASSIGNED / NOOP / failure
-    C-->>Q: ack on success/noop
-    C->>EX: transient failure -> retry queue
-    C->>DLQ: permanent/exhausted -> delivery.assign.async.dlq
-```
-
-Main properties:
-
-- `delivery.assignment.async.enabled` - publishes `DeliveryCreated` events when deliveries are created.
-- `delivery.assignment.async.consumer-enabled` - toggles Rabbit listener startup.
-- `delivery.assignment.async.max-retries` - number of retries after the initial failed consume attempt (e.g. `5` = initial try + up to 5 retries, then DLQ).
-- `delivery.assignment.async.retry-backoff-millis` - retry delay schedule in milliseconds.
-- `delivery.assignment.async.queue` / `retry-queue` / `dlq` - queue names for main retry and DLQ paths.
-- `delivery.assignment.async.exchange` / `routing-key` / `retry-routing-key` / `dlx` / `dlq-routing-key` - exchange/routing topology.
-
-Retry note: current retry scheduling uses per-message TTL on a single retry queue. For high retry volume where strict delay fairness matters, prefer bucketed retry queues (fixed queue TTL per bucket) or delayed-message exchange plugin.
-
-## Admin user management APIs (`#54`)
-
-Admin-only endpoints for managing courier/customer accounts:
-
-- `GET /api/admin/couriers` and `GET /api/admin/customers`
-- `POST /api/admin/couriers` and `POST /api/admin/customers`
-
-List behavior:
-
-- pageable contract (`page`, `size`, `sort`)
-- optional search (`q` or `search`) over `email`, `displayName`, `phoneNumber`
-- deterministic sorting (requested sort + `id DESC` tie-breaker; default `createdAt DESC`)
-
-Create behavior:
-
-- validates `email`, `displayName`, and password complexity
-- stores password as BCrypt hash (never returned in responses)
-- duplicate email returns `409` with `code=USER_EMAIL_CONFLICT` and `fieldErrors.email`
-- courier creation also creates a `courier_profiles` row in the same transaction
-
-Current onboarding assumption for MVP:
-
-- admin submits an initial password in create payloads
-- invite/reset-password workflow is deferred to a later milestone
-
-## Admin reports APIs (`#57`)
-
-Admin-only analytics endpoints are available under `/api/admin/reports`:
-
-- `GET /deliveries-by-status`
-- `GET /revenue`
-
-Shared query contract:
-
-- required `from` and `to` (`ISO-8601` timestamp or `YYYY-MM-DD`)
-- optional `granularity=day|week` (defaults to `day`)
-- UTC-normalized aggregation buckets on the backend
-- max window enforced to `180` days (validation error when exceeded)
-
-## Courier earnings APIs (`#58`)
-
-Courier-only earnings visibility endpoints are available under `/api/couriers/me/earnings`:
-
-- `GET /summary`
-- `GET /entries`
-
-The current MVP uses a **derived** earnings model (no dedicated ledger table yet):
-
-- earning entries are derived from `DELIVERED` rows in `delivery_status_history` joined with `deliveries`
-- entry timestamp is `delivery_status_history.recorded_at` (UTC semantics)
-- amount source is `deliveries.total_amount`
-
-Shared query semantics:
-
-- optional `from` and `to` (`ISO-8601` timestamp or `YYYY-MM-DD`)
-- when provided, `from` and `to` must be sent together
-- max range is `180` days
-- range boundaries are interpreted in UTC (date-only `to` is treated as end-of-day exclusive)
-
-Summary payload includes:
-
-- `todayTotal`, `weekTotal`, `monthTotal`
-- `customRangeTotal` and `trend` (vs previous period with same span)
-- UTC `window` metadata and daily chart buckets (`chartPoints`)
-- `currency` (dominant delivered currency for the selected window, fallback `RON`)
-
-Entries payload:
-
-- paginated rows with deterministic default sort (`recordedAt,desc`)
-- fields: `deliveryId`, `trackingCode`, `amount`, `currency`, `status`, `earnedAt`, optional `note`
-- no customer-sensitive fields are exposed
+- `docs/notifications-api.md`
+- `docs/admin-dashboard-api.md`
+- `docs/websocket-tracking.md`
+- `README.md` sections on delivery flows (still valid for payload semantics)

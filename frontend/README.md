@@ -115,7 +115,19 @@ frontend/
 
 ## API base URL
 
-HTTP calls will target **`/api`** on the dev server and be forwarded to the backend via a **proxy** (planned in issue **#23**). Until that is merged, configure the proxy locally or use absolute backend URLs as needed.
+Local dev uses **`environment.local.ts`** (`apiUrl: '/api'`) and **`proxy.conf.json`** (wired in `angular.json` for `ng serve`). The Angular dev server forwards `/api/**` to the microservices below; **URL paths are unchanged** from the monolith — only the upstream port differs.
+
+| Path prefix | Service | Port |
+| ----------- | ------- | ---- |
+| `/api/auth/**`, `/api/users/**`, `/api/actuator/**` | identity-service | 8081 |
+| `/api/deliveries/**`, `/api/admin/reports/**` | delivery-service | 8082 |
+| `/api/couriers/**` | courier-service | 8083 |
+| `/api/ws-tracking/**` (WebSocket) | tracking-service | 8084 |
+| `/api/notifications/**` | messaging-notification-service | 8085 |
+| `/api/admin/events/**` | events-service | 8086 |
+| `/api/admin/dashboard/**`, `/api/admin/customers/**`, `/api/admin/couriers/**` | admin-service | 8087 |
+
+Start all backend services before `ng serve`. Production builds use `environment.ts` (`apiUrl: ''`) and expect same-origin `/api` routing (reverse proxy or API gateway).
 
 ## HTTP auth interceptor (#27)
 

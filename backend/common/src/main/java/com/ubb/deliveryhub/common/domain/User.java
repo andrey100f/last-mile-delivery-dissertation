@@ -1,0 +1,68 @@
+package com.ubb.deliveryhub.common.domain;
+
+import com.ubb.deliveryhub.common.domain.enums.UserRole;
+import com.ubb.deliveryhub.common.domain.id.UserId;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Data;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(
+    name = UserId.TABLE_NAME,
+    indexes = {
+        @Index(name = "users_email_idx", columnList = "email", unique = true)
+    }
+)
+@Data
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(name = UserId.EMAIL, nullable = false)
+    private String email;
+
+    @Column(name = UserId.PASSWORD_HASH, nullable = false)
+    private String passwordHash;
+
+    @Column(name = UserId.DISPLAY_NAME)
+    private String displayName;
+
+    @Column(name = UserId.PHONE_NUMBER)
+    private String phoneNumber;
+
+    @Column(name = UserId.ROLE, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
+    @Column(name = UserId.CREATED_AT, nullable = false)
+    private Instant createdAt;
+
+    @Column(name = UserId.UPDATED_AT, nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    private void onCreate() {
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    private void onUpdate() {
+        this.updatedAt = Instant.now();
+    }
+}

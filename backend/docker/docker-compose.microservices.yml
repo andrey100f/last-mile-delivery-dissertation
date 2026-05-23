@@ -1,0 +1,153 @@
+name: DeliveryHub Microservices
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: deliveryhub-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: deliveryhub
+      POSTGRES_PASSWORD: deliveryhub
+      POSTGRES_DB: deliveryhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: deliveryhub-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: deliveryhub
+      RABBITMQ_DEFAULT_PASS: deliveryhub
+
+  identity-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: identity-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+  delivery-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: delivery-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: deliveryhub
+      SPRING_RABBITMQ_PASSWORD: deliveryhub
+      SERVICES_IDENTITY_URL: http://identity-service:8081/api
+      SERVICES_COURIER_URL: http://courier-service:8083/api
+      SERVICES_EVENTS_URL: http://events-service:8086/api
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - identity-service
+
+  courier-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: courier-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - identity-service
+
+  tracking-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: tracking-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: deliveryhub
+      SPRING_RABBITMQ_PASSWORD: deliveryhub
+      SERVICES_DELIVERY_URL: http://delivery-service:8082/api
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - delivery-service
+
+  messaging-notification-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: messaging-notification-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: deliveryhub
+      SPRING_RABBITMQ_PASSWORD: deliveryhub
+    ports:
+      - "8085:8085"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - identity-service
+
+  events-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: events-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+    ports:
+      - "8086:8086"
+    depends_on:
+      - postgres
+      - identity-service
+
+  admin-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        SERVICE_MODULE: admin-service
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deliveryhub
+    ports:
+      - "8087:8087"
+    depends_on:
+      - postgres
+      - identity-service
+      - delivery-service
+      - courier-service
+      - messaging-notification-service
+      - events-service
+
+volumes:
+  postgres_data:

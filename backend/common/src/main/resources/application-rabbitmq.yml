@@ -1,0 +1,10 @@
+# Shared RabbitMQ connection settings (must match docker/docker-compose.yml).
+# Imported by delivery, tracking, and messaging-notification services.
+spring:
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: deliveryhub
+    password: deliveryhub
+    virtual-host: /
+    connection-timeout: 10s

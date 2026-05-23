@@ -1,14 +1,51 @@
-{
-  "/api": {
-    "target": "http://localhost:8080",
+[
+  {
+    "context": ["/api/ws-tracking"],
+    "target": "http://localhost:8084",
     "secure": false,
     "changeOrigin": true,
     "ws": true
   },
-  "/ws": {
-    "target": "ws://localhost:8080",
+  {
+    "context": ["/api/admin/reports"],
+    "target": "http://localhost:8082",
     "secure": false,
-    "changeOrigin": true,
-    "ws": true
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/admin/events"],
+    "target": "http://localhost:8086",
+    "secure": false,
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/admin/dashboard", "/api/admin/customers", "/api/admin/couriers"],
+    "target": "http://localhost:8087",
+    "secure": false,
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/deliveries"],
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/couriers"],
+    "target": "http://localhost:8083",
+    "secure": false,
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/notifications"],
+    "target": "http://localhost:8085",
+    "secure": false,
+    "changeOrigin": true
+  },
+  {
+    "context": ["/api/auth", "/api/users", "/api/actuator"],
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true
   }
-}
+]
