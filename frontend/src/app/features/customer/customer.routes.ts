@@ -1,10 +1,5 @@
 import { Routes } from '@angular/router';
 
-const loadStub = () =>
-  import('@shared/pages/portal-route-stub/portal-route-stub').then(
-    (m) => m.PortalRouteStub,
-  );
-
 export const customerRoutes: Routes = [
   {
     path: '',
@@ -84,7 +79,13 @@ export const customerRoutes: Routes = [
   },
   {
     path: 'profile',
-    loadComponent: loadStub,
-    data: { pageTitle: 'Profile' },
+    loadComponent: () =>
+      import('./pages/customer-profile/customer-profile').then(
+        (m) => m.CustomerProfilePage,
+      ),
+    data: {
+      pageTitle: 'Profile & Settings',
+      subtitle: 'Manage your account and preferences',
+    },
   },
 ];
