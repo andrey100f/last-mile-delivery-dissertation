@@ -64,7 +64,7 @@
     </section>
 
     <section class="rounded-(--p-radius-lg) border border-p-surface-border bg-p-surface-card shadow-(--p-shadow-xs)">
-      @if (loading()) {
+      @if (initialLoading() && !hasLoadedAtLeastOnce()) {
         <div class="px-4 py-3">
           <table class="w-full">
             <tbody>
@@ -81,7 +81,7 @@
             </tbody>
           </table>
         </div>
-      } @else if (loadError(); as errorText) {
+      } @else if (loadError() && !hasLoadedAtLeastOnce(); as errorText) {
         <div class="p-5">
           <p class="text-sm font-semibold text-red-700">{{ errorText }}</p>
           <div class="mt-3">
@@ -96,6 +96,7 @@
           [rows]="rowsPerPage"
           [first]="pageFirst()"
           [totalRecords]="totalRecords()"
+          [loading]="tableLoading()"
           dataKey="id"
           responsiveLayout="scroll"
           size="small"

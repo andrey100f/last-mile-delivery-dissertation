@@ -19,7 +19,16 @@ export function shouldAttachBearerToRequest(
   }
 
   if (apiBase === '' || apiBase.startsWith('/')) {
-    return false;
+    if (apiBase === '') {
+      return false;
+    }
+    try {
+      const requestParsed = new URL(requestUrl, 'http://local.invalid');
+      const normalizedPath = requestParsed.pathname.replace(/\/$/, '');
+      return normalizedPath === apiBase || normalizedPath.startsWith(`${apiBase}/`);
+    } catch {
+      return false;
+    }
   }
 
   try {

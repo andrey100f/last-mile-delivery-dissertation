@@ -274,17 +274,30 @@ export class TrackingSocketService {
 
   private resolveWebSocketUrl(): string {
     const rawApiUrl = environment.apiUrl.trim();
+    const token = this.authService.getAccessToken();
+    let url: string;
+
     if (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')) {
       try {
         const parsed = new URL(rawApiUrl);
         const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
         const normalizedBase = normalizeApiBase(parsed.pathname);
-        return `${wsProtocol}//${parsed.host}${normalizedBase}/ws-tracking`;
+        url = `${wsProtocol}//${parsed.host}${normalizedBase}/ws-tracking`;
       } catch {
-        // Fall back to same-origin behavior below if configured URL is malformed.
+        url = this.resolveSameOriginWebSocketUrl(rawApiUrl);
       }
+    } else {
+      url = this.resolveSameOriginWebSocketUrl(rawApiUrl);
     }
 
+    if (token) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}token=${encodeURIComponent(token)}`;
+    }
+    return url;
+  }
+
+  private resolveSameOriginWebSocketUrl(rawApiUrl: string): string {
     const normalizedBase = normalizeApiBase(rawApiUrl);
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${wsProtocol}//${window.location.host}${normalizedBase}/ws-tracking`;
