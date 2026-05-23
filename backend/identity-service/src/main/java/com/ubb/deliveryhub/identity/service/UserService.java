@@ -42,7 +42,7 @@ public class UserService {
     }
 
     private User getById(String id) {
-        return getById(UUID.fromString(id));
+        return getById(parseUserId(id));
     }
 
     private User getById(UUID id) {
@@ -50,8 +50,16 @@ public class UserService {
             .orElseThrow(() -> new EntityNotFoundException("User with id %s not found".formatted(id)));
     }
 
+    private static UUID parseUserId(String id) {
+        try {
+            return UUID.fromString(id);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid user id format");
+        }
+    }
+
     private static UUID principalUserId(Authentication authentication) {
-        return UUID.fromString(authentication.getName());
+        return parseUserId(authentication.getName());
     }
 
 }
